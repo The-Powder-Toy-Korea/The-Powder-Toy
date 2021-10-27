@@ -107,7 +107,6 @@ public:
 class GOLTool: public Tool
 {
 public:
-	String selectGOLType;
 	GameModel * gameModel;
 	GOLTool(GameModel * gameModel):
 	Tool(0, "CUST", "새 사용자 지정 생명 게임을 추가합니다([Ctrl] + [Shift]를 누른 상태로 우클릭하여 제거합니다).", 0xfe, 0xa9, 0x00, "DEFAULT_UI_ADDLIFE", NULL),
