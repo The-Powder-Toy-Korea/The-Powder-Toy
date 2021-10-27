@@ -29,7 +29,7 @@ void Element::Element_FUSE()
 	Weight = 100;
 
 	HeatConduct = 200;
-	Description = "Burns slowly. Ignites at somewhat high temperatures or with electricity.";
+	Description = "퓨즈: 고온의 물질 및 전류에 반응합니다.";
 
 	Properties = TYPE_SOLID;
 

@@ -31,7 +31,7 @@ void Element::Element_ACID()
 	Weight = 10;
 
 	HeatConduct = 34;
-	Description = "Dissolves almost everything.";
+	Description = "산: 거의 모든 물질을 녹입니다.";
 
 	Properties = TYPE_LIQUID|PROP_DEADLY;
 

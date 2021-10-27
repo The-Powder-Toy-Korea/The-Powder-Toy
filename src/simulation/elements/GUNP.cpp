@@ -27,7 +27,7 @@ void Element::Element_GUNP()
 	Weight = 85;
 
 	HeatConduct = 97;
-	Description = "Gunpowder. Light dust, explodes on contact with fire or spark.";
+	Description = "화약: 가벼운 가루이며 불 및 전류이나 고온에 반응할 수 있다.";
 
 	Properties = TYPE_PART;
 

@@ -29,7 +29,7 @@ void Element::Element_NONE()
 	Weight = 100;
 
 	HeatConduct = 0;
-	Description = "Erases particles.";
+	Description = "물질을 지웁니다.";
 
 	Properties = 0;
 

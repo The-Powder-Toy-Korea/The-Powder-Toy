@@ -31,7 +31,7 @@ void Element::Element_TUNG()
 	Weight = 100;
 
 	HeatConduct = 251;
-	Description = "Tungsten. Brittle metal with a very high melting point.";
+	Description = "텅스텐: 매우 높은 온도에서 융해하며 부서지기 쉽습니다.";
 
 	Properties = TYPE_SOLID|PROP_CONDUCTS|PROP_LIFE_DEC;
 
@@ -41,7 +41,7 @@ void Element::Element_TUNG()
 	HighPressureTransition = NT;
 	LowTemperature = ITL;
 	LowTemperatureTransition = NT;
-	HighTemperature = 3695.0f;// TUNG melts in its update function instead of in the normal way, but store the threshold here so that it can be changed from Lua
+	HighTemperature = 3695.0f; // TUNG melts in its update function instead of in the normal way, but store the threshold here so that it can be changed from Lua
 	HighTemperatureTransition = NT;
 
 	Update = &update;

@@ -27,7 +27,7 @@ void Element::Element_SAND()
 	Weight = 90;
 
 	HeatConduct = 150;
-	Description = "Sand, Heavy particles. Melts into glass.";
+	Description = "모래, 질량이 높으며, 융해하면 유리가 생성됩니다.";
 
 	Properties = TYPE_PART;
 

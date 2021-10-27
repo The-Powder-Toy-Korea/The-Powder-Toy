@@ -20,7 +20,7 @@ ProfileActivity::ProfileActivity(ByteString username) :
 {
 	editable = Client::Ref().GetAuthUser().UserID && Client::Ref().GetAuthUser().Username == username;
 
-	ui::Button * closeButton = new ui::Button(ui::Point(0, Size.Y-15), ui::Point(Size.X, 15), "Close");
+	ui::Button * closeButton = new ui::Button(ui::Point(0, Size.Y-15), ui::Point(Size.X, 15), "닫기");
 	closeButton->SetActionCallback({ [this] {
 		Exit();
 	} });
@@ -28,12 +28,12 @@ ProfileActivity::ProfileActivity(ByteString username) :
 	{
 		closeButton->Size.X = (Size.X/2)+1;
 
-		ui::Button * saveButton = new ui::Button(ui::Point(Size.X/2, Size.Y-15), ui::Point(Size.X/2, 15), "Save");
+		ui::Button * saveButton = new ui::Button(ui::Point(Size.X/2, Size.Y-15), ui::Point(Size.X/2, 15), "저장");
 		saveButton->SetActionCallback({ [this, saveButton] {
 			if (!loading && !saving && editable)
 			{
 				saveButton->Enabled = false;
-				saveButton->SetText("Saving...");
+				saveButton->SetText("저장 중...");
 				saving = true;
 				info.location = location->GetText();
 				info.biography = bio->GetText();
@@ -57,11 +57,11 @@ void ProfileActivity::setUserInfo(UserInfo newInfo)
 	info = newInfo;
 
 	if (!info.biography.length() && !editable)
-		info.biography = "\bgNot Provided";
+		info.biography = "\b제공되지 않음";
 	if (!info.location.length() && !editable)
-		info.location = "\bgNot Provided";
+		info.location = "\b제공되지 않음";
 	if (!info.website.length())
-		info.website = "\bgNot Provided";
+		info.website = "\b제공되지 않음";
 
 	// everything is on a large scroll panel
 	scrollPanel = new ui::ScrollPanel(ui::Point(1, 1), ui::Point(Size.X-2, Size.Y-16));
@@ -80,7 +80,7 @@ void ProfileActivity::setUserInfo(UserInfo newInfo)
 	// edit avatar button
 	if (editable)
 	{
-		ui::Button * editAvatar = new ui::Button(ui::Point(Size.X - (40 + 16 + 75), currentY), ui::Point(75, 15), "Edit Avatar");
+		ui::Button * editAvatar = new ui::Button(ui::Point(Size.X - (40 + 16 + 100), currentY), ui::Point(100, 15), "프로필 사진 변경");
 		editAvatar->SetActionCallback({ [] {
 			Platform::OpenURI(SCHEME SERVER "/Profile/Avatar.html");
 		} });
@@ -89,19 +89,19 @@ void ProfileActivity::setUserInfo(UserInfo newInfo)
 	currentY += 23;
 
 	// age
-	ui::Label * ageTitle = new ui::Label(ui::Point(4, currentY), ui::Point(18, 15), "Age:");
+	ui::Label * ageTitle = new ui::Label(ui::Point(4, currentY), ui::Point(18, 15), "나이:");
 	ageTitle->Appearance.HorizontalAlign = ui::Appearance::AlignLeft;
 	ageTitle->SetTextColour(ui::Colour(180, 180, 180));
 	scrollPanel->AddChild(ageTitle);
 
 	// can't figure out how to tell a null from a 0 in the json library we use
-	ui::Label *age = new ui::Label(ui::Point(8+ageTitle->Size.X, currentY), ui::Point(40, 15), info.age ? String::Build(info.age) : "\bgNot Provided");
+	ui::Label *age = new ui::Label(ui::Point(13+ageTitle->Size.X, currentY), ui::Point(40, 15), info.age ? String::Build(info.age) : "\b제공되지 않음");
 	age->Appearance.HorizontalAlign = ui::Appearance::AlignLeft;
 	scrollPanel->AddChild(age);
 	currentY += 2+age->Size.Y;
 
 	// location
-	ui::Label * locationTitle = new ui::Label(ui::Point(4, currentY), ui::Point(45, 15), "Location:");
+	ui::Label * locationTitle = new ui::Label(ui::Point(4, currentY), ui::Point(45, 15), "지역:");
 	locationTitle->Appearance.HorizontalAlign = ui::Appearance::AlignLeft;
 	locationTitle->SetTextColour(ui::Colour(180, 180, 180));
 	scrollPanel->AddChild(locationTitle);
@@ -115,7 +115,7 @@ void ProfileActivity::setUserInfo(UserInfo newInfo)
 	currentY += 2+location->Size.Y;
 
 	// website
-	ui::Label * websiteTitle = new ui::Label(ui::Point(4, currentY), ui::Point(38, 15), "Website:");
+	ui::Label * websiteTitle = new ui::Label(ui::Point(4, currentY), ui::Point(38, 15), "홈페이지:");
 	websiteTitle->Appearance.HorizontalAlign = ui::Appearance::AlignLeft;
 	websiteTitle->SetTextColour(ui::Colour(180, 180, 180));
 	scrollPanel->AddChild(websiteTitle);
@@ -126,14 +126,14 @@ void ProfileActivity::setUserInfo(UserInfo newInfo)
 	currentY += 2+website->Size.Y;
 
 	// saves
-	ui::Label * savesTitle = new ui::Label(ui::Point(4, currentY), ui::Point(35, 15), "Saves:");
+	ui::Label * savesTitle = new ui::Label(ui::Point(4, currentY), ui::Point(35, 15), "세이브:");
 	savesTitle->Appearance.HorizontalAlign = ui::Appearance::AlignLeft;
 	savesTitle->SetTextColour(ui::Colour(180, 180, 180));
 	scrollPanel->AddChild(savesTitle);
 	currentY += savesTitle->Size.Y;
 
 		// saves count
-		ui::Label * saveCountTitle = new ui::Label(ui::Point(12, currentY), ui::Point(30, 15), "Count:");
+		ui::Label * saveCountTitle = new ui::Label(ui::Point(12, currentY), ui::Point(30, 15), "개수:");
 		saveCountTitle->Appearance.HorizontalAlign = ui::Appearance::AlignLeft;
 		saveCountTitle->SetTextColour(ui::Colour(180, 180, 180));
 		scrollPanel->AddChild(saveCountTitle);
@@ -144,7 +144,7 @@ void ProfileActivity::setUserInfo(UserInfo newInfo)
 		currentY += savesCount->Size.Y;
 
 		// average score
-		ui::Label * averageScoreTitle = new ui::Label(ui::Point(12, currentY), ui::Point(70, 15), "Average Score:");
+		ui::Label * averageScoreTitle = new ui::Label(ui::Point(12, currentY), ui::Point(70, 15), "평균 점수:");
 		averageScoreTitle->Appearance.HorizontalAlign = ui::Appearance::AlignLeft;
 		averageScoreTitle->SetTextColour(ui::Colour(180, 180, 180));
 		scrollPanel->AddChild(averageScoreTitle);
@@ -155,7 +155,7 @@ void ProfileActivity::setUserInfo(UserInfo newInfo)
 		currentY += averageScore->Size.Y;
 
 		// highest score
-		ui::Label * highestScoreTitle = new ui::Label(ui::Point(12, currentY), ui::Point(69, 15), "Highest Score:");
+		ui::Label * highestScoreTitle = new ui::Label(ui::Point(12, currentY), ui::Point(69, 15), "최고 점수:");
 		highestScoreTitle->Appearance.HorizontalAlign = ui::Appearance::AlignLeft;
 		highestScoreTitle->SetTextColour(ui::Colour(180, 180, 180));
 		scrollPanel->AddChild(highestScoreTitle);
@@ -166,7 +166,7 @@ void ProfileActivity::setUserInfo(UserInfo newInfo)
 		currentY += 2+highestScore->Size.Y;
 
 	// biograhy
-	ui::Label * bioTitle = new ui::Label(ui::Point(4, currentY), ui::Point(50, 15), "Biography:");
+	ui::Label * bioTitle = new ui::Label(ui::Point(4, currentY), ui::Point(50, 15), "소개:");
 	bioTitle->Appearance.HorizontalAlign = ui::Appearance::AlignLeft;
 	bioTitle->SetTextColour(ui::Colour(180, 180, 180));
 	scrollPanel->AddChild(bioTitle);
@@ -200,7 +200,7 @@ void ProfileActivity::OnResponse(bool SaveUserInfoStatus)
 	else
 	{
 		doError = true;
-		doErrorMessage = "Could not save user info: " + Client::Ref().GetLastError();
+		doErrorMessage = "사용자 정보를 저장할 수 없습니다: " + Client::Ref().GetLastError();
 	}
 }
 
@@ -214,7 +214,7 @@ void ProfileActivity::OnResponse(std::unique_ptr<UserInfo> getUserInfoResult)
 	else
 	{
 		doError = true;
-		doErrorMessage = "Could not load user info: " + Client::Ref().GetLastError();
+		doErrorMessage = "사용자 정보를 불러올 수 없습니다: " + Client::Ref().GetLastError();
 	}
 }
 
@@ -222,7 +222,7 @@ void ProfileActivity::OnTick(float dt)
 {
 	if (doError)
 	{
-		ErrorMessage::Blocking("Error", doErrorMessage);
+		ErrorMessage::Blocking("오류", doErrorMessage);
 		Exit();
 	}
 

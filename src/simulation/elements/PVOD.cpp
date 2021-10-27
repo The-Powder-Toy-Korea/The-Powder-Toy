@@ -30,7 +30,7 @@ void Element::Element_PVOD()
 	Weight = 100;
 
 	HeatConduct = 251;
-	Description = "Powered VOID. When activated, destroys entering particles.";
+	Description = "전원식 공허: 활성화되었을 때 닿은 입자를 제거합니다.";
 
 	Properties = TYPE_SOLID;
 

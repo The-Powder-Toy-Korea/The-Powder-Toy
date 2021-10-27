@@ -38,10 +38,7 @@ SaveFile * LocalBrowserController::GetSave()
 void LocalBrowserController::RemoveSelected()
 {
 	StringBuilder desc;
-	desc << "Are you sure you want to delete " << browserModel->GetSelected().size() << " stamp";
-	if(browserModel->GetSelected().size()>1)
-		desc << "s";
-	desc << "?";
+	desc << browserModel->GetSelected().size() << "개의 스탬프를 제거하시겠습니까?";
 	new ConfirmPrompt("Delete stamps", desc.Build(), { [this] { removeSelectedC(); } });
 }
 
@@ -71,12 +68,12 @@ void LocalBrowserController::removeSelectedC()
 	};
 
 	std::vector<ByteString> selected = browserModel->GetSelected();
-	new TaskWindow("Removing stamps", new RemoveSavesTask(this, selected));
+	new TaskWindow("스탬프를 제거하는 중", new RemoveSavesTask(this, selected));
 }
 
 void LocalBrowserController::RescanStamps()
 {
-	new ConfirmPrompt("Rescan", "Rescanning the stamps folder can find stamps added to the stamps folder or recover stamps when the stamps.def file has been lost or damaged. However, be warned that this will mess up the current sorting order", { [this] { rescanStampsC(); } });
+	new ConfirmPrompt("다시 검사", "스탬프 디렉토리를 다시 검사하면 새로 추가된 스탬프를 찾거나 stamps.def 파일이 훼손되었을 때 이를 복구할 수 있습니다. 하지만 현재 정렬된 스탬프가 어지럽혀질 수도 있습니다.", { [this] { rescanStampsC(); } });
 }
 
 void LocalBrowserController::rescanStampsC()

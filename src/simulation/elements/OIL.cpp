@@ -27,7 +27,7 @@ void Element::Element_OIL()
 	Weight = 20;
 
 	HeatConduct = 42;
-	Description = "Flammable, turns into GAS at low pressure or high temperature. Can be formed with NEUT and NITR.";
+	Description = "기름: 연소될 수 있으며, 저압이나 고온에서 GAS로 기화할 수 있다. NITR과 NEUT가 반응하여 생성되기도 한다.";
 
 	Properties = TYPE_LIQUID | PROP_NEUTPASS;
 

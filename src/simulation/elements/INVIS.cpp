@@ -30,7 +30,7 @@ void Element::Element_INVIS()
 	Weight = 100;
 
 	HeatConduct = 164;
-	Description = "Invisible to particles while under pressure.";
+	Description = "통과체: 높은 압력을 가하면 물질이 통과할 수 있습니다.";
 
 	Properties = TYPE_SOLID | PROP_NEUTPASS;
 

@@ -31,7 +31,7 @@ void Element::Element_THDR()
 
 	DefaultProperties.temp = 9000.0f + 273.15f;
 	HeatConduct = 1;
-	Description = "Lightning! Very hot, inflicts damage upon most materials, and transfers current to metals.";
+	Description = "천둥: 고온의 입자이며, 다른 입자에 닿을 시 매우 강한 압력과 전류를 방출합니다.";
 
 	Properties = TYPE_PART;
 

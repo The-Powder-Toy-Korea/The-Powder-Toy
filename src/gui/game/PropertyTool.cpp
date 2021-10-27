@@ -67,13 +67,13 @@ sim(sim_)
 {
 	properties = Particle::GetProperties();
 
-	ui::Label * messageLabel = new ui::Label(ui::Point(4, 5), ui::Point(Size.X-8, 14), "Edit property");
+	ui::Label * messageLabel = new ui::Label(ui::Point(4, 5), ui::Point(Size.X-8, 14), "속성 수정");
 	messageLabel->SetTextColour(style::Colour::InformationTitle);
 	messageLabel->Appearance.HorizontalAlign = ui::Appearance::AlignLeft;
 	messageLabel->Appearance.VerticalAlign = ui::Appearance::AlignTop;
 	AddComponent(messageLabel);
 
-	ui::Button * okayButton = new ui::Button(ui::Point(0, Size.Y-17), ui::Point(Size.X, 17), "OK");
+	ui::Button * okayButton = new ui::Button(ui::Point(0, Size.Y-17), ui::Point(Size.X, 17), "확인");
 	okayButton->Appearance.HorizontalAlign = ui::Appearance::AlignLeft;
 	okayButton->Appearance.VerticalAlign = ui::Appearance::AlignMiddle;
 	okayButton->Appearance.BorderInactive = ui::Colour(200, 200, 200);
@@ -97,7 +97,7 @@ sim(sim_)
 	}
 	property->SetOption(Client::Ref().GetPrefInteger("Prop.Type", 0));
 
-	textField = new ui::Textbox(ui::Point(8, 46), ui::Point(Size.X-16, 16), "", "[value]");
+	textField = new ui::Textbox(ui::Point(8, 46), ui::Point(Size.X-16, 16), "", "값");
 	textField->Appearance.HorizontalAlign = ui::Appearance::AlignLeft;
 	textField->Appearance.VerticalAlign = ui::Appearance::AlignMiddle;
 	textField->SetText(Client::Ref().GetPrefString("Prop.Value", ""));
@@ -179,7 +179,7 @@ void PropertyWindow::SetProperty(bool warn)
 					{
 						tool->validProperty = false;
 						if (warn)
-							new ErrorMessage("Could not set property", "Invalid particle type");
+							new ErrorMessage("속성을 설정할 수 없음", "잘못된 물질 종류");
 						return;
 					}
 
@@ -221,7 +221,7 @@ void PropertyWindow::SetProperty(bool warn)
 				default:
 					tool->validProperty = false;
 					if (warn)
-						new ErrorMessage("Could not set property", "Invalid property");
+						new ErrorMessage("속성을 설정할 수 없음", "잘못된 속성");
 					return;
 			}
 			tool->propOffset = properties[property->GetOption().second].Offset;
@@ -230,7 +230,7 @@ void PropertyWindow::SetProperty(bool warn)
 		} catch (const std::exception& ex) {
 			tool->validProperty = false;
 			if (warn)
-				new ErrorMessage("Could not set property", "Invalid value provided");
+				new ErrorMessage("속성을 설정할 수 없음", "잘못된 값이 입력되었습니다.");
 			return;
 		}
 		Client::Ref().SetPref("Prop.Type", property->GetOption().second);

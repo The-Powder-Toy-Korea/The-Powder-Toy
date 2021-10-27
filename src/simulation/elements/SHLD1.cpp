@@ -29,7 +29,7 @@ void Element::Element_SHLD1()
 	Weight = 100;
 
 	HeatConduct = 0;
-	Description = "Shield, spark it to grow.";
+	Description = "보호막: 전류를 흐르게 하면 주변에 막이 형성됩니다.";
 
 	Properties = TYPE_SOLID|PROP_LIFE_DEC;
 

@@ -28,7 +28,7 @@ void Element::Element_LOVE()
 
 	DefaultProperties.temp = 373.0f;
 	HeatConduct = 40;
-	Description = "Love...";
+	Description = "사랑...";
 
 	Properties = TYPE_SOLID;
 

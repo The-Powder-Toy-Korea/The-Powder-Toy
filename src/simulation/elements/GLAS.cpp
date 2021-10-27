@@ -30,7 +30,7 @@ void Element::Element_GLAS()
 	Weight = 100;
 
 	HeatConduct = 150;
-	Description = "Glass. Meltable. Shatters under pressure, and refracts photons.";
+	Description = "유리: 녹을 수 있습니다. 압력에 의해 파괴되며 PHOT을 분해하여 굴절시킵니다.";
 
 	Properties = TYPE_SOLID | PROP_NEUTPASS | PROP_HOT_GLOW | PROP_SPARKSETTLE;
 

@@ -30,7 +30,7 @@ void Element::Element_PSNS()
 
 	DefaultProperties.temp = 4.0f + 273.15f;
 	HeatConduct = 0;
-	Description = "Pressure sensor, creates a spark when the pressure is greater than its temperature.";
+	Description = "압력 감지기: 압력이 설정된 온도보다 높으면 전류를 방출합니다.";
 
 	Properties = TYPE_SOLID;
 

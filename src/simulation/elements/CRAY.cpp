@@ -31,7 +31,7 @@ void Element::Element_CRAY()
 	Weight = 100;
 
 	HeatConduct = 0;
-	Description = "Particle Ray Emitter. Creates a beam of particles set by its ctype, with a range set by tmp.";
+	Description = "C-Type 광선 방출기: ctype으로 지정된 물질로 물질로 이루어진 광선을 발사합니다. tmp로 범위를 지정할 수 있습니다.";
 
 	Properties = TYPE_SOLID;
 

@@ -256,20 +256,20 @@ void GameController::PlaceSave(ui::Point position)
 void GameController::Install()
 {
 #if defined(MACOSX)
-	new InformationMessage("No installation necessary", "You don't need to install The Powder Toy on OS X", false);
+	new InformationMessage("설치가 필요하지 않음", "macOS에서는 The Powder Toy를 설치하지 않아도 됩니다.", false);
 #elif defined(WIN) || defined(LIN)
-	new ConfirmPrompt("Install The Powder Toy", "Do you wish to install The Powder Toy on this computer?\nThis allows you to open save files and saves directly from the website.", { [] {
+	new ConfirmPrompt("The Powder Toy 설치", "이 컴퓨터에 The Powder Toy를 설치하시겠습니까?\n설치를 하면 세이브 파일을 웹 사이트에서 바로 열 수 있습니다.", { [] {
 		if (Client::Ref().DoInstallation())
 		{
-			new InformationMessage("Success", "Installation completed", false);
+			new InformationMessage("완료", "설치가 완료되었습니다.", false);
 		}
 		else
 		{
-			new ErrorMessage("Could not install", "The installation did not complete due to an error");
+			new ErrorMessage("설치할 수 없음", "오류로 인해 설치가 실패하였습니다.");
 		}
 	} });
 #else
-	new ErrorMessage("Cannot install", "You cannot install The Powder Toy on this platform");
+	new ErrorMessage("설치할 수 없음", "이 플랫폼에서는 The Powder Toy를 설치할 수 없습니다.");
 #endif
 }
 
@@ -480,12 +480,12 @@ ByteString GameController::StampRegion(ui::Point point1, ui::Point point2)
 		ByteString stampName = Client::Ref().AddStamp(newSave);
 		delete newSave;
 		if (stampName.length() == 0)
-			new ErrorMessage("Could not create stamp", "Error serializing save file");
+			new ErrorMessage("스탬프를 생성할 수 없음", "세이브 파일을 시리얼화할 수 없습니다.");
 		return stampName;
 	}
 	else
 	{
-		new ErrorMessage("Could not create stamp", "Error generating save file");
+		new ErrorMessage("스탬프를 생성할 수 없음", "세이브 파일을 생성할 수 없습니다.");
 		return "";
 	}
 }
@@ -814,13 +814,13 @@ void GameController::SwitchGravity()
 	switch (gameModel->GetSimulation()->gravityMode)
 	{
 	case 0:
-		gameModel->SetInfoTip("Gravity: Vertical");
+		gameModel->SetInfoTip("중력: 수직");
 		break;
 	case 1:
-		gameModel->SetInfoTip("Gravity: Off");
+		gameModel->SetInfoTip("중력: 끄기");
 		break;
 	case 2:
-		gameModel->SetInfoTip("Gravity: Radial");
+		gameModel->SetInfoTip("중력: 중심");
 		break;
 	}
 }
@@ -832,19 +832,19 @@ void GameController::SwitchAir()
 	switch (gameModel->GetSimulation()->air->airMode)
 	{
 	case 0:
-		gameModel->SetInfoTip("Air: On");
+		gameModel->SetInfoTip("공기: 켜기");
 		break;
 	case 1:
-		gameModel->SetInfoTip("Air: Pressure Off");
+		gameModel->SetInfoTip("공기: 압력 끄기");
 		break;
 	case 2:
-		gameModel->SetInfoTip("Air: Velocity Off");
+		gameModel->SetInfoTip("공기: 바람 끄기");
 		break;
 	case 3:
-		gameModel->SetInfoTip("Air: Off");
+		gameModel->SetInfoTip("공기: 끄기");
 		break;
 	case 4:
-		gameModel->SetInfoTip("Air: No Update");
+		gameModel->SetInfoTip("공기: 업데이트 없음");
 		break;
 	}
 }
@@ -1157,7 +1157,7 @@ void GameController::OpenSearch(String searchText)
 				}
 				catch(GameModelException & ex)
 				{
-					new ErrorMessage("Cannot open save", ByteString(ex.what()).FromUtf8());
+					new ErrorMessage("세이브를 열 수 없음", ByteString(ex.what()).FromUtf8());
 				}
 			}
 		});
@@ -1172,7 +1172,7 @@ void GameController::OpenLocalSaveWindow(bool asCurrent)
 	GameSave * gameSave = sim->Save(gameModel->GetIncludePressure() != gameView->ShiftBehaviour());
 	if(!gameSave)
 	{
-		new ErrorMessage("Error", "Unable to build save.");
+		new ErrorMessage("오류", "세이브를 빌드할 수 없습니다.");
 	}
 	else
 	{
@@ -1206,11 +1206,11 @@ void GameController::OpenLocalSaveWindow(bool asCurrent)
 			Platform::MakeDirectory(LOCAL_SAVE_DIR);
 			std::vector<char> saveData = gameSave->Serialise();
 			if (saveData.size() == 0)
-				new ErrorMessage("Error", "Unable to serialize game data.");
+				new ErrorMessage("오류", "게임 데이터를 시리얼화할 수 없습니다.");
 			else if (Client::Ref().WriteFile(saveData, gameModel->GetSaveFile()->GetName()))
-				new ErrorMessage("Error", "Unable to write save file.");
+				new ErrorMessage("오류", "세이브 파일을 쓸 수 없습니다.");
 			else
-				gameModel->SetInfoTip("Saved Successfully");
+				gameModel->SetInfoTip("저장됨");
 		}
 	}
 }
@@ -1237,7 +1237,7 @@ void GameController::OpenSaveDone()
 		}
 		catch(GameModelException & ex)
 		{
-			new ErrorMessage("Cannot open save", ByteString(ex.what()).FromUtf8());
+			new ErrorMessage("세이브를 열 수 없음", ByteString(ex.what()).FromUtf8());
 		}
 	}
 }
@@ -1324,7 +1324,7 @@ void GameController::OpenTags()
 	}
 	else
 	{
-		new ErrorMessage("Error", "No save open");
+		new ErrorMessage("오류", "세이브를 열지 않음");
 	}
 }
 
@@ -1335,7 +1335,7 @@ void GameController::OpenStamps()
 		if (file)
 		{
 			if (file->GetError().length())
-				new ErrorMessage("Error loading stamp", file->GetError());
+				new ErrorMessage("스탬프를 불러오는 중 오류가 발생함", file->GetError());
 			else if (localBrowser->GetMoveToFront())
 				Client::Ref().MoveStampToFront(file->GetDisplayName().ToUtf8());
 			LoadStamp(file->GetGameSave());
@@ -1383,7 +1383,7 @@ void GameController::OpenSaveWindow()
 		GameSave * gameSave = sim->Save(gameModel->GetIncludePressure() != gameView->ShiftBehaviour());
 		if(!gameSave)
 		{
-			new ErrorMessage("Error", "Unable to build save.");
+			new ErrorMessage("오류", "세이브를 빌드할 수 없습니다.");
 		}
 		else
 		{
@@ -1413,7 +1413,7 @@ void GameController::OpenSaveWindow()
 	}
 	else
 	{
-		new ErrorMessage("Error", "You need to login to upload saves.");
+		new ErrorMessage("오류", "세이브를 업로드하려면 로그인해야 합니다.");
 	}
 }
 
@@ -1425,7 +1425,7 @@ void GameController::SaveAsCurrent()
 		GameSave * gameSave = sim->Save(gameModel->GetIncludePressure() != gameView->ShiftBehaviour());
 		if(!gameSave)
 		{
-			new ErrorMessage("Error", "Unable to build save.");
+			new ErrorMessage("오류", "세이브를 빌드할 수 없습니다.");
 		}
 		else
 		{
@@ -1451,7 +1451,7 @@ void GameController::SaveAsCurrent()
 	}
 	else
 	{
-		new ErrorMessage("Error", "You need to login to upload saves.");
+		new ErrorMessage("오류", "세이브를 업로드하려면 로그인해야 합니다.");
 	}
 }
 
@@ -1471,7 +1471,7 @@ void GameController::Vote(int direction)
 		}
 		catch(GameModelException & ex)
 		{
-			new ErrorMessage("Error while voting", ByteString(ex.what()).FromUtf8());
+			new ErrorMessage("투표하는 중에 오류가 발생함", ByteString(ex.what()).FromUtf8());
 		}
 	}
 }
@@ -1585,37 +1585,37 @@ void GameController::NotifyUpdateAvailable(Client * sender)
 			UpdateInfo info = Client::Ref().GetUpdateInfo();
 			StringBuilder updateMessage;
 #ifndef MACOSX
-			updateMessage << "Are you sure you want to run the updater? Please save any changes before updating.\n\nCurrent version:\n ";
+			updateMessage << "업데이터를 실행하시겠습니까? 업데이트하려면 변경 사항을 저장하세요.\n\n현재 버전:\n ";
 #else
-			updateMessage << "Click \"Continue\" to download the latest version from our website.\n\nCurrent version:\n ";
+			updateMessage << "\"계속\"을 클릭하여 웹 사이트에서 최신 버전을 다운로드합니다. \n\n현재 버전:\n ";
 #endif
 
 #ifdef SNAPSHOT
-			updateMessage << "Snapshot " << SNAPSHOT_ID;
+			updateMessage << "스냅샷 " << SNAPSHOT_ID;
 #elif MOD_ID > 0
-			updateMessage << "Mod version " << SNAPSHOT_ID;
+			updateMessage << "모드 버전 " << SNAPSHOT_ID;
 #elif defined(BETA)
-			updateMessage << SAVE_VERSION << "." << MINOR_VERSION << " Beta, Build " << BUILD_NUM;
+			updateMessage << SAVE_VERSION << "." << MINOR_VERSION << " 베타, 빌드 " << BUILD_NUM;
 #else
-			updateMessage << SAVE_VERSION << "." << MINOR_VERSION << " Stable, Build " << BUILD_NUM;
+			updateMessage << SAVE_VERSION << "." << MINOR_VERSION << " 안정화, 빌드 " << BUILD_NUM;
 #endif
 
-			updateMessage << "\nNew version:\n ";
+			updateMessage << "\n새 버전:\n ";
 			if (info.Type == UpdateInfo::Beta)
-				updateMessage << info.Major << "." << info.Minor << " Beta, Build " << info.Build;
+				updateMessage << info.Major << "." << info.Minor << " 베타, 빌드 " << info.Build;
 			else if (info.Type == UpdateInfo::Snapshot)
 #if MOD_ID > 0
-				updateMessage << "Mod version " << info.Time;
+				updateMessage << "모드 버전 " << info.Time;
 #else
-				updateMessage << "Snapshot " << info.Time;
+				updateMessage << "스냅샷 " << info.Time;
 #endif
 			else if(info.Type == UpdateInfo::Stable)
-				updateMessage << info.Major << "." << info.Minor << " Stable, Build " << info.Build;
+				updateMessage << info.Major << "." << info.Minor << " 안정화, 빌드 " << info.Build;
 
 			if (info.Changelog.length())
-				updateMessage << "\n\nChangelog:\n" << info.Changelog;
+				updateMessage << "\n\n변경 사항:\n" << info.Changelog;
 
-			new ConfirmPrompt("Run Updater", updateMessage.Build(), { [this] { c->RunUpdater(); } });
+			new ConfirmPrompt("업데이터 실행", updateMessage.Build(), { [this] { c->RunUpdater(); } });
 		}
 	};
 
@@ -1623,16 +1623,16 @@ void GameController::NotifyUpdateAvailable(Client * sender)
 	{
 		case UpdateInfo::Snapshot:
 #if MOD_ID > 0
-			gameModel->AddNotification(new UpdateNotification(this, "A new mod update is available - click here to update"));
+			gameModel->AddNotification(new UpdateNotification(this, "새 모드 업데이트를 사용할 수 있습니다. 이 곳을 클릭하여 업데이트하세요."));
 #else
-			gameModel->AddNotification(new UpdateNotification(this, "A new snapshot is available - click here to update"));
+			gameModel->AddNotification(new UpdateNotification(this, "새 스냅샷을 사용할 수 있습니다. 이 곳을 클릭하여 업데이트하세요."));
 #endif
 			break;
 		case UpdateInfo::Stable:
-			gameModel->AddNotification(new UpdateNotification(this, "A new version is available - click here to update"));
+			gameModel->AddNotification(new UpdateNotification(this, "새 버전을 사용할 수 있습니다. 이 곳을 클릭하여 업데이트하세요."));
 			break;
 		case UpdateInfo::Beta:
-			gameModel->AddNotification(new UpdateNotification(this, "A new beta is available - click here to update"));
+			gameModel->AddNotification(new UpdateNotification(this, "새 베타를 사용할 수 있습니다. 이 곳을 클릭하여 업데이트하세요."));
 			break;
 	}
 }

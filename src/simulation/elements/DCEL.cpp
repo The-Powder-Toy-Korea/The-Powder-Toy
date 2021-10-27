@@ -30,7 +30,7 @@ void Element::Element_DCEL()
 	Weight = 100;
 
 	HeatConduct = 251;
-	Description = "Decelerator, slows down nearby elements.";
+	Description = "에너지 입자 감속기: 자기 자신에 닿은 모든 에너지 입자들을 감속시킵니다.";
 
 	Properties = TYPE_SOLID;
 

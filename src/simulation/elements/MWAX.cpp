@@ -28,7 +28,7 @@ void Element::Element_MWAX()
 
 	DefaultProperties.temp = R_TEMP + 28.0f + 273.15f;
 	HeatConduct = 44;
-	Description = "Liquid Wax. Hardens into WAX at 45 degrees.";
+	Description = "융해된 왁스: 45 C 이상에서 WAX로 응고합니다.";
 
 	Properties = TYPE_LIQUID;
 

@@ -28,7 +28,7 @@ void Element::Element_DUST()
 	Weight = 85;
 
 	HeatConduct = 70;
-	Description = "Very light dust. Flammable.";
+	Description = "먼지: 질량이 매우 낮은 가연성 가루입니다.";
 
 	Properties = TYPE_PART;
 

@@ -29,7 +29,7 @@ void Element::Element_TSNS()
 	Weight = 100;
 
 	HeatConduct = 0;
-	Description = "Temperature sensor, creates a spark when there's a nearby particle with a greater temperature.";
+	Description = "온도 센서: 설정된 온도보다 높은 온도의 물질이 감지되는 경우 전류를 방출합니다.";
 
 	Properties = TYPE_SOLID;
 

@@ -27,7 +27,7 @@ void Element::Element_STNE()
 	Weight = 90;
 
 	HeatConduct = 150;
-	Description = "Heavy particles. Meltable.";
+	Description = "돌: 융해할 수 있는 높은 질량의 입자입니다.";
 
 	Properties = TYPE_PART;
 

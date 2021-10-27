@@ -32,7 +32,7 @@ void Element::Element_SPRK()
 	Weight = 100;
 
 	HeatConduct = 251;
-	Description = "Electricity. The basis of all electronics in TPT, travels along wires and other conductive elements.";
+	Description = "전류: The Powder Toy로 구현된 모든 전자 장치의 기본이며, 전도체를 따라 이동합니다.";
 
 	Properties = TYPE_SOLID|PROP_LIFE_DEC;
 

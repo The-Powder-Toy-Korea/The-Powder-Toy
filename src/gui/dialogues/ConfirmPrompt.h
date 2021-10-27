@@ -15,10 +15,10 @@ class ConfirmPrompt : public ui::Window
 	ResultCallback callback;
 
 public:
-	ConfirmPrompt(String title, String message, ResultCallback callback_ = {}, String buttonText = String("Confirm"));
+	ConfirmPrompt(String title, String message, ResultCallback callback_ = {}, String buttonText = String("확인"));
 	virtual ~ConfirmPrompt() = default;
 
-	static bool Blocking(String title, String message, String buttonText = String("Confirm"));
+	static bool Blocking(String title, String message, String buttonText = String("확인"));
 	void OnDraw() override;
 };
 

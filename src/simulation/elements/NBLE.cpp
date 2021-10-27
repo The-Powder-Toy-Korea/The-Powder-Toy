@@ -31,7 +31,7 @@ void Element::Element_NBLE()
 
 	DefaultProperties.temp = R_TEMP + 2.0f + 273.15f;
 	HeatConduct = 106;
-	Description = "Noble Gas. Diffuses and conductive. Ionizes into plasma when introduced to electricity.";
+	Description = "비활성 기체: 매우 빠르게 확산하며 전도성을 지니고 있습니다. 전류를 흐르게 하면 플라즈마로 이온화합니다.";
 
 	Properties = TYPE_GAS|PROP_CONDUCTS|PROP_LIFE_DEC;
 

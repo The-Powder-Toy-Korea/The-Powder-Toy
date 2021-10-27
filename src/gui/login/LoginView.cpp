@@ -16,12 +16,12 @@
 
 LoginView::LoginView():
 	ui::Window(ui::Point(-1, -1), ui::Point(200, 87)),
-	loginButton(new ui::Button(ui::Point(200-100, 87-17), ui::Point(100, 17), "Sign in")),
-	cancelButton(new ui::Button(ui::Point(0, 87-17), ui::Point(101, 17), "Sign Out")),
-	titleLabel(new ui::Label(ui::Point(4, 5), ui::Point(200-16, 16), "Server login")),
+	loginButton(new ui::Button(ui::Point(200-100, 87-17), ui::Point(100, 17), "로그인")),
+	cancelButton(new ui::Button(ui::Point(0, 87-17), ui::Point(101, 17), "로그아웃")),
+	titleLabel(new ui::Label(ui::Point(4, 5), ui::Point(200-16, 16), "The Powder Toy에 로그인")),
 	infoLabel(new ui::Label(ui::Point(8, 67), ui::Point(200-16, 16), "")),
-	usernameField(new ui::Textbox(ui::Point(8, 25), ui::Point(200-16, 17), Client::Ref().GetAuthUser().Username.FromUtf8(), "[username]")),
-	passwordField(new ui::Textbox(ui::Point(8, 46), ui::Point(200-16, 17), "", "[password]")),
+	usernameField(new ui::Textbox(ui::Point(8, 25), ui::Point(200-16, 17), Client::Ref().GetAuthUser().Username.FromUtf8(), "[사용자 이름]")),
+	passwordField(new ui::Textbox(ui::Point(8, 46), ui::Point(200-16, 17), "", "[암호]")),
 	targetSize(0, 0)
 {
 	targetSize = Size;

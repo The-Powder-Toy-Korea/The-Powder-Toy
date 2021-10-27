@@ -32,7 +32,7 @@ void Element::Element_PRTI()
 	Weight = 100;
 
 	HeatConduct = 0;
-	Description = "Portal IN. Particles go in here. Also has temperature dependent channels. (same as WIFI)";
+	Description = "포탈 입구: 입자는 이곳에 들어옵니다. 같은 온도 채널에 있는 포탈 출구로 입자를 즉시 전송합니다.";
 
 	Properties = TYPE_SOLID;
 

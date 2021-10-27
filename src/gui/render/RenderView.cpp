@@ -31,17 +31,17 @@ RenderView::RenderView():
 		presetButton->SetActionCallback({ [this, index] { c->LoadRenderPreset(index); } });
 		AddComponent(presetButton);
 	};
-	addPresetButton( 1, IconVelocity  , ui::Point( -37,  6), "Velocity display mode preset");
-	addPresetButton( 2, IconPressure  , ui::Point( -37, 24), "Pressure display mode preset");
-	addPresetButton( 3, IconPersistant, ui::Point( -76,  6), "Persistent display mode preset");
-	addPresetButton( 4, IconFire      , ui::Point( -76, 24), "Fire display mode preset");
-	addPresetButton( 5, IconBlob      , ui::Point(-115,  6), "Blob display mode preset");
-	addPresetButton( 6, IconHeat      , ui::Point(-115, 24), "Heat display mode preset");
-	addPresetButton( 7, IconBlur      , ui::Point(-154,  6), "Fancy display mode preset");
-	addPresetButton( 8, IconBasic     , ui::Point(-154, 24), "Nothing display mode preset");
-	addPresetButton( 9, IconGradient  , ui::Point(-193,  6), "Heat gradient display mode preset");
-	addPresetButton( 0, IconAltAir    , ui::Point(-193, 24), "Alternative Velocity display mode preset");
-	addPresetButton(10, IconLife      , ui::Point(-232,  6), "Life display mode preset");
+	addPresetButton( 1, IconVelocity  , ui::Point( -37,  6), "사전 설정된 속도 디스플레이 모드");
+	addPresetButton( 2, IconPressure  , ui::Point( -37, 24), "사전 설정된 압력 디스플레이 모드");
+	addPresetButton( 3, IconPersistant, ui::Point( -76,  6), "사전 설정된 꼬리 디스플레이 모드");
+	addPresetButton( 4, IconFire      , ui::Point( -76, 24), "사전 설정된 불 디스플레이 모드");
+	addPresetButton( 5, IconBlob      , ui::Point(-115,  6), "사전 설정된 블롭 디스플레이 모드");
+	addPresetButton( 6, IconHeat      , ui::Point(-115, 24), "사전 설정된 열 디스플레이 모드");
+	addPresetButton( 7, IconBlur      , ui::Point(-154,  6), "사전 설정된 화려한 디스플레이 모드");
+	addPresetButton( 8, IconBasic     , ui::Point(-154, 24), "사전 설정된 일반 디스플레이 모드");
+	addPresetButton( 9, IconGradient  , ui::Point(-193,  6), "사전 설정된 열 그라데이션 디스플레이 모드");
+	addPresetButton( 0, IconAltAir    , ui::Point(-193, 24), "사전 설정된 대체 속도 디스플레이 모드");
+	addPresetButton(10, IconLife      , ui::Point(-232,  6), "사전 설정된 Life 디스플레이 모드");
 
 	auto addRenderModeCheckbox = [this](unsigned int mode, Icon icon, ui::Point offset, String tooltip) {
 		auto *renderModeCheckbox = new ModeCheckbox(ui::Point(0, YRES) + offset, ui::Point(30, 16), "", tooltip);
@@ -56,13 +56,13 @@ RenderView::RenderView():
 		} });
 		AddComponent(renderModeCheckbox);
 	};
-	addRenderModeCheckbox(RENDER_EFFE, IconEffect, ui::Point( 1,  4), "Adds Special flare effects to some elements");
-	addRenderModeCheckbox(RENDER_FIRE, IconFire  , ui::Point( 1, 22), "Fire effect for gasses");
-	addRenderModeCheckbox(RENDER_GLOW, IconGlow  , ui::Point(33,  4), "Glow effect on some elements");
-	addRenderModeCheckbox(RENDER_BLUR, IconBlur  , ui::Point(33, 22), "Blur effect for liquids");
-	addRenderModeCheckbox(RENDER_BLOB, IconBlob  , ui::Point(65,  4), "Makes everything be drawn like a blob");
-	addRenderModeCheckbox(RENDER_BASC, IconBasic , ui::Point(65, 22), "Basic rendering, without this, most things will be invisible");
-	addRenderModeCheckbox(RENDER_SPRK, IconEffect, ui::Point(97,  4), "Glow effect on sparks");
+	addRenderModeCheckbox(RENDER_EFFE, IconEffect, ui::Point( 1,  4), "일부 물질에 특별한 화염 효과를 표시합니다.");
+	addRenderModeCheckbox(RENDER_FIRE, IconFire  , ui::Point( 1, 22), "기체 물질에 불 효과를 표시합니다.");
+	addRenderModeCheckbox(RENDER_GLOW, IconGlow  , ui::Point(33,  4), "일부 물질에 조명 효과를 표시합니다.");
+	addRenderModeCheckbox(RENDER_BLUR, IconBlur  , ui::Point(33, 22), "액체 물질에 블러 효과를 표시합니다.");
+	addRenderModeCheckbox(RENDER_BLOB, IconBlob  , ui::Point(65,  4), "모든 것의 윤곽선을 흐리게 표시합니다.");
+	addRenderModeCheckbox(RENDER_BASC, IconBasic , ui::Point(65, 22), "기본 렌더링, 이 렌더링이 있어야 대부분의 것들이 표시됩니다.");
+	addRenderModeCheckbox(RENDER_SPRK, IconEffect, ui::Point(97,  4), "전류에 조명 효과를 표시합니다.");
 
 	auto addDisplayModeCheckbox = [this](unsigned int mode, Icon icon, ui::Point offset, String tooltip) {
 		auto *displayModeCheckbox = new ModeCheckbox(ui::Point(0, YRES) + offset, ui::Point(30, 16), "", tooltip);
@@ -78,12 +78,12 @@ RenderView::RenderView():
 		AddComponent(displayModeCheckbox);
 	};
 	line1 = 130;
-	addDisplayModeCheckbox(DISPLAY_AIRC, IconAltAir    , ui::Point(135,  4), "Displays pressure as red and blue, and velocity as white");
-	addDisplayModeCheckbox(DISPLAY_AIRP, IconPressure  , ui::Point(135, 22), "Displays pressure, red is positive and blue is negative");
-	addDisplayModeCheckbox(DISPLAY_AIRV, IconVelocity  , ui::Point(167,  4), "Displays velocity and positive pressure: up/down adds blue, right/left adds red, still pressure adds green");
-	addDisplayModeCheckbox(DISPLAY_AIRH, IconHeat      , ui::Point(167, 22), "Displays the temperature of the air like heat display does");
+	addDisplayModeCheckbox(DISPLAY_AIRC, IconAltAir  , ui::Point(135,  4), "압력을 적청으로, 속도를 하얗게 표시합니다.");
+	addDisplayModeCheckbox(DISPLAY_AIRP, IconPressure, ui::Point(135, 22), "압력을 표시합니다. 음압은 빨간색으로, 양압은 파란색으로 표시됩니다.");
+	addDisplayModeCheckbox(DISPLAY_AIRV, IconVelocity, ui::Point(167,  4), "속도와 양압을 표시합니다. 위/아래는 파란색, 왼쪽/오른쪽은 빨간색, 양압은 초록색으로 표시됩니다.");
+	addDisplayModeCheckbox(DISPLAY_AIRH, IconHeat    , ui::Point(167, 22), "공기의 온도를 열 디스플레이와 같이 표시합니다.");
 	line2 = 200;
-	addDisplayModeCheckbox(DISPLAY_WARP, IconWarp      , ui::Point(205, 22), "Gravity lensing, Newtonian Gravity bends light with this on");
+	addDisplayModeCheckbox(DISPLAY_WARP, IconWarp    , ui::Point(205, 22), "중력 렌즈 디스플레이: 뉴턴 중력이 발생하는 곳에서 빛을 왜곡하는 효과를 표시합니다.");
 #ifdef OGLR
 # define TOOLTIP "Some type of OpenGL effect ... maybe"
 #else
@@ -91,7 +91,7 @@ RenderView::RenderView():
 #endif
 	addDisplayModeCheckbox(DISPLAY_EFFE, IconEffect    , ui::Point(205,  4), TOOLTIP);
 #undef TOOLTIP
-	addDisplayModeCheckbox(DISPLAY_PERS, IconPersistant, ui::Point(237,  4), "Element paths persist on the screen for a while");
+	addDisplayModeCheckbox(DISPLAY_PERS, IconPersistant, ui::Point(237,  4), "물질이 지나간 곳에 잠시동안 경로를 표시합니다.");
 	line3 = 270;
 
 	auto addColourModeCheckbox = [this](unsigned int mode, Icon icon, ui::Point offset, String tooltip) {
@@ -107,10 +107,10 @@ RenderView::RenderView():
 		} });
 		AddComponent(colourModeCheckbox);
 	};
-	addColourModeCheckbox(COLOUR_HEAT, IconHeat    , ui::Point(275,  4), "Displays temperatures of the elements, dark blue is coldest, pink is hottest");
-	addColourModeCheckbox(COLOUR_LIFE, IconLife    , ui::Point(275, 22), "Displays the life value of elements in greyscale gradients");
-	addColourModeCheckbox(COLOUR_GRAD, IconGradient, ui::Point(307, 22), "Changes colors of elements slightly to show heat diffusing through them");
-	addColourModeCheckbox(COLOUR_BASC, IconBasic   , ui::Point(307,  4), "No special effects at all for anything, overrides all other options and deco");
+	addColourModeCheckbox(COLOUR_HEAT, IconHeat    , ui::Point(275,  4), "물질의 온도를 표시합니다. 짙은 남색이 가장 차갑고, 진분홍색이 가장 뜨거움을 나타냅니다.");
+	addColourModeCheckbox(COLOUR_LIFE, IconLife    , ui::Point(275, 22), "물질의 Life 값을 회색조로 표시합니다.");
+	addColourModeCheckbox(COLOUR_GRAD, IconGradient, ui::Point(307, 22), "열 확산을 자세히 표시하기 위해 물질의 색상을 약간 변경합니다.");
+	addColourModeCheckbox(COLOUR_BASC, IconBasic   , ui::Point(307,  4), "모든 물질에 대한 특수 효과나 도색 등을 모두 무효화합니다.");
 	line4 = 340;
 }
 

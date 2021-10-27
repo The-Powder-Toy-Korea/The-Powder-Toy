@@ -30,7 +30,7 @@ void Element::Element_ISOZ()
 
 	DefaultProperties.temp = R_TEMP - 2.0f + 273.15f;
 	HeatConduct = 29;
-	Description = "Isotope-Z. Radioactive liquid, decays into photons when touching PHOT or under negative pressure.";
+	Description = "동위원소-Z: 음압 상태이거나 광자에 닿으면 광자를 방출하며 소멸합니다.";
 
 	Properties = TYPE_LIQUID|PROP_NEUTPENETRATE;
 

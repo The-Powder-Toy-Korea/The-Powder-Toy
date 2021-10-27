@@ -8,7 +8,7 @@ void SimTool::Tool_VAC()
 	Identifier = "DEFAULT_TOOL_VAC";
 	Name = "VAC";
 	Colour = PIXPACK(0x303030);
-	Description = "Vacuum, reduces air pressure.";
+	Description = "진공: 음압을 생성합니다.";
 	Perform = &perform;
 }
 

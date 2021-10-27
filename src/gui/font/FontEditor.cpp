@@ -298,7 +298,7 @@ FontEditor::FontEditor(ByteString _dataFile):
 	grow->SetActionCallback({ [this] { GrowChar(); } });
 	AddComponent(grow);
 
-	ui::Button *add = new ui::Button(ui::Point(currentX, baseline), ui::Point(36, 17), "Add");
+	ui::Button *add = new ui::Button(ui::Point(currentX, baseline), ui::Point(36, 17), "추가");
 	currentX += 37;
 	add->SetActionCallback({ [this] {
 		if (fontWidths.find(currentChar) == fontWidths.end())
@@ -310,7 +310,7 @@ FontEditor::FontEditor(ByteString _dataFile):
 	} });
 	AddComponent(add);
 
-	ui::Button *remove = new ui::Button(ui::Point(currentX, baseline), ui::Point(36, 17), "Remove");
+	ui::Button *remove = new ui::Button(ui::Point(currentX, baseline), ui::Point(36, 17), "제거");
 	currentX += 37;
 	remove->SetActionCallback({ [this] {
 		if (fontWidths.find(currentChar) != fontWidths.end())
@@ -322,7 +322,7 @@ FontEditor::FontEditor(ByteString _dataFile):
 	} });
 	AddComponent(remove);
 	
-	ui::Button *showGrid = new ui::Button(ui::Point(currentX, baseline), ui::Point(32, 17), "Grid");
+	ui::Button *showGrid = new ui::Button(ui::Point(currentX, baseline), ui::Point(32, 17), "격자");
 	currentX += 33;
 	showGrid->SetTogglable(true);
 	showGrid->SetToggleState(grid);
@@ -331,7 +331,7 @@ FontEditor::FontEditor(ByteString _dataFile):
 	} });
 	AddComponent(showGrid);
 	
-	ui::Button *showRulers = new ui::Button(ui::Point(currentX, baseline), ui::Point(32, 17), "Rulers");
+	ui::Button *showRulers = new ui::Button(ui::Point(currentX, baseline), ui::Point(32, 17), "자");
 	currentX += 33;
 	showRulers->SetTogglable(true);
 	showRulers->SetToggleState(rulers);
@@ -357,12 +357,12 @@ FontEditor::FontEditor(ByteString _dataFile):
 	baseline += 18;
 	currentX = 1;
 	
-	ui::Button *render = new ui::Button(ui::Point(currentX, baseline), ui::Point(50, 17), "Render");
+	ui::Button *render = new ui::Button(ui::Point(currentX, baseline), ui::Point(50, 17), "렌더");
 	currentX += 51;
 	render->SetActionCallback({ [this] { Render(); } });
 	AddComponent(render);
 	
-	savedButton = new ui::Button(ui::Point(currentX, baseline), ui::Point(50, 17), "Save");
+	savedButton = new ui::Button(ui::Point(currentX, baseline), ui::Point(50, 17), "저장");
 	currentX += 51;
 	savedButton->SetTogglable(true);
 	savedButton->SetToggleState(true);
@@ -505,7 +505,7 @@ void FontEditor::OnDraw()
 	}
 	else
 	{
-		g->drawtext(8, 8, "No character", 255, 0, 0, 255);
+		g->drawtext(8, 8, "문자 없음", 255, 0, 0, 255);
 	}
 }
 

@@ -30,7 +30,7 @@ void Element::Element_HEAC()
 	Weight = 100;
 
 	HeatConduct = 251;
-	Description = "Rapid heat conductor.";
+	Description = "열 전도 물질: 열전도율이 높다.";
 
 	Properties = TYPE_SOLID;
 

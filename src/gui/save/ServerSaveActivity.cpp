@@ -68,27 +68,27 @@ ServerSaveActivity::ServerSaveActivity(SaveInfo save, OnUploaded onUploaded_) :
 	AddComponent(titleLabel);
 	CheckName(save.GetName()); //set titleLabel text
 
-	ui::Label * previewLabel = new ui::Label(ui::Point((Size.X/2)+4, 5), ui::Point((Size.X/2)-8, 16), "Preview:");
+	ui::Label * previewLabel = new ui::Label(ui::Point((Size.X/2)+4, 5), ui::Point((Size.X/2)-8, 16), "미리 보기:");
 	previewLabel->SetTextColour(style::Colour::InformationTitle);
 	previewLabel->Appearance.HorizontalAlign = ui::Appearance::AlignLeft;
 	previewLabel->Appearance.VerticalAlign = ui::Appearance::AlignMiddle;
 	AddComponent(previewLabel);
 
-	nameField = new ui::Textbox(ui::Point(8, 25), ui::Point((Size.X/2)-16, 16), save.GetName(), "[save name]");
+	nameField = new ui::Textbox(ui::Point(8, 25), ui::Point((Size.X/2)-16, 16), save.GetName(), "세이브 이름");
 	nameField->Appearance.VerticalAlign = ui::Appearance::AlignMiddle;
 	nameField->Appearance.HorizontalAlign = ui::Appearance::AlignLeft;
 	nameField->SetActionCallback({ [this] { CheckName(nameField->GetText()); } });
 	AddComponent(nameField);
 	FocusComponent(nameField);
 
-	descriptionField = new ui::Textbox(ui::Point(8, 65), ui::Point((Size.X/2)-16, Size.Y-(65+16+4)), save.GetDescription(), "[save description]");
+	descriptionField = new ui::Textbox(ui::Point(8, 65), ui::Point((Size.X/2)-16, Size.Y-(65+16+4)), save.GetDescription(), "세이브 설명");
 	descriptionField->SetMultiline(true);
 	descriptionField->SetLimit(254);
 	descriptionField->Appearance.VerticalAlign = ui::Appearance::AlignTop;
 	descriptionField->Appearance.HorizontalAlign = ui::Appearance::AlignLeft;
 	AddComponent(descriptionField);
 
-	publishedCheckbox = new ui::Checkbox(ui::Point(8, 45), ui::Point((Size.X/2)-80, 16), "Publish", "");
+	publishedCheckbox = new ui::Checkbox(ui::Point(8, 45), ui::Point((Size.X/2)-80, 16), "게시", "");
 	if(Client::Ref().GetAuthUser().Username != save.GetUserName())
 	{
 		//Save is not owned by the user, disable by default
@@ -101,11 +101,11 @@ ServerSaveActivity::ServerSaveActivity(SaveInfo save, OnUploaded onUploaded_) :
 	}
 	AddComponent(publishedCheckbox);
 
-	pausedCheckbox = new ui::Checkbox(ui::Point(160, 45), ui::Point(55, 16), "Paused", "");
+	pausedCheckbox = new ui::Checkbox(ui::Point(160, 45), ui::Point(55, 16), "일시 정지", "");
 	pausedCheckbox->SetChecked(save.GetGameSave()->paused);
 	AddComponent(pausedCheckbox);
 
-	ui::Button * cancelButton = new ui::Button(ui::Point(0, Size.Y-16), ui::Point((Size.X/2)-75, 16), "Cancel");
+	ui::Button * cancelButton = new ui::Button(ui::Point(0, Size.Y-16), ui::Point((Size.X/2)-75, 16), "취소");
 	cancelButton->Appearance.HorizontalAlign = ui::Appearance::AlignLeft;
 	cancelButton->Appearance.VerticalAlign = ui::Appearance::AlignMiddle;
 	cancelButton->Appearance.BorderInactive = ui::Colour(200, 200, 200);
@@ -115,7 +115,7 @@ ServerSaveActivity::ServerSaveActivity(SaveInfo save, OnUploaded onUploaded_) :
 	AddComponent(cancelButton);
 	SetCancelButton(cancelButton);
 
-	ui::Button * okayButton = new ui::Button(ui::Point((Size.X/2)-76, Size.Y-16), ui::Point(76, 16), "Save");
+	ui::Button * okayButton = new ui::Button(ui::Point((Size.X/2)-76, Size.Y-16), ui::Point(76, 16), "저장");
 	okayButton->Appearance.HorizontalAlign = ui::Appearance::AlignLeft;
 	okayButton->Appearance.VerticalAlign = ui::Appearance::AlignMiddle;
 	okayButton->Appearance.TextInactive = style::Colour::InformationTitle;
@@ -125,7 +125,7 @@ ServerSaveActivity::ServerSaveActivity(SaveInfo save, OnUploaded onUploaded_) :
 	AddComponent(okayButton);
 	SetOkayButton(okayButton);
 
-	ui::Button * PublishingInfoButton = new ui::Button(ui::Point((Size.X*3/4)-75, Size.Y-42), ui::Point(150, 16), "Publishing Info");
+	ui::Button * PublishingInfoButton = new ui::Button(ui::Point((Size.X*3/4)-75, Size.Y-42), ui::Point(150, 16), "게시 안내");
 	PublishingInfoButton->Appearance.HorizontalAlign = ui::Appearance::AlignCentre;
 	PublishingInfoButton->Appearance.VerticalAlign = ui::Appearance::AlignMiddle;
 	PublishingInfoButton->Appearance.TextInactive = style::Colour::InformationTitle;
@@ -134,7 +134,7 @@ ServerSaveActivity::ServerSaveActivity(SaveInfo save, OnUploaded onUploaded_) :
 	} });
 	AddComponent(PublishingInfoButton);
 
-	ui::Button * RulesButton = new ui::Button(ui::Point((Size.X*3/4)-75, Size.Y-22), ui::Point(150, 16), "Save Uploading Rules");
+	ui::Button * RulesButton = new ui::Button(ui::Point((Size.X*3/4)-75, Size.Y-22), ui::Point(150, 16), "세이브 업로드 규칙");
 	RulesButton->Appearance.HorizontalAlign = ui::Appearance::AlignCentre;
 	RulesButton->Appearance.VerticalAlign = ui::Appearance::AlignMiddle;
 	RulesButton->Appearance.TextInactive = style::Colour::InformationTitle;
@@ -157,7 +157,7 @@ ServerSaveActivity::ServerSaveActivity(SaveInfo save, bool saveNow, OnUploaded o
 	onUploaded(onUploaded_),
 	saveUploadTask(NULL)
 {
-	ui::Label * titleLabel = new ui::Label(ui::Point(0, 0), Size, "Saving to server...");
+	ui::Label * titleLabel = new ui::Label(ui::Point(0, 0), Size, "서버에 저장하는 중...");
 	titleLabel->SetTextColour(style::Colour::InformationTitle);
 	titleLabel->Appearance.HorizontalAlign = ui::Appearance::AlignCentre;
 	titleLabel->Appearance.VerticalAlign = ui::Appearance::AlignMiddle;
@@ -175,7 +175,7 @@ void ServerSaveActivity::NotifyDone(Task * task)
 	if(!task->GetSuccess())
 	{
 		Exit();
-		new ErrorMessage("Error", Client::Ref().GetLastError());
+		new ErrorMessage("오류", Client::Ref().GetLastError());
 	}
 	else
 	{
@@ -193,7 +193,7 @@ void ServerSaveActivity::Save()
 	{
 		if(Client::Ref().GetAuthUser().Username != save.GetUserName() && publishedCheckbox->GetChecked())
 		{
-			new ConfirmPrompt("Publish", "This save was created by " + save.GetUserName().FromUtf8() + ", you're about to publish this under your own name; If you haven't been given permission by the author to do so, please uncheck the publish box, otherwise continue", { [this] {
+			new ConfirmPrompt("게시", "이 세이브는 " + save.GetUserName().FromUtf8() + "에 의해 제작되었으며, 귀하가 이것을 귀하의 이름으로 게시하려고 하고 있습니다. 게시자의 허가가 있지 않다면 게시 확인 상자를 해제하세요. 게시자의 허락이 있다면 게시해도 됩니다.", { [this] {
 				Exit();
 				saveUpload();
 			} });
@@ -206,7 +206,7 @@ void ServerSaveActivity::Save()
 	}
 	else
 	{
-		new ErrorMessage("Error", "You must specify a save name.");
+		new ErrorMessage("오류", "파일 이름을 입력해야 합니다.");
 	}
 }
 
@@ -236,7 +236,7 @@ void ServerSaveActivity::saveUpload()
 
 	if(Client::Ref().UploadSave(save) != RequestOkay)
 	{
-		new ErrorMessage("Error", "Upload failed with error:\n"+Client::Ref().GetLastError());
+		new ErrorMessage("오류", "업로드에 실패하였습니다. 오류:\n"+Client::Ref().GetLastError());
 	}
 	else if (onUploaded)
 	{
@@ -253,92 +253,92 @@ void ServerSaveActivity::Exit()
 void ServerSaveActivity::ShowPublishingInfo()
 {
 	String info =
-		"In The Powder Toy, one can save simulations to their account in two privacy levels: Published and unpublished. You can choose which one by checking or unchecking the 'publish' checkbox. Saves are unpublished by default, so if you do not check publish nobody will be able to see your saves.\n"
+		"The Powder Toy에서는 플레이어가 자신의 계정에 자신의 시뮬레이션을 공개와 비공개의 두 가지 상태로 저장할 수 있습니다. 당신은 이것을 '공개' 체크 상자에 체크하거나 체크하지 않음으로써 결정할 수 있습니다. 기본적으로 세이브는 공개되지 않으므로, 공개하기로 체크하지 않으면 아무도 당신의 세이브를 볼 수 없을 것입니다.\n"
 		"\n"
-		"\btPublished saves\bw will appear on the 'By Date' feed and will be seen by many people. These saves also contribute to your Average Score, which is displayed publicly on your profile page on the website. Publish saves that you want people to see so they can comment and vote on.\n"
-		"\btUnpublished saves\bw will not be shown on the 'By Date' feed. These will not contribute to your Average Score. They are not completely private though, as anyone who knows the save id will be able to view it. You can give the save id out to show specific people the save but not allow just everyone to see it.\n"
+		"\bt공개된 세이브\bw는 '날짜순 정렬'에 표시되어 많은 사람이 볼 수 있습니다. 이러한 세이브는 파우더 토이 홈페이지에 있는 당신의 프로필에 표시되는 평균점수에 영향을 줄 것입니다. 사람들이 당신의 작품을 보고 댓글을 달고 투표하게 하려면 작품을 공개하십시오.\n"
+		"\bt비공개된 세이브\bw는 '날짜순 정렬'에서 보이지 않습니다. 이것은 당신의 평균 점수에 영향을 주지 않습니다. 다만, 세이브 ID를 알고 있는 사람은 이러한 작품을 볼 수 있으므로 아예 공개되지 않는 것은 아닙니다. 당신은 특정한 사람들에게만 이러한 세이브를 보여주기 위해서 세이브 ID를 줄 수 있습니다.\n"
 		"\n"
-		"To quickly resave a save, open it and click the left side of the split resave button to \bt'Reupload the current simulation'\bw. If you want to change the description or change the published status, you can click the right side to \bt'Modify simulation properties'\bw. Note that you can't change the name of saves; this will create an entirely new save with no comments, votes, or tags; separate from the original.\n"
-		"You may want to publish an unpublished save after it is finished, or to unpublish some currently published ones. You can do this by opening the save, selecting the 'Modify simulation properties' button, and changing the published status there. You can also \btunpublish or delete saves\bw by selecting them in the 'my own' section of the browser and clicking either one of the buttons that appear on bottom.\n"
-		"If a save is under a week old and gains popularity fast, it will be automatically placed on the \btfront page\bw. Only published saves will be able to get here. Moderators can also choose to promote any save onto the front page, but this happens rarely. They can also demote any save from the front page that breaks a rule or they feel doesn't belong.\n"
-		"Once you make a save, you can resave it as many times as you want. A short previous \btsave history\bw is saved, just right click any save in the save browser and select 'View History' to view it. This is useful for when you accidentally save something you didn't mean to and want to go back to the old version.\n"
+		"어떤 세이브를 즉각적으로 다시 저장하려면 세이브를 열고 저장 버튼의 왼쪽 부분의 \bt'현재 시뮬레이션을 재업로드'\bw 버튼을 누르십시오. 작품의 설명이나 공개 상태를 바꾸고 싶다면 오른쪽 부분의 \bt'시뮬레이션 속성 변경'\bw 버튼을 누르십시오. 단, 이때 세이브의 이름을 바꿀 경우 이 세이브는 완전히 새로운 세이브로 저장되어 기존의 댓글, 투표, 태그가 사라지게 됩니다.\n"
+		"공개되지 않은 세이브를 완성한 다음 공개하고 싶거나, 현재 공개된 세이브를 비공개로 바꾸고 싶다면, 세이브를 열고 '시뮬레이션 속성 변경' 버튼을 누르고, 공개 상태를 변경하면 됩니다. 세이브 검색 화면의 '내 세이브' 메뉴를 통하여 세이브를 선택한 뒤, 하단의 \bt'비공개로 전환' 또는 '삭제'\bw 버튼을 통하여서도 해당 작업을 할 수 있습니다.\n"
+		"어떤 세이브가 만들어진 지 일주일이 되지 않았고 빠른 속도로 인기를 얻는다면 자동으로 \bt프론트페이지\bw에 올라가게 됩니다. 공개된 세이브만이 프론트페이지에 등록됩니다. 관리자들도 세이브를 프론트페이지에 올려놓을 수 있지만 이것은 거의 일어나지 않습니다. 관리자들은 또한 규정을 어기거나 적절하지 않다고 생각하는 세이브를 프론트페이지에서 내릴 수 있습니다.\n"
+		"한 번 세이브를 만들었다면 세이브를 다시 저장하는 제에는 제한이 없습니다. 짧은 기간의 \bt세이브 편집 기록\bw이 남으므로, 세이브 검색 화면에서 세이브를 마우스 오른쪽 클릭한 뒤 '편집 기록 보기'를 통하여 편집 기록을 볼 수 있습니다. 이것은 실수로 저장을 했거나 과거 버전으로 돌아가고 싶을 때 쓰일 수 있습니다.\n"
 		;
 
-	new InformationMessage("Publishing Info", info, true);
+	new InformationMessage("게시 안내", info, true);
 }
 
 void ServerSaveActivity::ShowRules()
 {
 	String rules =
-		"\boSection S: Social and Community Rules\n"
-		"\bwThere are a few rules you should follow while interacting with the community. These rules are enforced by staff members and any issues related to violations of these rules may be brought to our attention by users. This section applies to saves uploaded, comments area, forums, and other areas of the community.\n"
+		"\bo섹션 S - 커뮤니티 내 활동에 관한 규칙\n"
+		"\bw아래 규칙들은 The Powder Toy 커뮤니티에서 활동할 때에 반드시 지켜야 할 규칙입니다. 이 규칙들은 스태프들에 의해 집행되며, 이러한 규정을 어기는 경우 다른 회원이 우리 스태프들에게 알릴 것입니다. 제 1장은 세이브, 댓글, 포럼, 그리고 기타 커뮤니티의 다른 영역에서의 규칙입니다.\n"
 		"\n"
-		"\bt1. Try to use proper grammar.\bw English is the official community language, but use is not required in regional or cultural groups. If you cannot write English well, we advise that you use Google Translate.\n"
-		"\bt2. Do not spam.\bw There's not a one size fits all definition here, but the idea is usually obvious. In addition, the following are seen as spam and may be hidden or deleted:\n"
-		   "- Posting multiple threads on the same subject. Try to combine threads on game feedback or suggestions into one thread.\n"
-		   "- Bumping an old thread by replying. This is what we call 'necro' or 'necroing'. The content of the thread may be stale (fixing issues, ideas, etc). We recommend posting a new thread for an updated or more current response.\n"
-		   "- Posting on a thread with '+1' or other short replies. There's no need to constantly bump a thread and make finding replies difficult. Replies are great for constructive feedback, while the '+1' button is to show your support for the content.\n"
-		   "- Comments that are excessively long or gibberish. Making comments such as repeating the same letter or have little to no intended purpose, fall under this rule. Comments that are in a different language are exempt.\n"
-		   "- Excessive formatting. UPPERCASE, Bold, and italics can be nice with moderate use, but please do not use them throughout the entire post.\n"
-		"\bt3. Keep swearing to a minimum.\bw Comments or saves containing swearing are at risk of being deleted. This also includes swearing in other languages.\n"
-		"\bt4. Refrain from uploading sexually explicit, offensive, or other inappropriate materials.\bw\n"
-		   "- These include, but are not limited to: sex, drugs, racism, excessive politics, or anything that offends or insults a group of people.\n"
-		   "- Reference to these topics in other languages is also prohibited. Do not attempt to bypass this rule.\n"
-		   "- Posting URLs or images that violate this rule is prohibited. This includes links or text in your profile information.\n"
-		"\bt5. Do not advertise third-party games, sites, or other places not related to The Powder Toy.\bw\n"
-		   "- Mainly this rule is intended to prevent people going through and advertising their own games and products.\n"
-		   "- Unauthorized or unofficial community gathering places, such as Discord, are prohibited.\n"
-		"\bt6. Trolling is not allowed.\bw As with some rules, there's no clear definition. Users who repeatedly troll are far more likely to be banned and recieve longer bans than others.\n"
-		"\bt7. Do not impersonate anyone.\bw Registering accounts with names intentionally similar to other users in our community or other online communities is prohibited.\n"
-		"\bt8. Do not post about moderator decisions or issues.\bw If there is a problem regarding a ban on your account or content removal, please contact a moderator through the messages system. Otherwise, discussion about moderator actions should be avoided.\n"
-		"\bt9. Avoid backseat moderating.\bw Moderators are the ones who make the decisions. Users should refrain from threatening bans or possible results from breaking a rule. If there is a possible issue or you are unsure, we recommend reporting the issue through the 'Report' button or via the messaging system on the website.\n"
-		"\bt10. Condoning of breaking common laws is prohibited.\bw The jurisdiction of which country's laws applies is not clear, but there are some common ones to know. These include, but not limited to:\n"
-		   "- Piracy of software, music, bagels, etc.\n"
-		   "- Hacking / Stealing accounts\n"
-		   "- Theft / Fraud\n"
-		"\bt11. Do not stalk or harass any user.\bw This has been a growing problem in recent years by different methods, but generally these include:\n"
-		   "- 'Doxing' user(s) to find where they live or their real identity\n"
-		   "- Constantly messaging a user when they wish to refrain from any contact\n"
-		   "- Mass downvoting saves\n"
-		   "- Posting rude or unnecessary comments on someone's content (saves, forum threads, etc)\n"
-		   "- Coercing a group of users to 'target' a user\n"
-		   "- Personal arguments or hatred. This could be arguing in the comments or making hate saves\n"
-		   "- Discrimination, in general, of people. This could be religious, ethnic, etc.\n"
+		"\bt1. 최대한 바른 문법을 사용하십시오.\bw 우리 커뮤니티의 공식 언어는 영어이나, 특정 국가나 문화권의 사람들이 모이는 경우에까지 영어를 굳이 쓰진 않아도 됩니다. 영어를 잘 하지 못한다면 번역기를 사용하는 것을 추천드립니다.\n"
+		"\bt2. 스팸 행위는 금지입니다.\bw 여기서 '스팸'이 항상 여기의 정의에 맞지는 않을 수도 있지만, 대부분의 경우 어떤 행동이 '스팸'인지 아닌지 명백하게 알아차릴 수 있을 것입니다. 아래는 '스팸'으로 간주되어 글 따위가 숨겨지거나 지워질 수 있는 행위입니다:\n"
+		   "- 많은 수의 같은 주제를 가진 스레드를 포럼에 올리는 경우. 게임에 대한 피드백이나 제안은 최대한 모아서 올려 주세요.\n"
+		   "- 오래된 스레드에 대답하여 다시 스레드 목록의 상위로 올리는 경우. 흔히 'necro'나 'necroing'로 불립니다. 이런 스레드의 주제는 오래 되었을 수도 있습니다(버그 수정, 아이디어 등). 이러한 경우, 새로운 응답을 위해서는 새로운 스레드를 생성하는 것을 권장합니다.\n"
+		   "- '+1' 등의 짧은 대답을 한 스레드에 올리는 경우. 이런 방법으로 지속적으로 스레드를 목록 위로 올릴 경우 다른 대답을 찾기 어려워집니다. 당신이 이 스레드를 지지함을 표현하는 '+1' 버튼이 이미 있으니, 대답 기능은 건설적인 피드백에 사용해 주세요.\n"
+		   "- 지나치게 길거나 의미 없는 댓글. 의미 없이 같은 문자를 반복하거나 너무 적은 내용을 쓰는 것 등이 이에 해당됩니다. 단, 다른 언어로 댓글을 쓰는 것은 해당되지 않습니다.\n"
+		   "- 특정 서식을 남용하는 경우. 대문자, 굵은 글씨, 기울임꼴은 적절하게 쓰이면 좋지만, 글 전체에 이런 서식을 쓰는 것은 적절하지 않습니다.\n"
+		"\bt3. 욕설은 자제해 주세요.\bw 욕설이 포함된 댓글이나 세이브는 지워질 수 있습니다. 다른 언어로 욕설을 사용하는 것도 이 규칙에 포함됩니다.\n"
+		"\bt4. 성적으로 노골적이거나, 불쾌하거나, 기타 부적절한 것들을 업로드하지 마세요.\bw\n"
+		   "- 이것은 성행위, 약물, 인종차별, 극단주의적 정책, 또는 다른 집단을 공격하거나 비난하는 등의 모든 행위를 포함하며, 또한 위에서 말한 행위만이 이 규칙의 적용 대상인 것도 아닙니다.\n"
+		   "- 이러한 주제를 다른 언어로 말하는 것도 금지되어 있습니다. 이 규칙을 회피하려고 하지 마십시오.\n"
+		   "- 이 규칙을 어기는 내용을 포함하는 URL이나 이미지를 올리는 것도 금지되어 있습니다. 이것은 당신의 프로필에 이러한 링크를 올려놓거나 글을 써 놓는 것도 해당됩니다.\n"
+		"\bt5. The Powder Toy와 직접적으로 관련되지 않은 게임이나 사이트, 기타 다른 것을 광고하지 마세요.\bw\n"
+		   "- 이 규칙은 자신의 게임이나 상품을 경험시키거나 광고하는 것을 막기 위해 있습니다.\n"
+		   "- 디스코드 등 인증받지 않았거나 비공식적인 커뮤니티를 광고하는 것 역시 금지되어 있습니다.\n"
+		"\bt6. 트롤링은 금지입니다.\bw 일부 규칙과 마찬가지로 트롤링에 대한 정확한 정의는 내릴 수 없습니다. 자주 트롤링하는 회원은 이용이 금지될 가능성이 높으며, 그 기간이 다른 이들보다 길 것입니다.\n"
+		"\bt7. 타인을 사칭하지 마십시오.\bw 우리 커뮤니티나 타 인터넷 커뮤니티에서 의도적으로 다른 회원과 별명을 비슷하게 등록하는 것은 금지되어 있습니다.\n"
+		"\bt8. 관리자의 결정이나 문제점에 대한 내용은 쓰지 마십시오.\bw 이용 정지나 컨텐츠 삭제에 관한 이의가 있다면 메시지 시스템을 이용해서 관리자에게 연락하십시오. 이 외 관리자의 결정에 관한 내용에 관한 글은 자제하여 주십시오.\n"
+		"\bt9. 관리자의 일에 참견하는 것은 삼가 주십시오.\bw 결정을 하는 것은 관리자입니다. 이용자들은 이용 정지가 되거나 규정 위반에 해당될 수 있는 일을 자제해야 합니다. 만약 어떤 일이 규정을 어길 것 같거나 확실하지 않다면 '신고' 버튼을 통해서 알리거나 우리 홈페이지의 메시지 시스템을 통해 물어볼 것을 권장합니다.\n"
+		"\bt10. 법을 어기는 것을 묵인하는 것은 금지되어 있습니다.\bw 어떤 나라의 법이 어떻게 적용되는지는 확실치 않으나 몇몇 행위는 흔히 볼 수 있을 것입니다. 아래에는 다음과 같은 행위가 있지만 여기에만 국한되지는 않습니다:\n"
+		   "- 소프트웨어, 음악, Bagels 등의 복제\n"
+		   "- 계정을 해킹하거나 뺏는 것\n"
+		   "- 절도, 사기\n"
+		"\bt11. 이용자를 쫓아다니거나 괴롭히지 마십시오.\bw 이것은 최근 몇 년 사이 여러 방법으로 나타나며 커져가던 문제로, 일반적으로는 아래의 행위를 포함합니다.\n"
+		   "- 이용자의 거주지나 실제 정체를 알아내어 공개하는 것, 일명 '신상 털이'\n"
+		   "- 어떤 이용자가 연락을 하고 싶지 않음에도 불구하고 지속적으로 메시지를 보내는 것\n"
+		   "- 세이브에 대량으로 '싫어요'를 누르는 것\n"
+		   "- 타인의 컨텐츠(세이브, 포럼 스레드 등)에 무례하거나 불필요한 댓글을 다는 것\n"
+		   "- 어떤 이용자를 표적으로 공격하도록 다수의 이용자에게 강요하는 것\n"
+		   "- 개인적인 언쟁이나 증오. 이것은 댓글에 분쟁을 유발하거나 혐오성이 짙은 세이브 등을 말합니다.\n"
+		   "- 종교적이거나 문화적 이유 등으로 사람을 차별하는 행위.\n"
 		"\n"
-		"\boSection G: In-Game Rules\n"
-		"\bwThis section of the rules is focused on in-game actions. Though, Section S also applies in-game, the following rules are more specialized to in-game community interaction.\n"
-		"\bt1. Don't claim other people's work.\bw This could be simply re-uploading another user's or utilizing large sections of saves. Derivative works are allowed, with proper usage. Should you utilize someone's work, by default you must credit the author. Unless the author has explicitly noted different usage terms, this is the standard policy. Derivative works are characterized by innovative usage and originality percentage (ie. how much is original versus someone's work?). Stolen saves will be unpublished or disabled.\n"
-		"\bt2. Self-voting or vote fraud is not allowed.\bw This is defined as making multiple accounts to vote on your own saves or the saves of others. We enforce this rule strictly, therefore, you must understand that there are very few successful ban appeals. Please ensure you and other accounts are not voting from the same household. All alternate accounts will be permanently banned, the main account will be temporarily banned and any affected saves will be disabaled.\n"
-		"\bt3. Asking for votes of any kind is frowned upon.\bw Saves which do this will be unpublished until the issue is fixed. Examples of such that are under this rules are:\n"
-		   "- Signs that may hint at voting up or down. The signature green arrow or asking for votes goes under this rule.\n"
-		   "- Gimmicks that ask for votes. These might be a total number of votes in exchange for something, like '100 votes and I'll make a better version'. This is what we define as vote farming. Any type of vote farming is not allowed.\n"
-		   "- Asking for votes in return for usage of a save or for any other reason is prohibited.\n"
-		"\bt4. Do not spam.\bw As mentioned earlier, there are no standards for what counts as spam. Here are some examples that may qualify as spamming:\n"
-		   "- Uploading or re-uploading similar saves within a short amount of time. Don't try to circumvent the system to have your saves seen/voted by people. This includes uploading 'junk' or 'blank' saves with little to no purpose. These saves will be unpublished.\n"
-		   "- Uploading text-only saves. These may be announcements or looking for help of sorts. We have the forums and comments area available for many purposes these text-only saves would serve. These saves will be removed from front page.\n"
-		   "- Uploading art saves is not strictly prohibited, but may result in a front-page demotion. We like to see usage of the variety of elements in a creative manner. Lack of these factors (such as in deco-only saves) will typically result in a front-page demotion\n"
-		"\bt5. Refrain from uploading sexually explicit or other inappropriate materials. These saves will be deleted and will lead to a ban.\bw\n"
-		   "- These include, but are not limited to: sex, drugs, racism, excessive politics, or anything that offends or insults a group of people.\n"
-		   "- Don't try to circumvent this rule. Anything that intentionally refers to these concepts/ideas by direct or indirect means falls under this rule.\n"
-		   "- Reference to these topics in other languages is also prohibited. Do not attempt to bypass this rule.\n"
-		   "- Posting URLs or images that violate this rule is prohibited. This includes links or text in your profile information.\n"
-		"\bt6. Image plotting is strictly prohibited.\bw This includes usage of scripting or any third-party tools to plot or create a save for you. Saves using CGI will be deleted and you may receive a ban.\n"
-		"\bt7. Keep logos and signs to a minimum.\bw These saves may be removed from front page. Items that this rule restricts are:\n"
-		   "- Excessive logos placed\n"
-		   "- Signs without intended purpose\n"
-		   "- Fake update or notifications signs\n"
-		   "- Linking other saves that have no related purposes\n"
-		"\bt8. Do not place offtopic or inappropriate tags.\bw Tags are only there to improve search results. They should generally only be one word descriptions of the save. Sentences or subjective tags may be deleted. Inappropriate or offensive tags will likely get you banned.\n"
-		"\bt9. Intentional lag inducing or crashing saves are prohibited.\bw If the majority of users are writing about the save causing crashes or lag, then the save will fall under this rule. These saves will be removed from front page or disabled.\n"
-		"\bt10. Do not misuse the reporting system.\bw Sending in report reasons such as 'bad save' or gibberish wastes our time. Unless the issue pertains to a possible rule violation or community issue, please refrain from sending a report. If you think the save violates or poses a community issue, send a report anyway! Bans will never happen if you are reporting a save in good faith.\n"
-		"\bt11. Do not ask for saves to be demoted or removed from the front-page.\bw Unless the save violates any rules, it will stay on the front-page. There is no exception to this rule for art saves, please do not report art either.\n"
+		"\bo섹션 G - 게임 내 규칙\n"
+		"\bw섹션 G은 게임 내 행위에 대해 중점적으로 다룹니다. 섹션 S 역시 게임 내 행위에 적용되지만 아래 규칙은 인게임 커뮤니티에서의 활동에 대해 더욱 중점적으로 다루고 있습니다.\n"
+		"\bt1. 타인의 작품을 가져다 쓰지 마십시오.\bw 이는 단순히 타인의 세이브를 다시 업로드하거나 대부분의 영역에 타인의 작품을 이용하는 것을 포함합니다. 파생 작품은 그 의도가 적절하다면 허용됩니다. 기본적으로 원작자가 따로 자유롭게 사용해도 된다고 말하지 않은 이상, 일반적인 규정에 따라 타인의 작품을 썼다면 원작의 제작자를 반드시 언급해야 합니다. 파생 작품은 창의적 이용과 독창적인 부분의 비율에서 그 가치가 결정됩니다. 도용된 세이브는 비공개되거나 비활성화될 것입니다.\n"
+		"\bt2. 자기 작품에 자신이 직접 투표하거나, 투표를 조작하는 것은 금지되어 있습니다.\bw 투표 조작이란 많은 계정을 만들어서 자신이나 타인의 세이브에 투표하는 것을 말합니다. 이 규정은 엄격하게 적용되므로, 이의 신청이 거의 받아들여지지 않음을 명심하십시오. 당신과 다른 계정이 같은 세이브에 투표하지 않고 있는지 확인하십시오. 다중 계정은 모두 영구적으로 이용이 정지될 것이며, 주 계정은 일시적으로 이용이 정지되고 영향을 받은 모든 세이브가 삭제될 것입니다.\n"
+		"\bt3. 어떤 방법으로도 투표를 요구하는 것 또한 옳지 않은 행동입니다.\bw 이러한 행위를 하는 세이브는 수정될 때까지 비공개될 것입니다. 아래는 이 규칙에 해당되는 행위의 예시입니다.\n"
+		   "- \"좋아요\" 또는 \"싫어요\" 투표를 암시하는 기호들. 초록색 화살표나 투표를 해 줄 것을 요구하는 것이 이 규정에 어긋납니다.\n"
+		   "- 투표를 받기 위한 술책들. 이러한 행위는 이를테면 '100표를 받으면 더 개선된 것을 내놓겠습니다' 와 같은 총 투표수에 대하여 무언가를 내놓겠다는 것들을 말합니다. 우리는 이것을 '투표수 파밍'라고 부르고 이러한 행위는 허용되지 않습니다.\n"
+		   "- 세이브 사용에 대한 답례로 투표를 요구하거나 기타 다른 이유로 투표를 요구하는 것 또한 금지입니다.\n"
+		"\bt4. 스팸 행위는 금지입니다.\bw 앞서 말했듯이, 우리가 스팸으로 여기는 것은 정확한 정의가 없습니다. 아래는 스팸으로 간주될 수 있는 행위의 예시입니다.\n"
+		   "- 짧은 시간 이내에 비슷한 세이브를 업로드하거나 재업로드하는 행위. 세이브의 조회수나 투표수를 위해서 시스템을 회피하려고 시도하지 마십시오. 이것은 특별한 의도 없이 의미 없거나 빈 세이브를 업로드하는 것도 포함됩니다. 이러한 세이브는 비공개될 것입니다.\n"
+		   "- 텍스트로만 채워진 세이브를 올리는 행위. 이것은 공지사항일 수도 있고 도움을 요청하는 것일수도 있습니다. 이러한 텍스트만 채워진 세이브에 대비하여 우리는 포럼과 댓글 기능을 만들어 놓았습니다. 이러한 세이브는 프론트페이지에서 내려갈 것입니다.\n"
+		   "- 아트 세이브를 올리는 것은 엄격히 금하지는 않지만, 프론트페이지에서는 내려갈 수 있습니다. 우리는 다양한 물질이 창의적으로 사용된 세이브를 높이 평가합니다. 이러한 요소가 부족한(데코만으로 된 세이브 등) 세이브는 일반적으로 프론트페이지에서 내려갈 것입니다.\n"
+		"\bt5. 성적으로 노골적이거나 기타 다른 부적절한 컨텐츠를 올리는 것은 삼가 주십시오.\bw 이러한 세이브는 삭제되고 이용 정지 처분이 내려질 것입니다.\bw\n"
+		   "- 이것은 성행위, 약물, 인종차별, 극단주의적 정책, 또는 다른 집단을 공격하거나 비난하는 등의 모든 행위를 포함하며, 또한 위에서 말한 행위만이 이 규칙의 적용 대상인 것도 아닙니다.\n"
+		   "- 이 규칙을 회피하려고 하지 마십시오. 고의적으로 이러한 개념이나 발상을 나타내는 것은 방법이 직접적이나 간접적이냐에 관계없이 규정을 어기는 행위입니다.\n"
+		   "- 다른 언어로 이러한 주제를 표현하는 것도 금지되어 있습니다. 어떤 방법으로든 이 규칙을 회피하려고 하지 마십시오.\n"
+		   "- 이 규칙을 어기는 내용을 포함하는 URL이나 이미지를 올리는 것도 금지되어 있습니다. 이것은 당신의 프로필에 이러한 링크를 올려놓거나 글을 써 놓는 것도 해당됩니다.\n"
+		"\bt6. 이미지 변환 프로그램 등은 엄격하게 금지되어 있습니다.\bw 이것은 그림 등을 따 오거나 세이브를 만들어 주는 모든 종류의 스크립트나 비공식적인 도구들을 포함합니다. CGI를 사용한 세이브는 삭제되며 이용 정지 처분을 받게 될 것입니다.\n"
+		"\bt7. 로고나 표지판은 최소한으로 사용해 주세요.\bw 이러한 세이브는 프론트페이지에서 삭제될 것입니다. 아래는 이 규칙이 제한하는 것들입니다:\n"
+		   "- 로고 남용\n"
+		   "- 특별한 의도 없는 표지판의 사용\n"
+		   "- 가짜 업데이트 또는 알림 표지판\n"
+		   "- 관련이 없는 세이브로 링크하는 행위\n"
+		"\bt8. 주제에 어긋나거나 부적절한 태그를 사용하지 마세요.\bw 태그는 검색 기능을 개선하기 위해 존재하는 기능입니다. 태그들은 일반적으로 세이브를 설명하는 1개의 단어로만 이루어져 있습니다. 문장형 태그 또는 주관적인 태그는 삭제될 것입니다. 부적절하거나 모욕적인 태그를 올리는 것은 이용 정지 처분의 대상이 될 수 있는 행위입니다.\n"
+		"\bt9. 고의적으로 랙이나 크래시를 유발하는 세이브는 금지되어 있습니다. \bw 다수의 이용자들이 크래시나 랙을 유발한다고 신고하는 세이브가 이 규정에 어긋나는 세이브가 됩니다. 이러한 세이브는 프론트페이지에서 내려가거나 비활성화될 것입니다.\n"
+		"\bt10. 신고 시스템을 남용하지 마세요.\bw '나쁜 세이브' 등의 이유나 의미 없는 내용으로 신고하면 우리의 시간이 의미 없이 쓰이게 됩니다. 규정 위반인 것 같거나 커뮤니티에서 사건사고가 일어나지 않는다면 신고를 하지 말아주세요. 세이브의 내용이 규칙을 위반하거나 커뮤니티에 문제를 일으키는 것 같다면 신고하세요! 여러분이 좋은 의도로 신고한다면 여러분이 이용 정지될 일은 절대 없습니다.\n"
+		"\bt11. 어떤 세이브를 프론트페이지에서 내려달라고 하는 행위는 삼가 주십시오.\bw 세이브가 규칙을 어기지 않는 이상, 그 세이브는 프론트페이지에 머무를 것입니다. 이 규정은 아트 세이브에도 예외가 아니므로, 아트 세이브에도 이러한 요구는 하지 말아주세요.\n"
 		"\n"
-		"\boSection R: Other\n"
-		"\bwModerators may interpret these rules as they see fit. Not all rules are equal, some are enforced less than others. Moderators make the final decision on what is and isn't against the rules, but we have made our best effort here to cover all unwanted behavior here. Notice will be posted in this thread whenever the rules are updated.\n"
+		"\bo섹션 R: 기타\n"
+		"\bw관리자들은 그들의 판단에 따라서 규칙을 해석할 수 있습니다. 이 규칙이 항상 동등하게 적용되진 않고, 어떤 규칙은 조금 덜 엄격하게 시행됩니다. 규칙에 맞는지 안 맞는지 최종적인 판단은 관리자들이 하지만, 불쾌한 모든 행동을 다루기 위해 우리는 항상 최선을 다해 왔습니다. 만약 규칙이 변경된다면 이 스레드에 공지사항이 올라올 것입니다.\n"
 		"\n"
-		"Violation of these rules may result in removal of posts / comments, unpublishing or disabling saves, removing saves from front page, or in more extreme cases, a temporary or permanent ban. There are various manual and automated measures in place to enforce these rules. The severity and resulting decisions may not be consistent between moderators.\n"
+		"규칙을 어기면 포럼 게시글이나 댓글의 삭제, 세이브의 비공개나 비활성화, 프론트페이지에서 삭제, 혹은 더 나아가서 일시적이거나 영구적인 이용 정지 처분을 받게 됩니다. 이런 규칙들을 시행하기 위해 자동적이거나 수동적인 여러 방법을 적용하고 있습니다. 처분 수위나 결정은 관리자들 간에 일관되지 않을 수 있습니다.\n"
 		"\n"
-		"If you have any questions about what is and isn't against the rules, feel free to contact a moderator.";
+		"어떤 행위가 규칙에 맞는지 어긋나는지 묻고 싶다면 언제나 관리자에게 연락하여 주십시오.";
 
 	new InformationMessage("Save Uploading Rules", rules, true);
 }
@@ -346,9 +346,9 @@ void ServerSaveActivity::ShowRules()
 void ServerSaveActivity::CheckName(String newname)
 {
 	if (newname.length() && newname == save.GetName() && save.GetUserName() == Client::Ref().GetAuthUser().Username)
-		titleLabel->SetText("Modify simulation properties:");
+		titleLabel->SetText("시뮬레이션 속성 수정:");
 	else
-		titleLabel->SetText("Upload new simulation:");
+		titleLabel->SetText("새 시뮬레이션 업로드:");
 }
 
 void ServerSaveActivity::OnTick(float dt)

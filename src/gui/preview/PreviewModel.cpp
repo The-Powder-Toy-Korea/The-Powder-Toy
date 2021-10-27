@@ -39,9 +39,9 @@ void PreviewModel::SetFavourite(bool favourite)
 		if (Client::Ref().FavouriteSave(saveInfo->id, favourite) == RequestOkay)
 			saveInfo->Favourite = favourite;
 		else if (favourite)
-			throw PreviewModelException("Error, could not fav. the save: " + Client::Ref().GetLastError());
+			throw PreviewModelException("오류가 발생하여 세이브를 즐겨찾기에 등록할 수 없습니다: " + Client::Ref().GetLastError());
 		else
-			throw PreviewModelException("Error, could not unfav. the save: " + Client::Ref().GetLastError());
+			throw PreviewModelException("오류가 발생하여 세이브를 즐겨찾기에서 해제할 수 없습니다: " + Client::Ref().GetLastError());
 		notifySaveChanged();
 	}
 }
@@ -175,12 +175,12 @@ void PreviewModel::OnSaveReady()
 	{
 		GameSave *gameSave = new GameSave(*saveData);
 		if (gameSave->fromNewerVersion)
-			new ErrorMessage("This save is from a newer version", "Please update TPT in game or at https://powdertoy.co.uk");
+			new ErrorMessage("이 세이브는 더 높은 버전의 게임을 요구합니다", "The Powderr Toy를 게임이나 https://powdertoy.co.uk/에서 업데이트하세요.");
 		saveInfo->SetGameSave(gameSave);
 	}
 	catch(ParseException &e)
 	{
-		new ErrorMessage("Error", ByteString(e.what()).FromUtf8());
+		new ErrorMessage("오류", ByteString(e.what()).FromUtf8());
 		canOpen = false;
 	}
 	notifySaveChanged();
@@ -331,7 +331,7 @@ void PreviewModel::Update()
 			else
 			{
 				for (size_t i = 0; i < observers.size(); i++)
-					observers[i]->SaveLoadingError("Could not parse save info");
+					observers[i]->SaveLoadingError("저장 정보를 구문 분석할 수 없습니다.");
 			}
 		}
 		else

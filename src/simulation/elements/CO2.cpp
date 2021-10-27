@@ -29,7 +29,7 @@ void Element::Element_CO2()
 	Weight = 1;
 
 	HeatConduct = 88;
-	Description = "Carbon Dioxide. Heavy gas, drifts downwards. Carbonates water and turns to dry ice when cold.";
+	Description = "이산화 탄소: 질량이 큰 기체이고 바닥으로 가라앉습니다. WATR에 녹아 BUBW를 생성하며 어는점 이하에서 DRIC로 변합니다.";
 
 	Properties = TYPE_GAS;
 

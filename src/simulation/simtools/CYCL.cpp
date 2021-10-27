@@ -10,7 +10,7 @@ void SimTool::Tool_CYCL()
 	Identifier = "DEFAULT_TOOL_CYCL";
 	Name = "CYCL";
 	Colour = PIXPACK(0x132f5b);
-	Description = "Cyclone, produces swirling air currents";
+	Description = "사이클론: 공기를 섞습니다.";
 	Perform = &perform;
 }
 

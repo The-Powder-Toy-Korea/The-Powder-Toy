@@ -30,7 +30,7 @@ void Element::Element_RIME()
 
 	DefaultProperties.temp = -30.0f + 273.15f;
 	HeatConduct = 100;
-	Description = "Solid, created when steam cools rapidly and goes through sublimation.";
+	Description = "서리: WTRV가 급격히 냉각되어 승화될 때 생성됩니다.";
 
 	Properties = TYPE_SOLID;
 

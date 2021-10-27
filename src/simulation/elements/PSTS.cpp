@@ -28,7 +28,7 @@ void Element::Element_PSTS()
 
 	DefaultProperties.temp = R_TEMP - 2.0f + 273.15f;
 	HeatConduct = 29;
-	Description = "Solid form of PSTE.";
+	Description = "고체 콜로이드: 응고된 PSTE입니다.";
 
 	Properties = TYPE_SOLID;
 

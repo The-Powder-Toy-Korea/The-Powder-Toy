@@ -32,7 +32,7 @@ void Element::Element_DEUT()
 
 	DefaultProperties.temp = R_TEMP - 2.0f + 273.15f;
 	HeatConduct = 251;
-	Description = "Deuterium oxide. Volume changes with temp, radioactive with neutrons.";
+	Description = "중수: 온도에 따라 부피가 다르며 중성자에 방사성 반응을 합니다.";
 
 	Properties = TYPE_LIQUID|PROP_NEUTPASS;
 

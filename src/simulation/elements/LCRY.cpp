@@ -30,7 +30,7 @@ void Element::Element_LCRY()
 	Weight = 100;
 
 	HeatConduct = 251;
-	Description = "Liquid Crystal. Changes colour when charged. (PSCN Charges, NSCN Discharges)";
+	Description = "액정: 활성화되었을 때 색을 바꾼다(PSCN으로 활성화, NSCN으로 비활성화).";
 
 	Properties = TYPE_SOLID;
 

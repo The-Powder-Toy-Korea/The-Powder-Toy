@@ -29,7 +29,7 @@ void Element::Element_NWHL()
 	Weight = 100;
 
 	HeatConduct = 186;
-	Description = "White hole, pushes away other particles with gravity. (Requires Newtonian gravity)";
+	Description = "화이트홀: 물질을 중력으로 밀어냅니다(뉴턴 중력을 요구합니다).";
 
 	Properties = TYPE_SOLID;
 

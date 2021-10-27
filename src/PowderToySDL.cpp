@@ -277,7 +277,7 @@ bool RecreateWindow()
 		SDL_DestroyWindow(sdl_window);
 	}
 
-	sdl_window = SDL_CreateWindow("The Powder Toy", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, WINDOWW * scale, WINDOWH * scale,
+	sdl_window = SDL_CreateWindow("The Powder Toy (ko-KR)", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, WINDOWW * scale, WINDOWH * scale,
 	                              flags);
 	sdl_renderer = SDL_CreateRenderer(sdl_window, -1, 0);
 	if (!sdl_renderer)
@@ -548,10 +548,10 @@ void EventProcess(SDL_Event event)
 void LargeScreenDialog()
 {
 	StringBuilder message;
-	message << "Switching to " << scale << "x size mode since your screen was determined to be large enough: ";
-	message << desktopWidth << "x" << desktopHeight << " detected, " << WINDOWW*scale << "x" << WINDOWH*scale << " required";
-	message << "\nTo undo this, hit Cancel. You can change this in settings at any time.";
-	if (!ConfirmPrompt::Blocking("Large screen detected", message.Build()))
+	message << "대화면이 감지되어 픽셀을 " << scale << "x 크기로 전환합니다: ";
+	message << desktopWidth << "x" << desktopHeight << " 감지됨, " << WINDOWW*scale << "x" << WINDOWH*scale << " 요구됨";
+	message << "\n취소하려면 취소 단추를 누르세요. 나중에 설정에서 언제든지 바꿀 수 있습니다.";
+	if (!ConfirmPrompt::Blocking("대화면 감지됨", message.Build()))
 	{
 		Client::Ref().SetPref("Scale", 1);
 		engine->SetScale(1);

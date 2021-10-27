@@ -56,7 +56,7 @@ bool PreviewController::SubmitComment(String comment)
 {
 	if(comment.length() < 4)
 	{
-		new ErrorMessage("Error", "Comment is too short");
+		new ErrorMessage("오류", "댓글이 너무 짧습니다.");
 		return false;
 	}
 	else
@@ -64,7 +64,7 @@ bool PreviewController::SubmitComment(String comment)
 		RequestStatus status = Client::Ref().AddComment(saveId, comment);
 		if(status != RequestOkay)
 		{
-			new ErrorMessage("Error submitting comment", Client::Ref().GetLastError());
+			new ErrorMessage("댓글을 게시하는 데 오류가 발생함", Client::Ref().GetLastError());
 			return false;
 		}
 		else
@@ -107,10 +107,10 @@ void PreviewController::Report(String message)
 	if(Client::Ref().ReportSave(saveId, message) == RequestOkay)
 	{
 		Exit();
-		new InformationMessage("Information", "Report submitted", false);
+		new InformationMessage("안내", "신고가 전송됨", false);
 	}
 	else
-		new ErrorMessage("Error", "Unable to file report: " + Client::Ref().GetLastError());
+		new ErrorMessage("오류", "신고를 전송할 수 없음: " + Client::Ref().GetLastError());
 }
 
 void PreviewController::FavouriteSave()
@@ -126,7 +126,7 @@ void PreviewController::FavouriteSave()
 		}
 		catch (PreviewModelException & e)
 		{
-			new ErrorMessage("Error", ByteString(e.what()).FromUtf8());
+			new ErrorMessage("오류", ByteString(e.what()).FromUtf8());
 		}
 	}
 }

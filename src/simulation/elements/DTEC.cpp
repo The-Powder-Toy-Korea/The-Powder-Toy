@@ -29,7 +29,7 @@ void Element::Element_DTEC()
 	Weight = 100;
 
 	HeatConduct = 0;
-	Description = "Detector, creates a spark when something with its ctype is nearby.";
+	Description = "탐지기: ctype으로 설정된 물질이 근처에 있으면 전류를 방출합니다.";
 
 	Properties = TYPE_SOLID;
 

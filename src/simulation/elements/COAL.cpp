@@ -31,7 +31,7 @@ void Element::Element_COAL()
 	Weight = 100;
 
 	HeatConduct = 200;
-	Description = "Coal, Burns very slowly. Gets red when hot.";
+	Description = "석탄: 느리게 연소하며 가열되면 붉은 색으로 변합니다.";
 
 	Properties = TYPE_SOLID;
 

@@ -48,7 +48,7 @@ PreviewView::PreviewView():
 {
 	showAvatars = ui::Engine::Ref().ShowAvatars;
 
-	favButton = new ui::Button(ui::Point(50, Size.Y-19), ui::Point(51, 19), "Fav");
+	favButton = new ui::Button(ui::Point(45, Size.Y-19), ui::Point(108, 19), "즐겨찾기");
 	favButton->Appearance.HorizontalAlign = ui::Appearance::AlignLeft;
 	favButton->Appearance.VerticalAlign = ui::Appearance::AlignMiddle;
 	favButton->SetIcon(IconFavourite);
@@ -56,26 +56,26 @@ PreviewView::PreviewView():
 	favButton->Enabled = Client::Ref().GetAuthUser().UserID?true:false;
 	AddComponent(favButton);
 
-	reportButton = new ui::Button(ui::Point(100, Size.Y-19), ui::Point(51, 19), "Report");
+	reportButton = new ui::Button(ui::Point(152, Size.Y-19), ui::Point(46, 19), "신고");
 	reportButton->Appearance.HorizontalAlign = ui::Appearance::AlignLeft;
 	reportButton->Appearance.VerticalAlign = ui::Appearance::AlignMiddle;
 	reportButton->SetIcon(IconReport);
 	reportButton->SetActionCallback({ [this] {
-		new TextPrompt("Report Save", "Things to consider when reporting:\n\bw1)\bg When reporting stolen saves, please include the ID of the original save.\n\bw2)\bg Do not ask for saves to be removed from front page unless they break the rules.\n\bw3)\bg You may report saves for comments or tags too (including your own saves)", "", "[reason]", true, { [this](String const &resultText) {
+		new TextPrompt("세이브 신고하기", "신고를 할 때에는 신중하십시오:\n\bw1)\bg 베껴진 세이브를 신고할 때에는 원본 세이브의 ID를 포함하여 주세요.\n\bw2)\bg 규칙이 위반되지 않았다면 세이브를 프론트페이지에서 제거하도록 요청하지 마세요.\n\bw3)\bg 댓글이나 태그에 대한 신고도 이곳에서 할 수 있습니다(귀하의 세이브도 포함됩니다).", "", "신고 사유", true, { [this](String const &resultText) {
 			c->Report(resultText);
 		} });
 	} });
 	reportButton->Enabled = Client::Ref().GetAuthUser().UserID?true:false;
 	AddComponent(reportButton);
 
-	openButton = new ui::Button(ui::Point(0, Size.Y-19), ui::Point(51, 19), "Open");
+	openButton = new ui::Button(ui::Point(0, Size.Y-19), ui::Point(46, 19), "열기");
 	openButton->Appearance.HorizontalAlign = ui::Appearance::AlignLeft;
 	openButton->Appearance.VerticalAlign = ui::Appearance::AlignMiddle;
 	openButton->SetIcon(IconOpen);
 	openButton->SetActionCallback({ [this] { c->DoOpen(); } });
 	AddComponent(openButton);
 
-	browserOpenButton = new ui::Button(ui::Point((XRES/2)-107, Size.Y-19), ui::Point(108, 19), "Open in browser");
+	browserOpenButton = new ui::Button(ui::Point((XRES/2)-107, Size.Y-19), ui::Point(108, 19), "브라우저에서 열기");
 	browserOpenButton->Appearance.HorizontalAlign = ui::Appearance::AlignLeft;
 	browserOpenButton->Appearance.VerticalAlign = ui::Appearance::AlignMiddle;
 	browserOpenButton->SetIcon(IconOpen);
@@ -125,7 +125,7 @@ PreviewView::PreviewView():
 	viewsLabel->Appearance.VerticalAlign = ui::Appearance::AlignMiddle;
 	AddComponent(viewsLabel);
 
-	pageInfo = new ui::Label(ui::Point((XRES/2) + 85, Size.Y+1), ui::Point(70, 16), "Page 1 of 1");
+	pageInfo = new ui::Label(ui::Point((XRES/2) + 85, Size.Y+1), ui::Point(70, 16), "페이지 1/1");
 	pageInfo->Appearance.HorizontalAlign = ui::Appearance::AlignCentre;
 	AddComponent(pageInfo);
 
@@ -147,14 +147,14 @@ void PreviewView::AttachController(PreviewController * controller)
 {
 	c = controller;
 
-	int textWidth = Graphics::textwidth("Click the box below to copy the save ID");
-	saveIDLabel = new ui::Label(ui::Point((Size.X-textWidth-20)/2, Size.Y+5), ui::Point(textWidth+20, 16), "Click the box below to copy the save ID");
+	int textWidth = Graphics::textwidth("세이브 ID를 복사하려면 아래의 상자를 클릭하세요");
+	saveIDLabel = new ui::Label(ui::Point((Size.X-textWidth-20)/2, Size.Y+5), ui::Point(textWidth+20, 16), "세이브 ID를 복사하려면 아래의 상자를 클릭하세요");
 	saveIDLabel->SetTextColour(ui::Colour(150, 150, 150));
 	saveIDLabel->Appearance.HorizontalAlign = ui::Appearance::AlignCentre;
 	AddComponent(saveIDLabel);
 
 	textWidth = Graphics::textwidth(String::Build(c->SaveID()));
-	saveIDLabel2 = new ui::Label(ui::Point((Size.X-textWidth-20)/2-37, Size.Y+22), ui::Point(40, 16), "Save ID:");
+	saveIDLabel2 = new ui::Label(ui::Point((Size.X-textWidth-20)/2-37, Size.Y+22), ui::Point(40, 16), "세이브 ID:");
 	AddComponent(saveIDLabel2);
 
 	saveIDButton = new ui::CopyTextButton(ui::Point((Size.X-textWidth-10)/2, Size.Y+20), ui::Point(textWidth+10, 18), String::Build(c->SaveID()), saveIDLabel);
@@ -221,15 +221,15 @@ void PreviewView::CheckComment()
 		if (!commentHelpText)
 		{
 			if (random_gen()%2)
-				commentWarningLabel->SetText("Stolen? Report the save instead");
+				commentWarningLabel->SetText("세이브가 베껴졌다면 세이브를 신고하십시오.");
 			else
-				commentWarningLabel->SetText("Please report stolen saves");
+				commentWarningLabel->SetText("베껴진 세이브는 신고하십시오.");
 			commentHelpText = true;
 		}
 	}
 	else if (userIsAuthor && text.Contains("vote"))
 	{
-		commentWarningLabel->SetText("Do not ask for votes");
+		commentWarningLabel->SetText("좋아요에 대해 언급하지 마세요.");
 		commentHelpText = true;
 	}
 	else if (CheckSwearing(text))
@@ -237,9 +237,9 @@ void PreviewView::CheckComment()
 		if (!commentHelpText)
 		{
 			if (random_gen()%2)
-				commentWarningLabel->SetText("Please do not swear");
+				commentWarningLabel->SetText("욕설을 사용하지 마십시오.");
 			else
-				commentWarningLabel->SetText("Bad language may be deleted");
+				commentWarningLabel->SetText("부적절한 언어나 욕설은 제거될 것입니다.");
 			commentHelpText = true;
 		}
 	}
@@ -269,7 +269,7 @@ void PreviewView::DoDraw()
 	{
 		g->fillrect(Position.X+(Size.X/2)-101, Position.Y+(Size.Y/2)-26, 202, 52, 0, 0, 0, 210);
 		g->drawrect(Position.X+(Size.X/2)-100, Position.Y+(Size.Y/2)-25, 200, 50, 255, 255, 255, 180);
-		g->drawtext(Position.X+(Size.X/2)-(Graphics::textwidth("Loading save...")/2), Position.Y+(Size.Y/2)-5, "Loading save...", style::Colour::InformationTitle.Red, style::Colour::InformationTitle.Green, style::Colour::InformationTitle.Blue, 255);
+		g->drawtext(Position.X+(Size.X/2)-(Graphics::textwidth("세이브를 불러오는 중...")/2), Position.Y+(Size.Y/2)-5, "세이브를 불러오는 중...", style::Colour::InformationTitle.Red, style::Colour::InformationTitle.Green, style::Colour::InformationTitle.Blue, 255);
 	}
 	g->drawrect(Position.X, Position.Y, Size.X, Size.Y, 255, 255, 255, 255);
 
@@ -368,7 +368,7 @@ void PreviewView::OnTick(float dt)
 	c->Update();
 	if (doError)
 	{
-		ErrorMessage::Blocking("Error loading save", doErrorMessage);
+		ErrorMessage::Blocking("세이브를 불러오는 중 오류가 발생함.", doErrorMessage);
 		c->Exit();
 	}
 }
@@ -435,27 +435,27 @@ void PreviewView::NotifySaveChanged(PreviewModel * sender)
 		}
 		else
 		{
-			authorDateLabel->SetText("\bgAuthor:\bw " + save->userName.FromUtf8() + " \bg" + dateType + " \bw" + format::UnixtimeToDateMini(save->updatedDate).FromAscii());
+			authorDateLabel->SetText("\bg제작자: \bw " + save->userName.FromUtf8() + " \bg" + dateType + " \bw" + format::UnixtimeToDateMini(save->updatedDate).FromAscii());
 		}
 		if (Client::Ref().GetAuthUser().UserID && save->userName == Client::Ref().GetAuthUser().Username)
 			userIsAuthor = true;
 		else
 			userIsAuthor = false;
-		viewsLabel->SetText(String::Build("\bgViews:\bw ", save->Views));
+		viewsLabel->SetText(String::Build("\bg조회수: \bw ", save->Views));
 		saveDescriptionLabel->SetText(save->Description);
 		if(save->Favourite)
 		{
 			favButton->Enabled = true;
-			favButton->SetText("Unfav");
+			favButton->SetText("즐겨찾기에서 해제");
 		}
 		else if(Client::Ref().GetAuthUser().UserID)
 		{
 			favButton->Enabled = true;
-			favButton->SetText("Fav");
+			favButton->SetText("즐겨찾기에 등록");
 		}
 		else
 		{
-			favButton->SetText("Fav");
+			favButton->SetText("즐겨찾기에 등록");
 			favButton->Enabled = false;
 		}
 
@@ -498,13 +498,13 @@ void PreviewView::submitComment()
 		String comment = addCommentBox->GetText();
 		submitCommentButton->Enabled = false;
 		addCommentBox->SetText("");
-		addCommentBox->SetPlaceholder("Submitting comment"); //This doesn't appear to ever show since no separate thread is created
+		addCommentBox->SetPlaceholder("댓글을 게시하는 중"); // This doesn't appear to ever show since no separate thread is created
 		FocusComponent(NULL);
 
 		if (!c->SubmitComment(comment))
 			addCommentBox->SetText(comment);
 
-		addCommentBox->SetPlaceholder("Add comment");
+		addCommentBox->SetPlaceholder("새 댓글 게시");
 		submitCommentButton->Enabled = true;
 
 		commentBoxAutoHeight();
@@ -532,7 +532,7 @@ void PreviewView::NotifyCommentBoxEnabledChanged(PreviewModel * sender)
 		commentBoxSizeX = float(Size.X-(XRES/2)-48);
 		commentBoxSizeY = 17;
 
-		addCommentBox = new ui::Textbox(ui::Point((XRES/2)+4, Size.Y-19), ui::Point(Size.X-(XRES/2)-48, 17), "", "Add Comment");
+		addCommentBox = new ui::Textbox(ui::Point((XRES/2)+4, Size.Y-19), ui::Point(Size.X-(XRES/2)-48, 17), "", "새 댓글 게시");
 		addCommentBox->SetActionCallback({ [this] {
 			CheckComment();
 			commentBoxAutoHeight();
@@ -540,7 +540,7 @@ void PreviewView::NotifyCommentBoxEnabledChanged(PreviewModel * sender)
 		addCommentBox->Appearance.HorizontalAlign = ui::Appearance::AlignLeft;
 		addCommentBox->SetMultiline(true);
 		AddComponent(addCommentBox);
-		submitCommentButton = new ui::Button(ui::Point(Size.X-40, Size.Y-19), ui::Point(40, 19), "Submit");
+		submitCommentButton = new ui::Button(ui::Point(Size.X-40, Size.Y-19), ui::Point(40, 19), "게시");
 		submitCommentButton->SetActionCallback({ [this] { submitComment(); } });
 		//submitCommentButton->Enabled = false;
 		AddComponent(submitCommentButton);
@@ -553,7 +553,7 @@ void PreviewView::NotifyCommentBoxEnabledChanged(PreviewModel * sender)
 	}
 	else
 	{
-		submitCommentButton = new ui::Button(ui::Point(XRES/2, Size.Y-19), ui::Point(Size.X-(XRES/2), 19), "Login to comment");
+		submitCommentButton = new ui::Button(ui::Point(XRES/2, Size.Y-19), ui::Point(Size.X-(XRES/2), 19), "댓글을 게시하려면 로그인하세요.");
 		submitCommentButton->SetActionCallback({ [this] { c->ShowLogin(); } });
 		AddComponent(submitCommentButton);
 	}
@@ -567,7 +567,7 @@ void PreviewView::SaveLoadingError(String errorMessage)
 
 void PreviewView::NotifyCommentsPageChanged(PreviewModel * sender)
 {
-	pageInfo->SetText(String::Build("Page ", sender->GetCommentsPageNum(), " of ", sender->GetCommentsPageCount()));
+	pageInfo->SetText(String::Build("페이지 ", sender->GetCommentsPageNum(), "/", sender->GetCommentsPageCount()));
 }
 
 void PreviewView::NotifyCommentsChanged(PreviewModel * sender)

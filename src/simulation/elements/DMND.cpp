@@ -27,7 +27,7 @@ void Element::Element_DMND()
 	Weight = 100;
 
 	HeatConduct = 186;
-	Description = "Diamond. Indestructible.";
+	Description = "다이아몬드: 파괴할 수 없습니다.";
 
 	Properties = TYPE_SOLID;
 

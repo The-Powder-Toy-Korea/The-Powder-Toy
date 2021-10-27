@@ -30,7 +30,7 @@ void Element::Element_DSTW()
 
 	DefaultProperties.temp = R_TEMP - 2.0f + 273.15f;
 	HeatConduct = 23;
-	Description = "Distilled water, does not conduct electricity.";
+	Description = "증류수: 전기를 전도하지 않습니다.";
 
 	Properties = TYPE_LIQUID|PROP_NEUTPASS;
 

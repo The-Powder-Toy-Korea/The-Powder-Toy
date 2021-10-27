@@ -30,7 +30,7 @@ void Element::Element_SMKE()
 
 	DefaultProperties.temp = R_TEMP + 320.0f + 273.15f;
 	HeatConduct = 88;
-	Description = "Smoke, created by fire.";
+	Description = "연기: 불에서 생성됩니다.";
 
 	Properties = TYPE_GAS|PROP_LIFE_DEC|PROP_LIFE_KILL_DEC;
 

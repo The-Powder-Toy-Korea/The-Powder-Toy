@@ -31,7 +31,7 @@ void Element::Element_VIBR()
 
 	DefaultProperties.temp = 273.15f;
 	HeatConduct = 251;
-	Description = "Vibranium. Stores energy and releases it in violent explosions.";
+	Description = "비브라늄: 에너지를 저장해 두었다 강력한 폭발로 한 번에 방출합니다.";
 
 	Properties = TYPE_SOLID|PROP_LIFE_DEC;
 

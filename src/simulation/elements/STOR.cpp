@@ -32,7 +32,7 @@ void Element::Element_STOR()
 	Weight = 100;
 
 	HeatConduct = 0;
-	Description = "Storage. Captures and stores a single particle. Releases when charged with PSCN, also passes to PIPE.";
+	Description = "저장소: 단일 입자를 저장하며, PSCN을 이용하여 입자를 배출시킬 수 있습니다. PIPE로 입자를 전송할 수 있습니다.";
 
 	Properties = TYPE_SOLID | PROP_NOCTYPEDRAW;
 

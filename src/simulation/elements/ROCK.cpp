@@ -30,7 +30,7 @@ void Element::Element_ROCK()
 	Weight = 100;
 
 	HeatConduct = 200;
-	Description = "Rock. Solid material, CNCT can stack on top of it.";
+	Description = "암석: 위에 CNCT를 쌓을 수 있습니다.";
 
 	Properties = TYPE_SOLID | PROP_HOT_GLOW;
 

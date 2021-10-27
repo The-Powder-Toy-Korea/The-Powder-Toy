@@ -30,7 +30,7 @@ void Element::Element_VSNS()
 
 	DefaultProperties.temp = 4.0f + 273.15f;
 	HeatConduct = 0;
-	Description = "Velocity sensor, creates a spark when there's a nearby particle with velocity higher than its temperature.";
+	Description = "속도 감지기: 설정된 온도보다 높은 속도의 입자가 감지되면 전류를 방출합니다.";
 
 	Properties = TYPE_SOLID;
 

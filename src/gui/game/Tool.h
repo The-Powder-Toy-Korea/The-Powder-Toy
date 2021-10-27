@@ -48,7 +48,7 @@ class SignTool: public Tool
 public:
 	GameModel * gameModel;
 	SignTool(GameModel *model):
-	Tool(0, "SIGN", "Sign. Displays text. Click on a sign to edit it or anywhere else to place a new one.", 0, 0, 0, "DEFAULT_UI_SIGN", SignTool::GetIcon),
+	Tool(0, "SIGN", "표지판: 텍스트를 표시합니다. 표지판을 클릭하여 편집하거나 다른 곳을 클릭하여 새 표지판을 생성합니다.", 0, 0, 0, "DEFAULT_UI_SIGN", SignTool::GetIcon),
 	  gameModel(model)
 	{
 	}
@@ -66,7 +66,7 @@ class SampleTool: public Tool
 	GameModel * gameModel;
 public:
 	SampleTool(GameModel *model):
-	Tool(0, "SMPL", "Sample an element on the screen.", 0, 0, 0, "DEFAULT_UI_SAMPLE", SampleTool::GetIcon),
+	Tool(0, "SMPL", "화면의 물질을 스포이트합니다.", 0, 0, 0, "DEFAULT_UI_SAMPLE", SampleTool::GetIcon),
 	gameModel(model)
 	{
 	}
@@ -84,7 +84,7 @@ class PropertyTool: public Tool
 public:
 	GameModel * gameModel;
 	PropertyTool(GameModel *model):
-	Tool(0, "PROP", "Property Drawing Tool. Use to alter the properties of elements in the field.", 0xfe, 0xa9, 0x00, "DEFAULT_UI_PROPERTY", NULL),
+	Tool(0, "PROP", "속성 그리기 도구: 물질의 속성을 바꾸는데 사용합니다.", 0xfe, 0xa9, 0x00, "DEFAULT_UI_PROPERTY", NULL),
 	gameModel(model)
 	{
 	}
@@ -110,7 +110,7 @@ public:
 	String selectGOLType;
 	GameModel * gameModel;
 	GOLTool(GameModel * gameModel):
-	Tool(0, "CUST", "Add a new custom GOL type. (Use ctrl+shift+rightclick to remove them)", 0xfe, 0xa9, 0x00, "DEFAULT_UI_ADDLIFE", NULL),
+	Tool(0, "CUST", "새 사용자 지정 생명 게임을 추가합니다([Ctrl] + [Shift]를 누른 상태로 우클릭하여 제거합니다).", 0xfe, 0xa9, 0x00, "DEFAULT_UI_ADDLIFE", NULL),
 	gameModel(gameModel)
 	{
 	}

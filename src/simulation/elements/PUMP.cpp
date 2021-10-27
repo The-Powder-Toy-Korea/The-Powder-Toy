@@ -31,7 +31,7 @@ void Element::Element_PUMP()
 
 	DefaultProperties.temp = 273.15f;
 	HeatConduct = 0;
-	Description = "Pressure pump. Changes pressure to its temp when activated. (use HEAT/COOL).";
+	Description = "압력 생성기: 활성화되었을 때 설정한 온도에 맞춰 압력을 발생시킵니다.";
 
 	Properties = TYPE_SOLID;
 

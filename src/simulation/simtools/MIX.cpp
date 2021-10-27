@@ -10,7 +10,7 @@ void SimTool::Tool_MIX()
 	Identifier = "DEFAULT_TOOL_MIX";
 	Name = "MIX";
 	Colour = PIXPACK(0xFFD090);
-	Description = "Mixes particles.";
+	Description = "입자를 섞습니다.";
 	Perform = &perform;
 }
 

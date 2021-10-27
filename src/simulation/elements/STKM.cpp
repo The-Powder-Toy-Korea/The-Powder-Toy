@@ -39,7 +39,7 @@ void Element::Element_STKM()
 
 	DefaultProperties.temp = R_TEMP + 14.6f + 273.15f;
 	HeatConduct = 0;
-	Description = "Stickman. Don't kill him! Control with the arrow keys.";
+	Description = "스틱맨: 화살표 키로 조종할 수 있습니다.";
 
 	Properties = PROP_NOCTYPEDRAW;
 

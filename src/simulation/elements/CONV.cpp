@@ -29,7 +29,7 @@ void Element::Element_CONV()
 	Weight = 100;
 
 	HeatConduct = 251;
-	Description = "Converter. Converts everything into whatever it first touches.";
+	Description = "변환기: 닿는 모든 물질을 처음에 닿는 물질로 바꿉니다.";
 
 	Properties = TYPE_SOLID | PROP_NOCTYPEDRAW;
 

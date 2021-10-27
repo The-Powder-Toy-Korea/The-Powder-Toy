@@ -36,7 +36,7 @@ void Element::Element_PSTN()
 
 	DefaultProperties.temp = 10.0f + 273.15f;
 	HeatConduct = 0;
-	Description = "Piston, extends and pushes particles.";
+	Description = "피스톤: 입자들을 밀어냅니다.";
 
 	Properties = TYPE_SOLID;
 

@@ -30,7 +30,7 @@ void Element::Element_BIZR()
 	Weight = 30;
 
 	HeatConduct = 29;
-	Description = "Bizarre... contradicts the normal state changes. Paints other elements with its deco color.";
+	Description = "기묘한 액체: 비정상적인 상태변화를 보이며, 다른 물질을 자기 자신의 도색된 색으로 칠합니다.";
 
 	Properties = TYPE_LIQUID;
 

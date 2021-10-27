@@ -29,7 +29,7 @@ void Element::Element_FRME()
 	Weight = 100;
 
 	HeatConduct = 0;
-	Description = "Frame, can be used with pistons to push many particles.";
+	Description = "프레임: 대부분의 물질을 밀기 위해 PSTN과 함께 사용됩니다.";
 
 	Properties = TYPE_SOLID;
 

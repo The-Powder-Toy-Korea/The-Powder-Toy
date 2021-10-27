@@ -29,7 +29,7 @@ void Element::Element_CLNE()
 	Weight = 100;
 
 	HeatConduct = 251;
-	Description = "Clone. Duplicates any particles it touches.";
+	Description = "복제기: 접촉하는 물질을 복제합니다.";
 
 	Properties = TYPE_SOLID | PROP_NOCTYPEDRAW;
 

@@ -30,7 +30,7 @@ void Element::Element_SPNG()
 	Weight = 100;
 
 	HeatConduct = 251;
-	Description = "Sponge, absorbs water. Is not a moving solid.";
+	Description = "스폰지: 물을 흡수합니다. 이동하지 않습니다.";
 
 	Properties = TYPE_SOLID;
 

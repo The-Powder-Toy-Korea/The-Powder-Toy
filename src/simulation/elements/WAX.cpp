@@ -27,7 +27,7 @@ void Element::Element_WAX()
 	Weight = 100;
 
 	HeatConduct = 44;
-	Description = "Wax. Melts at moderately high temperatures.";
+	Description = "왁스: 고온에서 융해합니다.";
 
 	Properties = TYPE_SOLID;
 

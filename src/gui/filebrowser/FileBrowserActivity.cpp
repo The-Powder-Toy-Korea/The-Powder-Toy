@@ -87,13 +87,13 @@ FileBrowserActivity::FileBrowserActivity(ByteString directory, OnSelected onSele
 	totalFiles(0)
 {
 
-	ui::Label * titleLabel = new ui::Label(ui::Point(4, 5), ui::Point(Size.X-8, 18), "Save Browser");
+	ui::Label * titleLabel = new ui::Label(ui::Point(4, 5), ui::Point(Size.X-8, 18), "세이브 탐색기");
 	titleLabel->SetTextColour(style::Colour::WarningTitle);
 	titleLabel->Appearance.HorizontalAlign = ui::Appearance::AlignLeft;
 	titleLabel->Appearance.VerticalAlign = ui::Appearance::AlignMiddle;
 	AddComponent(titleLabel);
 
-	ui::Textbox * textField = new ui::Textbox(ui::Point(8, 25), ui::Point(Size.X-16, 16), "", "[search]");
+	ui::Textbox * textField = new ui::Textbox(ui::Point(8, 25), ui::Point(Size.X-16, 16), "", "검색하려면 여기에 입력하세요.");
 	textField->Appearance.VerticalAlign = ui::Appearance::AlignMiddle;
 	textField->Appearance.HorizontalAlign = ui::Appearance::AlignLeft;
 	textField->SetActionCallback({ [this, textField] { DoSearch(textField->GetText().ToUtf8()); } });
@@ -107,7 +107,7 @@ FileBrowserActivity::FileBrowserActivity(ByteString directory, OnSelected onSele
 	progressBar = new ui::ProgressBar(ui::Point((Size.X-200)/2, 45+(Size.Y-66)/2), ui::Point(200, 17));
 	AddComponent(progressBar);
 
-	infoText = new ui::Label(ui::Point((Size.X-200)/2, 45+(Size.Y-66)/2), ui::Point(200, 17), "No saves found");
+	infoText = new ui::Label(ui::Point((Size.X-200)/2, 45+(Size.Y-66)/2), ui::Point(200, 17), "세이브 없음");
 	AddComponent(infoText);
 
 	filesX = 4;
@@ -143,8 +143,8 @@ void FileBrowserActivity::SelectSave(SaveFile * file)
 
 void FileBrowserActivity::DeleteSave(SaveFile * file)
 {
-	String deleteMessage = "Are you sure you want to delete " + file->GetDisplayName() + ".cps?";
-	if (ConfirmPrompt::Blocking("Delete Save", deleteMessage))
+	String deleteMessage = file->GetDisplayName() + ".cps를 정말로 삭제하시겠습니까?";
+	if (ConfirmPrompt::Blocking("세이브 제거", deleteMessage))
 	{
 		remove(file->GetName().c_str());
 		loadDirectory(directory, "");
@@ -153,18 +153,18 @@ void FileBrowserActivity::DeleteSave(SaveFile * file)
 
 void FileBrowserActivity::RenameSave(SaveFile * file)
 {
-	ByteString newName = TextPrompt::Blocking("Rename", "Change save name", file->GetDisplayName(), "", 0).ToUtf8();
+	ByteString newName = TextPrompt::Blocking("이름 바꾸기", "세이브 이름 바꾸기", file->GetDisplayName(), "", 0).ToUtf8();
 	if (newName.length())
 	{
 		newName = directory + PATH_SEP + newName + ".cps";
 		int ret = rename(file->GetName().c_str(), newName.c_str());
 		if (ret)
-			ErrorMessage::Blocking("Error", "Could not rename file");
+			ErrorMessage::Blocking("오류", "세이브의 이름을 바꿀 수 없습니다.");
 		else
 			loadDirectory(directory, "");
 	}
 	else
-		ErrorMessage::Blocking("Error", "No save name given");
+		ErrorMessage::Blocking("오류", "세이브 이름이 없습니다.");
 }
 
 void FileBrowserActivity::cleanup()
@@ -196,7 +196,7 @@ void FileBrowserActivity::loadDirectory(ByteString directory, ByteString search)
 	itemList->Visible = false;
 	progressBar->Visible = true;
 	progressBar->SetProgress(-1);
-	progressBar->SetStatus("Loading files");
+	progressBar->SetStatus("파일을 불러오는 중");
 	loadFiles = new LoadFilesTask(directory, search);
 	loadFiles->AddTaskListener(this);
 	loadFiles->Start();
@@ -226,7 +226,7 @@ void FileBrowserActivity::NotifyDone(Task * task)
 
 void FileBrowserActivity::OnMouseDown(int x, int y, unsigned button)
 {
-	if (!(x > Position.X && y > Position.Y && y < Position.Y+Size.Y && x < Position.X+Size.X)) //Clicked outside window
+	if (!(x > Position.X && y > Position.Y && y < Position.Y+Size.Y && x < Position.X+Size.X)) // Clicked outside window
 		Exit();
 }
 
@@ -280,7 +280,7 @@ void FileBrowserActivity::OnTick(float dt)
 			[this, saveButton] { DeleteSave(saveButton->GetSaveFile()); }
 		});
 
-		progressBar->SetStatus("Rendering thumbnails");
+		progressBar->SetStatus("썸네일을 렌더하는 중");
 		progressBar->SetProgress(totalFiles ? (totalFiles - files.size()) * 100 / totalFiles : 0);
 		componentsQueue.push_back(saveButton);
 		fileX++;

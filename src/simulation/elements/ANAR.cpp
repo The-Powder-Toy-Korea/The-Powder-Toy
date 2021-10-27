@@ -30,7 +30,7 @@ void Element::Element_ANAR()
 	Weight = 85;
 
 	HeatConduct = 70;
-	Description = "Anti-air. Very light dust, which behaves opposite gravity.";
+	Description = "반중력 가루: 중력 및 공기에 대해 반대로 작용합니다.";
 
 	Properties = TYPE_PART;
 

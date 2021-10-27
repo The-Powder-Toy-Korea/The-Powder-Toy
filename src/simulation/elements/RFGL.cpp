@@ -29,7 +29,7 @@ void Element::Element_RFGL()
 	Weight = 10;
 
 	HeatConduct = 3;
-	Description = "Liquid refrigerant.";
+	Description = "액체 냉매";
 
 	Properties = TYPE_LIQUID|PROP_DEADLY;
 

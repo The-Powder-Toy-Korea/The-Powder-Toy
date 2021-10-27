@@ -28,7 +28,7 @@ void Element::Element_GAS()
 
 	DefaultProperties.temp = R_TEMP + 2.0f + 273.15f;
 	HeatConduct = 42;
-	Description = "Diffuses quickly and is flammable. Liquefies into OIL under pressure.";
+	Description = "가스: 빠르게 확산하고 가연성이 높습니다. 압력에 따라 기름으로 액화할 수 있습니다.";
 
 	Properties = TYPE_GAS | PROP_NEUTPASS;
 

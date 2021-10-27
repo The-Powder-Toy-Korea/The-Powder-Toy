@@ -7,7 +7,7 @@ void SimTool::Tool_AMBP()
 	Identifier = "DEFAULT_TOOL_AMBP";
 	Name = "AMBP";
 	Colour = PIXPACK(0xFFDD00);
-	Description = "Increases ambient air temperature.";
+	Description = "공기 온도를 높입니다.";
 	Perform = &perform;
 }
 

@@ -31,7 +31,7 @@ void Element::Element_PBCN()
 	Weight = 100;
 
 	HeatConduct = 251;
-	Description = "Powered breakable clone.";
+	Description = "파괴 가능한 전원식 CLNE입니다.";
 
 	Properties = TYPE_SOLID | PROP_NOCTYPEDRAW;
 

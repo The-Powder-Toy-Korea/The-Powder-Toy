@@ -29,7 +29,7 @@ void Element::Element_BTRY()
 	Weight = 100;
 
 	HeatConduct = 251;
-	Description = "Battery. Generates infinite electricity.";
+	Description = "전지: 무한한 전류를 생성합니다.";
 
 	Properties = TYPE_SOLID;
 

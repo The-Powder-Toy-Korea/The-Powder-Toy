@@ -27,7 +27,7 @@ void Element::Element_CNCT()
 	Weight = 55;
 
 	HeatConduct = 100;
-	Description = "Concrete, stronger than stone.";
+	Description = "콘크리트: STNE보다 튼튼합니다.";
 
 	Properties = TYPE_PART|PROP_HOT_GLOW;
 

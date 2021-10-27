@@ -7,7 +7,7 @@ void SimTool::Tool_HEAT()
 	Identifier = "DEFAULT_TOOL_HEAT";
 	Name = "HEAT";
 	Colour = PIXPACK(0xFFDD00);
-	Description = "Heats the targeted element.";
+	Description = "가열 도구: 물질을 가열합니다.";
 	Perform = &perform;
 }
 

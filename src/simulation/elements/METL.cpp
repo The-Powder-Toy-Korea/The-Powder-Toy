@@ -27,7 +27,7 @@ void Element::Element_METL()
 	Weight = 100;
 
 	HeatConduct = 251;
-	Description = "The basic conductor. Meltable.";
+	Description = "메탈: 가장 기본이 되는 도체이며 응고할 수 있습니다.";
 
 	Properties = TYPE_SOLID|PROP_CONDUCTS|PROP_LIFE_DEC|PROP_HOT_GLOW;
 

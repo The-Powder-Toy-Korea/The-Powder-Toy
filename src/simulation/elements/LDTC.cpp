@@ -30,7 +30,7 @@ void Element::Element_LDTC()
 	Weight = 100;
 
 	HeatConduct = 0;
-	Description = "Linear detector. Scans in 8 directions for particles with its ctype and creates a spark on the opposite side.";
+	Description = "선형 감지기: 여덟 방향의 물질을 스캔하여 ctype으로 설정된 물질이 있는 쪽의 반대편에 전류를 흘립니다.";
 
 	Properties = TYPE_SOLID | PROP_NOCTYPEDRAW;
 

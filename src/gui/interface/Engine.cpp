@@ -77,7 +77,7 @@ void Engine::Exit()
 
 void Engine::ConfirmExit()
 {
-	new ConfirmPrompt("You are about to quit", "Are you sure you want to exit the game?", { [] {
+	new ConfirmPrompt("The Powder Toy에서 나가기", "정말로 프로그램을 종료하시겠습니까?", { [] {
 		ui::Engine::Ref().Exit();
 	} });
 }

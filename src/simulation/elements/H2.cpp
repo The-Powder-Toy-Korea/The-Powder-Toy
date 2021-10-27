@@ -29,7 +29,7 @@ void Element::Element_H2()
 	Weight = 1;
 
 	HeatConduct = 251;
-	Description = "Hydrogen. Combusts with OXYG to make WATR. Undergoes fusion at high temperature and pressure.";
+	Description = "수소: OXYG와 함께 연소하면 WATR를 생성합니다. 고온 고압의 환경에서 핵융합합니다.";
 
 	Properties = TYPE_GAS;
 

@@ -14,19 +14,19 @@ void LoginModel::Login(ByteString username, ByteString password)
 {
 	if (username.Contains("@"))
 	{
-		statusText = "Use your Powder Toy account to log in, not your email. If you don't have a Powder Toy account, you can create one at https://powdertoy.co.uk/Register.html";
+		statusText = "이메일이 아닌 The Powder Toy 계정으로 로그인하세요. 계정이 없다면 https://powdertoy.co.uk/Register.html에서 새로 만들 수";
 		loginStatus = false;
 		notifyStatusChanged();
 		return;
 	}
-	statusText = "Logging in...";
+	statusText = "로그인하는 중...";
 	loginStatus = false;
 	notifyStatusChanged();
 	LoginStatus status = Client::Ref().Login(username, password, currentUser);
 	switch(status)
 	{
 	case LoginOkay:
-		statusText = "Logged in";
+		statusText = "로그인됨";
 		loginStatus = true;
 		break;
 	case LoginError:

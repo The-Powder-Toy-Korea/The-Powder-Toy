@@ -40,13 +40,13 @@ tool(tool_),
 sim(sim_),
 toolSelection(toolSelection)
 {
-	ui::Label * messageLabel = new ui::Label(ui::Point(4, 5), ui::Point(Size.X-8, 14), "Edit custom GOL type");
+	ui::Label * messageLabel = new ui::Label(ui::Point(4, 5), ui::Point(Size.X-8, 14), "사용자 지정 생명 게임 편집");
 	messageLabel->SetTextColour(style::Colour::InformationTitle);
 	messageLabel->Appearance.HorizontalAlign = ui::Appearance::AlignLeft;
 	messageLabel->Appearance.VerticalAlign = ui::Appearance::AlignTop;
 	AddComponent(messageLabel);
 
-	auto *okayButton = new ui::Button(ui::Point(0, Size.Y-17), ui::Point(Size.X, 17), "OK");
+	auto *okayButton = new ui::Button(ui::Point(0, Size.Y-17), ui::Point(Size.X, 17), "확인");
 	okayButton->Appearance.HorizontalAlign = ui::Appearance::AlignLeft;
 	okayButton->Appearance.VerticalAlign = ui::Appearance::AlignMiddle;
 	okayButton->Appearance.BorderInactive = ui::Colour(200, 200, 200);
@@ -61,14 +61,14 @@ toolSelection(toolSelection)
 	AddComponent(okayButton);
 	SetOkayButton(okayButton);
 
-	nameField = new ui::Textbox(ui::Point(8, 25), ui::Point(Size.X-16, 16), "", "[name]");
+	nameField = new ui::Textbox(ui::Point(8, 25), ui::Point(Size.X-16, 16), "", "이름");
 	nameField->Appearance.HorizontalAlign = ui::Appearance::AlignLeft;
 	nameField->Appearance.VerticalAlign = ui::Appearance::AlignMiddle;
 	nameField->SetLimit(7);
 	AddComponent(nameField);
 	FocusComponent(nameField);
 
-	ruleField = new ui::Textbox(ui::Point(8, 46), ui::Point(Size.X-16, 16), "", "[rule]");
+	ruleField = new ui::Textbox(ui::Point(8, 46), ui::Point(Size.X-16, 16), "", "규칙");
 	ruleField->Appearance.HorizontalAlign = ui::Appearance::AlignLeft;
 	ruleField->Appearance.VerticalAlign = ui::Appearance::AlignMiddle;
 	AddComponent(ruleField);
@@ -136,19 +136,19 @@ void GOLWindow::Validate()
 	auto ruleString = ruleField->GetText();
 	if (!ValidateGOLName(nameString))
 	{
-		new ErrorMessage("Could not add GOL type", "Invalid name provided");
+		new ErrorMessage("새 생명 게임을 추가할 수 없음", "잘못된 이름이 입력됨");
 		return;
 	}
 	nameString = nameString.ToUpper();
 	int rule = ParseGOLString(ruleString);
 	if (rule == -1)
 	{
-		new ErrorMessage("Could not add GOL type", "Invalid rule provided");
+		new ErrorMessage("새 생명 게임을 추가할 수 없음", "잘못된 규칙이 입력됨");
 		return;
 	}
 	if (sim->GetCustomGOLByRule(rule))
 	{
-		new ErrorMessage("Could not add GOL type", "This Custom GoL rule already exists");
+		new ErrorMessage("새 생명 게임을 추가할 수 없음", "이 생명 게임은 이미 존재합니다.");
 		return;
 	}
 	ruleString = SerialiseGOLRule(rule); // * Make it canonical.
@@ -160,7 +160,7 @@ void GOLWindow::Validate()
 	auto color2 = (((lowColour.Red << 8) | lowColour.Green) << 8) | lowColour.Blue;
 	if (!AddCustomGol(ruleString, nameString, color1, color2))
 	{
-		new ErrorMessage("Could not add GOL type", "Name already taken");
+		new ErrorMessage("새 생명 게임을 추가할 수 없음", "이름이 중복됨");
 		return;
 	}
 

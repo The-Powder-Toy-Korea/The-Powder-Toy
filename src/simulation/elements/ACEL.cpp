@@ -30,7 +30,7 @@ void Element::Element_ACEL()
 	Weight = 100;
 
 	HeatConduct = 251;
-	Description = "Accelerator, speeds up nearby elements.";
+	Description = "에너지 입자 가속기: 자기 자신에 닿은 모든 에너지 입자들을 가속시킵니다.";
 
 	Properties = TYPE_SOLID;
 

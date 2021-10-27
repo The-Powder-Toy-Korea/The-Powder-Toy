@@ -30,7 +30,7 @@ void Element::Element_EMP()
 	Weight = 100;
 
 	HeatConduct = 121;
-	Description = "Electromagnetic pulse. Breaks activated electronics.";
+	Description = "전자기 충격파 방출기: 전류가 흐르는 전도체를 파괴합니다.";
 
 	Properties = TYPE_SOLID|PROP_LIFE_DEC;
 

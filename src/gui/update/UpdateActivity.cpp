@@ -33,7 +33,7 @@ private:
 		String error;
 		http::Request *request = new http::Request(updateName);
 		request->Start();
-		notifyStatus("Downloading update");
+		notifyStatus("업데이트를 다운로드하는 중");
 		notifyProgress(-1);
 		while(!request->CheckDone())
 		{
@@ -47,30 +47,30 @@ private:
 		ByteString data = request->Finish(&status);
 		if (status!=200)
 		{
-			error = String::Build("Server responded with Status ", status);
-			notifyError("Could not download update: " + error);
+			error = String::Build("서버가 다음 코드로 응답함: Status ", status);
+			notifyError("업데이트를 다운로드할 수 없음: " + error);
 			return false;
 		}
 		if (!data.size())
 		{
-			error = "Server responded with nothing";
-			notifyError("Server did not return any data");
+			error = "서버가 응답하지 않음";
+			notifyError("서버가 아무 데이터를 반환하지 않음");
 			return false;
 		}
 
-		notifyStatus("Unpacking update");
+		notifyStatus("업데이트를 언팩하는 중");
 		notifyProgress(-1);
 
 		unsigned int uncompressedLength;
 
 		if(data.size()<16)
 		{
-			error = String::Build("Unsufficient data, got ", data.size(), " bytes");
+			error = String::Build("충분하지 않은 데이터: ", data.size(), " 바이트");
 			goto corrupt;
 		}
 		if (data[0]!=0x42 || data[1]!=0x75 || data[2]!=0x54 || data[3]!=0x54)
 		{
-			error = "Invalid update format";
+			error = "알 수 없는 업데이트 포맷";
 			goto corrupt;
 		}
 
@@ -83,7 +83,7 @@ private:
 		res = (char *)malloc(uncompressedLength);
 		if (!res)
 		{
-			error = String::Build("Unable to allocate ", uncompressedLength, " bytes of memory for decompression");
+			error = String::Build("압축 해제용 메모리 ", uncompressedLength, " 바이트를 할당하는 데에 실패함");
 			goto corrupt;
 		}
 
@@ -91,12 +91,12 @@ private:
 		dstate = BZ2_bzBuffToBuffDecompress((char *)res, (unsigned *)&uncompressedLength, &data[8], data.size()-8, 0, 0);
 		if (dstate)
 		{
-			error = String::Build("Unable to decompress update: ", dstate);
+			error = String::Build("업데이트 파일을 압축 해제할 수 없음: ", dstate);
 			free(res);
 			goto corrupt;
 		}
 
-		notifyStatus("Applying update");
+		notifyStatus("업데이트를 적용하는 중");
 		notifyProgress(-1);
 
 		Client::Ref().SetPref("version.update", true);
@@ -104,14 +104,14 @@ private:
 		{
 			Client::Ref().SetPref("version.update", false);
 			update_cleanup();
-			notifyError("Update failed - try downloading a new version.");
+			notifyError("업데이트에 실패함 - 더 높은 버전의 The Powder Toy가 필요합니다.");
 			return false;
 		}
 
 		return true;
 
 	corrupt:
-		notifyError("Downloaded update is corrupted\n" + error);
+		notifyError("다운로드된 업데이트가 손상되었습니다\n" + error);
 		return false;
 	}
 };
@@ -124,7 +124,7 @@ UpdateActivity::UpdateActivity() {
 	file = ByteString::Build(SCHEME, SERVER, Client::Ref().GetUpdateInfo().File);
 #endif
 	updateDownloadTask = new UpdateDownloadTask(file, this);
-	updateWindow = new TaskWindow("Downloading update...", updateDownloadTask, true);
+	updateWindow = new TaskWindow("업데이트를 다운로드하는 중...", updateDownloadTask, true);
 }
 
 void UpdateActivity::NotifyDone(Task * sender)
@@ -147,9 +147,9 @@ void UpdateActivity::NotifyError(Task * sender)
 #ifdef UPDATESERVER
 # define FIRST_LINE "Please go online to manually download a newer version.\n"
 #else
-# define FIRST_LINE "Please visit the website to download a newer version.\n"
+# define FIRST_LINE "The Powder Toy 공식 홈페이지에서 게임을 다운로드해 보세요.\n"
 #endif
-	new ConfirmPrompt("Autoupdate failed", FIRST_LINE "Error: " + sender->GetError(), { [this] {
+	new ConfirmPrompt("자동 업데이트에 실패함", FIRST_LINE "오류: " + sender->GetError(), { [this] {
 #ifndef UPDATESERVER
 		Platform::OpenURI(SCHEME "powdertoy.co.uk/Download.html");
 #endif

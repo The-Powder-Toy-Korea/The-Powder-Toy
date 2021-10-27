@@ -31,7 +31,7 @@ void Element::Element_EMBR()
 
 	DefaultProperties.temp = 500.0f + 273.15f;
 	HeatConduct = 29;
-	Description = "Sparks. Formed by explosions.";
+	Description = "불꽃: 폭발에 의해 생성됩니다.";
 
 	Properties = TYPE_PART|PROP_LIFE_DEC|PROP_LIFE_KILL|PROP_SPARKSETTLE;
 

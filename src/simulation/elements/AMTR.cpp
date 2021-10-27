@@ -30,7 +30,7 @@ void Element::Element_AMTR()
 	Weight = 100;
 
 	HeatConduct = 70;
-	Description = "Anti-Matter, destroys a majority of particles.";
+	Description = "반물질: 물질과 닿으면 쌍소멸을 일으킵니다.";
 
 	Properties = TYPE_GAS;
 

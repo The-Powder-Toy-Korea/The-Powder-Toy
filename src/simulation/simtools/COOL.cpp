@@ -7,7 +7,7 @@ void SimTool::Tool_COOL()
 	Identifier = "DEFAULT_TOOL_COOL";
 	Name = "COOL";
 	Colour = PIXPACK(0x00DDFF);
-	Description = "Cools the targeted element.";
+	Description = "냉각 도구: 물질을 냉각합니다.";
 	Perform = &perform;
 }
 

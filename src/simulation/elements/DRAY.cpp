@@ -29,7 +29,7 @@ void Element::Element_DRAY()
 	Weight = 100;
 
 	HeatConduct = 0;
-	Description = "Duplicator ray. Replicates a line of particles in front of it.";
+	Description = "D-Type 광선 방출기: 앞에 있는 물질을 복사합니다.";
 
 	Properties = TYPE_SOLID;
 
