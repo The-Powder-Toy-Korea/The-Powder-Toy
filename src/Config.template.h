@@ -52,6 +52,9 @@
 #undef FUTURE_SAVE_VERSION
 #undef FUTURE_MINOR_VERSION
 #endif
+
+#define MOD_MAJOR_VERSION 1
+#define MOD_MINOR_VERSION 2
 //VersionInfoEnd
 
 #if !(defined(MACOSX) && defined(DEBUG))
