@@ -33,7 +33,7 @@ void Element::Element_PHOT()
 
 	DefaultProperties.temp = R_TEMP + 900.0f + 273.15f;
 	HeatConduct = 251;
-	Description = "광자: GLAS에 굴절되며 물질에 닿아 반사되면 색이 변합니다. QRTZ에 닿아 반사되면 여러 가지 색으로 흩어집니다. 가연성 물질을 점화합니다.";
+	Description = "광자: 유리나 석영에 닿으면 색이 바뀌며, 가연성 물질을 점화합니다.";
 
 	Properties = TYPE_ENERGY|PROP_LIFE_DEC|PROP_LIFE_KILL_DEC;
 

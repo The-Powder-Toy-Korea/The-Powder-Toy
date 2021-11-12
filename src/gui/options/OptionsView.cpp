@@ -93,7 +93,7 @@ OptionsView::OptionsView():
 	scrollPanel->AddChild(tempLabel);
 
 	currentY+=16;
-	waterEqualisation = new ui::Checkbox(ui::Point(8, currentY), ui::Point(1, 16), "Water equalisation \bg버전 61 이상", "");
+	waterEqualisation = new ui::Checkbox(ui::Point(8, currentY), ui::Point(1, 16), "액체 높이 균등화 \bg버전 61 이상", "");
 	autowidth(waterEqualisation);
 	waterEqualisation->SetActionCallback({ [this] { c->SetWaterEqualisation(waterEqualisation->GetChecked()); } });
 	scrollPanel->AddChild(waterEqualisation);

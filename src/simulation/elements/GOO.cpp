@@ -30,7 +30,7 @@ void Element::Element_GOO()
 	Weight = 100;
 
 	HeatConduct = 75;
-	Description = "Goo: 압력에 의해 변형되거나 사라질 수 있다.";
+	Description = "Goo: 압력에 의해 변형되거나 사라질 수 있습니다.";
 
 	Properties = TYPE_SOLID | PROP_NEUTPENETRATE|PROP_LIFE_DEC|PROP_LIFE_KILL_DEC;
 

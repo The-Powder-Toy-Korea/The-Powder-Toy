@@ -28,7 +28,7 @@ void Element::Element_LO2()
 
 	DefaultProperties.temp = 80.0f;
 	HeatConduct = 70;
-	Description = "액체 산소: 온도가 매우 낮으며 연소할 수 있다.";
+	Description = "액체 산소: 온도가 매우 낮으며 연소할 수 있습니다.";
 
 	Properties = TYPE_LIQUID;
 

@@ -27,7 +27,7 @@ void Element::Element_OIL()
 	Weight = 20;
 
 	HeatConduct = 42;
-	Description = "기름: 연소될 수 있으며, 저압이나 고온에서 GAS로 기화할 수 있다. NITR과 NEUT가 반응하여 생성되기도 한다.";
+	Description = "기름: 저압이나 고온에서 가스로 기화할 수 있는 가연성 기체입니다. 나이트로글리세린과 중성자가 반응하여 생성되기도 합니다.";
 
 	Properties = TYPE_LIQUID | PROP_NEUTPASS;
 

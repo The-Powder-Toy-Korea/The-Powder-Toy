@@ -321,7 +321,7 @@ GameView::GameView():
 	pauseButton->SetActionCallback({ [this] { c->SetPaused(pauseButton->GetToggleState()); } });
 	AddComponent(pauseButton);
 
-	ui::Button * tempButton = new ui::Button(ui::Point(WINDOWW-16, WINDOWH-32), ui::Point(15, 15), 0xE065, "물질 검색...");
+	ui::Button * tempButton = new ui::Button(ui::Point(WINDOWW-16, WINDOWH-32), ui::Point(15, 15), 0xE065, "물질 검색\xe2\x80\xa6");
 	tempButton->Appearance.Margin = ui::Border(0, 2, 3, 2);
 	tempButton->SetActionCallback({ [this] { c->OpenElementSearch(); } });
 	AddComponent(tempButton);

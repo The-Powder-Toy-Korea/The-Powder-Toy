@@ -33,7 +33,7 @@ void Element::Element_LAVA()
 
 	DefaultProperties.temp = R_TEMP + 1500.0f + 273.15f;
 	HeatConduct = 60;
-	Description = "용암: 가연성 물질을 연소시킨다. 금속 및 기타 물질들이 녹을 때 생성되고 저온에서 응고된다.";
+	Description = "용암: 가연성 물질을 연소시킵니다. 금속 및 기타 물질들이 녹을 때 생성되고 저온에서 응고됩니다.";
 
 	Properties = TYPE_LIQUID|PROP_LIFE_DEC;
 

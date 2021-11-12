@@ -29,7 +29,7 @@ void Element::Element_O2()
 	Weight = 1;
 
 	HeatConduct = 70;
-	Description = "기체 산소: 높은 가연성을 지니고 있다.";
+	Description = "기체 산소: 높은 가연성을 지니고 있습니다.";
 
 	Properties = TYPE_GAS;
 

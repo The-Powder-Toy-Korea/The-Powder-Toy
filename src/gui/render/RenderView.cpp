@@ -85,9 +85,9 @@ RenderView::RenderView():
 	line2 = 200;
 	addDisplayModeCheckbox(DISPLAY_WARP, IconWarp    , ui::Point(205, 22), "중력 렌즈 디스플레이: 뉴턴 중력이 발생하는 곳에서 빛을 왜곡하는 효과를 표시합니다.");
 #ifdef OGLR
-# define TOOLTIP "Some type of OpenGL effect ... maybe"
+# define TOOLTIP "OpenGL 효과 중 하나로 추정됨\xe2\x80\xa6"
 #else
-# define TOOLTIP "Enables moving solids, stickmen guns, and premium(tm) graphics"
+# define TOOLTIP "고체 이동 활성화, 스틱맨 총, 프리미엄\xE2\x84\xA2 그래픽 (패러디)"
 #endif
 	addDisplayModeCheckbox(DISPLAY_EFFE, IconEffect    , ui::Point(205,  4), TOOLTIP);
 #undef TOOLTIP

@@ -7,7 +7,7 @@ void SimTool::Tool_PGRV()
 	Identifier = "DEFAULT_TOOL_PGRV";
 	Name = "PGRV";
 	Colour = PIXPACK(0xCCCCFF);
-	Description = "순간적인 방출 중력을 생성합니다.";
+	Description = "순간적인 흡수 중력을 생성합니다.";
 	Perform = &perform;
 }
 

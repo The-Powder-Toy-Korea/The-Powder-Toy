@@ -62,7 +62,7 @@ std::vector<wall_type> LoadWalls()
 		{PIXPACK(0x808080), PIXPACK(0x000000), 3, Renderer::WallIcon, String("WALL"),            "DEFAULT_WL_WALL",   String("벽: 모든 것들을 막습니다.")},
 		{PIXPACK(0x3C3C3C), PIXPACK(0x000000), 1, Renderer::WallIcon, String("AIRONLY WALL"),    "DEFAULT_WL_AIR",    String("압력 벽: 공기 흐름은 통과시키지만 모든 물질을 막습니다.")},
 		{PIXPACK(0x575757), PIXPACK(0x000000), 1, Renderer::WallIcon, String("POWDER WALL"),     "DEFAULT_WL_POWDR",  String("가루 벽: 가루 물질을 제외한 모든 물질을 막습니다.")},
-		{PIXPACK(0xFFFF22), PIXPACK(0x101010), 2, Renderer::WallIcon, String("CONDUCTOR"),       "DEFAULT_WL_CNDTR",  String("도체 벽: 모든 물질을 통과시키며, 전도성이 있다.")},
+		{PIXPACK(0xFFFF22), PIXPACK(0x101010), 2, Renderer::WallIcon, String("CONDUCTOR"),       "DEFAULT_WL_CNDTR",  String("도체 벽: 모든 물질을 통과시키며, 전도성이 있습니다.")},
 		{PIXPACK(0x242424), PIXPACK(0x101010), 0, Renderer::WallIcon, String("EHOLE"),           "DEFAULT_WL_EHOLE",  String("전원식 구멍: 물질을 흡수했다가, 전류가 흐를 때 흡수한 모든 물질을 내보냅니다.")},
 		{PIXPACK(0x579777), PIXPACK(0x000000), 1, Renderer::WallIcon, String("GAS WALL"),        "DEFAULT_WL_GAS",    String("기체 벽: 기체를 제외한 모든 물질을 막습니다.")},
 		{PIXPACK(0xFFEE00), PIXPACK(0xAA9900), 4, Renderer::WallIcon, String("GRAVITY WALL"),    "DEFAULT_WL_GRVTY",  String("중력 벽: 이것으로 그려진 공간 내부에서는 뉴턴 중력이 통하지 않습니다.")},

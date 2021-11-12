@@ -34,7 +34,7 @@ void Element::Element_NEUT()
 
 	DefaultProperties.temp = R_TEMP + 4.0f + 273.15f;
 	HeatConduct = 60;
-	Description = "중성자: 물질들과 비정상적으로 상호작용한다.";
+	Description = "중성자: 물질들과 비정상적으로 상호작용합니다.";
 
 	Properties = TYPE_ENERGY|PROP_LIFE_DEC|PROP_LIFE_KILL_DEC;
 

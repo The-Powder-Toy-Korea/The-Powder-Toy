@@ -531,7 +531,7 @@ new_button = function(x,y,w,h,splitx,f,f2,text,localscript)
 	b.f=f b.f2=f2
 	b.localscript=localscript
 	b.splitx = splitx
-	b.t=ui_text.newscroll(text,x+34,y+5,splitx-24)
+	b.t=ui_text.newscroll(text,x+36,y+5,splitx-24)
 	b.clicked=false
 	b.selected=false
 	b.checkbut=ui_checkbox.up_button(x+splitx+15, y, 15, 15, ui_button.scriptcheck, icons["sync"])
@@ -639,7 +639,7 @@ new = function(x,y,w,h)
 		return but
 	end
 	box:drawadd(function (self)
-		tpt.drawtext(self.x+34, self.y+4, TPT_LUA_PATH.." 폴더의 파일")
+		tpt.drawtext(self.x+36, self.y+4, TPT_LUA_PATH.." 폴더의 파일")
 		for i,line in ipairs(self.lines) do
 			line:draw()
 		end
@@ -1119,8 +1119,8 @@ function ui_button.localview(self)
 		globebutton.t.text = icons["globe"]
 		globebutton.f = ui_button.onlineview
 		donebutton.t.text = (requiresrestart and icons["restart"] or icons["accept"])
-		donebutton.t.x = 541
-		donebutton.x = 538
+		donebutton.t.x = 538
+		donebutton.x = 535
 		donebutton.x2 = 550
 		donebutton.f = ui_button.donepressed
 		uploadscriptbutton.t.text = icons["fileexplorer"]
