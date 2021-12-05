@@ -1,10 +1,9 @@
---Cracker64's Autorun Script Manager
+--TPT Integrated Script Manager Korea
 --The autorun to end all autoruns
 --Version 3.11
 
 --TODO:
 --manual file addition (that can be anywhere and any extension)
---Moving window (because why not)
 --some more API functions
 --prettier, organize code
 
