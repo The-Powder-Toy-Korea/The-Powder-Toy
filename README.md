@@ -94,7 +94,7 @@ TPT를 빌드하려면 [The Powder Toy 공식 위키](https://powdertoy.co.uk/Wi
 | Ctrl + B                | 도색 효과 표시 전환                                              |
 | N                       | 뉴턴 중력 전환                                                   |
 | U                       | 복사열 전환                                                      |
-| Ctrl + I                | The Powder Toy 설치, 세이브 및 스탬프를 더블클릭으로 로드하기 위해 필요 |
+| Ctrl + I                | The Powder Toy 설치, 세이브 및 스탬프를 더블클릭으로 불러오기 위해 필요 |
 | Backtick                | 콘솔 열기                                                        |
 | =                       | 압력 및 공기 흐름 초기화                                          |
 | Ctrl + =                | 모든 전류 제거                                                   |
@@ -125,7 +125,7 @@ TPT를 빌드하려면 [The Powder Toy 공식 위키](https://powdertoy.co.uk/Wi
 | `kiosk`               | 전체 화면                                         |                                   |
 | `proxy:SERVER[:PORT]` | 사용할 프록시 서버                                 | `proxy:wwwcache.lancs.ac.uk:8080` |
 | `open FILE`           | 세이브 및 스탬프 열기                              |                                   |
-| `ddir DIRECTORY`      | 설정 및 스탬프가 저장된 디렉토리                    |                                   |
+| `ddir DIRECTORY`      | 설정 및 스탬프가 저장된 디렉터리                    |                                   |
 | `ptsave:SAVEID`       | 온라인 세이브 열기, URL이 ptsave에서 사용됨         | `ptsave:2198`                     |
 | `disable-network`     | 인터넷 연결 비활성화                               |                                   |
 | `redirect`            | 출력을 stdout.txt / stderr.txt에 리다이렉트        |                                   |

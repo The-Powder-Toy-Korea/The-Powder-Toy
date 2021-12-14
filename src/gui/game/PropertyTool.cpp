@@ -67,7 +67,7 @@ sim(sim_)
 {
 	properties = Particle::GetProperties();
 
-	ui::Label * messageLabel = new ui::Label(ui::Point(4, 5), ui::Point(Size.X-8, 14), "속성 수정");
+	ui::Label * messageLabel = new ui::Label(ui::Point(4, 5), ui::Point(Size.X-8, 14), "입자 속성 바꾸기");
 	messageLabel->SetTextColour(style::Colour::InformationTitle);
 	messageLabel->Appearance.HorizontalAlign = ui::Appearance::AlignLeft;
 	messageLabel->Appearance.VerticalAlign = ui::Appearance::AlignTop;
@@ -179,7 +179,7 @@ void PropertyWindow::SetProperty(bool warn)
 					{
 						tool->validProperty = false;
 						if (warn)
-							new ErrorMessage("속성을 설정할 수 없음", "잘못된 물질 종류");
+							new ErrorMessage("속성을 설정할 수 없음", "잘못된 물질 유형");
 						return;
 					}
 

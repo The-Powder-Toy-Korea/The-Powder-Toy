@@ -236,7 +236,7 @@ GameView::GameView():
 	} });
 	AddComponent(searchButton);
 
-	reloadButton = new ui::Button(ui::Point(currentX, Size.Y-16), ui::Point(17, 15), "", "시뮬레이션 다시 로드하기");
+	reloadButton = new ui::Button(ui::Point(currentX, Size.Y-16), ui::Point(17, 15), "", "시뮬레이션 다시 불러오기");
 	reloadButton->SetIcon(IconReload);
 	reloadButton->Appearance.Margin.Left+=2;
 	currentX+=18;
@@ -1545,7 +1545,7 @@ void GameView::OnFileDrop(ByteString filename)
 {
 	if (!(filename.EndsWith(".cps") || filename.EndsWith(".stm")))
 	{
-		new ErrorMessage("세이브 로드 오류", "이 파일은 세이브 파일(*.cps, *.stm)이 아닙니다.");
+		new ErrorMessage("세이브 불러오기 오류", "이 파일은 세이브 파일(*.cps, *.stm)이 아닙니다.");
 		return;
 	}
 
@@ -1554,7 +1554,7 @@ void GameView::OnFileDrop(ByteString filename)
 		return;
 	if (saveFile->GetError().length())
 	{
-		new ErrorMessage("세이브 로드 오류", "세이브 파일을 블러오는 중에 문제가 발생했습니다. 오류: " + saveFile->GetError());
+		new ErrorMessage("세이브 불러오기 오류", "세이브 파일을 블러오는 중에 문제가 발생했습니다. 오류: " + saveFile->GetError());
 		return;
 	}
 	c->LoadSaveFile(saveFile);
@@ -2190,7 +2190,7 @@ void GameView::OnDraw()
 					else if (ctype)
 						sampleInfo << " (" << ctype << ")";
 				}
-				sampleInfo << ", 온도: " << (sample.particle.temp - 273.15f) << " C";
+				sampleInfo << ", 온도: " << (sample.particle.temp - 273.15f) << "\x20\xe2\x84\x83";
 				sampleInfo << ", Life: " << sample.particle.life;
 				if (sample.particle.type != PT_RFRG && sample.particle.type != PT_RFGL && sample.particle.type != PT_LIFE)
 				{
@@ -2219,7 +2219,7 @@ void GameView::OnDraw()
 			else
 			{
 				sampleInfo << c->BasicParticleInfo(sample.particle);
-				sampleInfo << ", Temp: " << sample.particle.temp - 273.15f << " C";
+				sampleInfo << ", Temp: " << sample.particle.temp - 273.15f << "\x20\xe2\x84\x83";
 				sampleInfo << ", 압력: " << sample.AirPressure;
 			}
 		}
@@ -2292,7 +2292,7 @@ void GameView::OnDraw()
 				sampleInfo << ", GX: " << sample.GravityVelocityX << " GY: " << sample.GravityVelocityY;
 
 			if (c->GetAHeatEnable())
-				sampleInfo << ", AHeat: " << sample.AirTemperature - 273.15f << " C";
+				sampleInfo << ", AHeat: " << sample.AirTemperature - 273.15f << "\x20\xe2\x84\x83";
 
 			textWidth = Graphics::textwidth(sampleInfo.Build());
 			g->fillrect(XRES-20-textWidth, 27, textWidth+8, 14, 0, 0, 0, int(alpha*0.5f));

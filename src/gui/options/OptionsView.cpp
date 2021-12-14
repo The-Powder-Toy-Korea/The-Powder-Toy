@@ -259,10 +259,10 @@ OptionsView::OptionsView():
 	scrollPanel->AddChild(showAvatars);
 
 	currentY += 20;
-	momentumScroll = new ui::Checkbox(ui::Point(8, currentY), ui::Point(1, 16), "탄력 스크롤 활성화", "");
+	momentumScroll = new ui::Checkbox(ui::Point(8, currentY), ui::Point(1, 16), "부드러운 스크롤 활성화", "");
 	autowidth(momentumScroll);
 	momentumScroll->SetActionCallback({ [this] { c->SetMomentumScroll(momentumScroll->GetChecked()); } });
-	tempLabel = new ui::Label(ui::Point(momentumScroll->Position.X + Graphics::textwidth(momentumScroll->GetText()) + 20, currentY), ui::Point(1, 16), "\bg- 탄력 스크롤을 활성화합니다.");
+	tempLabel = new ui::Label(ui::Point(momentumScroll->Position.X + Graphics::textwidth(momentumScroll->GetText()) + 20, currentY), ui::Point(1, 16), "\bg- 부드러운 스크롤을 활성화합니다.");
 	autowidth(tempLabel);
 	tempLabel->Appearance.HorizontalAlign = ui::Appearance::AlignLeft;
 	tempLabel->Appearance.VerticalAlign = ui::Appearance::AlignMiddle;
@@ -327,11 +327,11 @@ OptionsView::OptionsView():
 	} });
 	scrollPanel->AddChild(dataFolderButton);
 
-	ui::Button * migrationButton = new ui::Button(ui::Point(Size.X - 178, currentY), ui::Point(163, 16), "공유 데이터 디렉토리로 이동");
+	ui::Button * migrationButton = new ui::Button(ui::Point(Size.X - 178, currentY), ui::Point(163, 16), "공유 데이터 디렉터리로 이동");
 	migrationButton->SetActionCallback({ [] {
 		ByteString from = Platform::originalCwd;
 		ByteString to = Platform::sharedCwd;
-		new ConfirmPrompt("디렉토리를 이동할까요?", "이것은\n\bt" + from.FromUtf8() + "\bw\n에 있는 모든 스탬프, 세이브, 스크립트를 디렉토리\n\bt" + to.FromUtf8() + "\bw로 이동합니다.\n\n" +
+		new ConfirmPrompt("디렉터리를 이동할까요?", "이것은\n\bt" + from.FromUtf8() + "\bw\n에 있는 모든 스탬프, 세이브, 스크립트를 디렉터리\n\bt" + to.FromUtf8() + "\bw로 이동합니다.\n\n" +
 			 "이미 존재하는 파일은 덮어씌여지지 않을 것입니다.", { [=] () {
 				 String ret = Platform::DoMigration(from, to);
 				new InformationMessage("이동됨", ret, false);
