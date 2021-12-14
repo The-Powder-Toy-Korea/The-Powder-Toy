@@ -2151,13 +2151,13 @@ void GameView::OnDraw()
 				}
 				else if ((type == PT_PIPE || type == PT_PPIP) && c->IsValidElement(ctype))
 				{
-					if (ctype == PT_LAVA && c->IsValidElement((int)sample.particle.pavg[1]))
+					if (ctype == PT_LAVA && c->IsValidElement(sample.particle.tmp4))
 					{
-						sampleInfo << "융해된 " << c->ElementResolve((int)sample.particle.pavg[1], -1) << "이(가) 들어있는 " << c->ElementResolve(type, 0);
+						sampleInfo << "융해된 " << c->ElementResolve(type, 0) << "이(가) 들어있는 " << c->ElementResolve(sample.particle.tmp4, -1);
 					}
 					else
 					{
-						sampleInfo << c->ElementResolve((int)sample.particle.pavg[1], -1) << "이(가) 들어있는 " << c->ElementResolve(type, 0);
+						sampleInfo << c->ElementResolve(type, 0) << "이(가) 들어있는 " << c->ElementResolve(ctype, sample.particle.tmp4);
 					}
 				}
 				else if (type == PT_LIFE)

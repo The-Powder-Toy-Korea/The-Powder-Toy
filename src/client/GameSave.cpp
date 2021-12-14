@@ -1024,7 +1024,7 @@ void GameSave::readOPS(char * data, int dataLength)
 	//Read particle data
 	if (partsData && partsPosData)
 	{
-		int newIndex = 0, fieldDescriptor, tempTemp;
+		int newIndex = 0, tempTemp;
 		int posCount, posTotal, partsPosDataIndex = 0;
 		if (fullW * fullH * 3 > partsPosDataLen)
 			throw ParseException(ParseException::Corrupt, "Not enough particle position data");
@@ -1052,8 +1052,8 @@ void GameSave::readOPS(char * data, int dataLength)
 						throw ParseException(ParseException::Corrupt, "Ran past particle data buffer");
 					x = saved_x + fullX;
 					y = saved_y + fullY;
-					fieldDescriptor = partsData[i+1];
-					fieldDescriptor |= partsData[i+2] << 8;
+					unsigned int fieldDescriptor = (unsigned int)(partsData[i+1]);
+					fieldDescriptor |= (unsigned int)(partsData[i+2]) << 8;
 					if (x >= fullW || y >= fullH)
 						throw ParseException(ParseException::Corrupt, "Particle out of range");
 
@@ -1090,6 +1090,14 @@ void GameSave::readOPS(char * data, int dataLength)
 							tempTemp -= 0x100;
 						}
 						particles[newIndex].temp = tempTemp+294.15f;
+					}
+
+					// fieldDesc3
+					if (fieldDescriptor & 0x8000)
+					{
+						if (i >= partsDataLen)
+							throw ParseException(ParseException::Corrupt, "Ran past particle data buffer while loading third byte of field descriptor");
+						fieldDescriptor |= (unsigned int)(partsData[i++]) << 16;
 					}
 
 					//Read life
@@ -1189,33 +1197,33 @@ void GameSave::readOPS(char * data, int dataLength)
 						}
 					}
 
-					//Read pavg
+					//Read tmp3 and tmp4
 					if(fieldDescriptor & 0x2000)
 					{
 						if (i+3 >= partsDataLen)
-							throw ParseException(ParseException::Corrupt, "Ran past particle data buffer while loading pavg");
-						int pavg;
-						pavg = partsData[i++];
-						pavg |= (((unsigned)partsData[i++]) << 8);
-						particles[newIndex].pavg[0] = (float)pavg;
-						pavg = partsData[i++];
-						pavg |= (((unsigned)partsData[i++]) << 8);
-						particles[newIndex].pavg[1] = (float)pavg;
-
-						switch (particles[newIndex].type)
+							throw ParseException(ParseException::Corrupt, "Ran past particle data buffer while loading tmp3 and tmp4");
+						if (fieldDescriptor & 0x10000 && i+7 >= partsDataLen)
+							throw ParseException(ParseException::Corrupt, "Ran past particle data buffer while loading high halves of tmp3 and tmp4");
+						unsigned int tmp34;
+						tmp34  = (unsigned int)partsData[i + 0];
+						tmp34 |= (unsigned int)partsData[i + 1] << 8;
+						if (fieldDescriptor & 0x10000)
 						{
-						// List of elements that save pavg with a multiplicative bias of 2**6
-						// (or not at all if pressure is not saved).
-						// If you change this list, change it in Simulation::Load and GameSave::serialiseOPS too!
-						case PT_QRTZ:
-						case PT_GLAS:
-						case PT_TUNG:
-							if (particles[newIndex].pavg[0] >= 0x8000) particles[newIndex].pavg[0] -= 0x10000;
-							if (particles[newIndex].pavg[1] >= 0x8000) particles[newIndex].pavg[1] -= 0x10000;
-							particles[newIndex].pavg[0] /= 64;
-							particles[newIndex].pavg[1] /= 64;
-							break;
+							tmp34 |= (unsigned int)partsData[i + 4] << 16;
+							tmp34 |= (unsigned int)partsData[i + 5] << 24;
 						}
+						particles[newIndex].tmp3 = int(tmp34);
+						tmp34  = (unsigned int)partsData[i + 2];
+						tmp34 |= (unsigned int)partsData[i + 3] << 8;
+						if (fieldDescriptor & 0x10000)
+						{
+							tmp34 |= (unsigned int)partsData[i + 6] << 16;
+							tmp34 |= (unsigned int)partsData[i + 7] << 24;
+						}
+						particles[newIndex].tmp4 = int(tmp34);
+						i += 4;
+						if (fieldDescriptor & 0x10000)
+							i += 4;
 					}
 
 					//Particle specific parsing:
@@ -2201,14 +2209,21 @@ char * GameSave::serialiseOPS(unsigned int & dataLength)
 	}
 
 	//Copy parts data
-	/* Field descriptor format:
-	 |      0       |      14       |      13       |      12       |      11       |      10       |       9       |       8       |       7       |       6       |       5       |       4       |       3       |       2       |       1       |       0       |
-	 |   RESERVED   |    type[2]    |     pavg      |   tmp[3+4]    |   tmp2[2]     |     tmp2      |   ctype[2]    |      vy       |      vx       |  decorations  |   ctype[1]    |    tmp[2]     |    tmp[1]     |    life[2]    |    life[1]    | temp dbl len  |
+	/* Field descriptor [1+2] format:
+	 |      15      |      14       |      13       |      12       |      11       |      10       |       9       |       8       |       7       |       6       |       5       |       4       |       3       |       2       |       1       |       0       |
+	 |  fieldDesc3  |    type[2]    |  tmp3/4[1+2]  |   tmp[3+4]    |   tmp2[2]     |     tmp2      |   ctype[2]    |      vy       |      vx       |  decorations  |   ctype[1]    |    tmp[2]     |    tmp[1]     |    life[2]    |    life[1]    | temp dbl len  |
 	 life[2] means a second byte (for a 16 bit field) if life[1] is present
+	 fieldDesc3 means Field descriptor [3] exists
+	   Field descriptor [3] format:
+	 |      23      |      22       |      21       |      20       |      19       |      18       |      17       |      16       |
+	 |   RESERVED   |     FREE      |     FREE      |     FREE      |     FREE      |     FREE      |     FREE      |  tmp3/4[3+4]  |
 	 last bit is reserved. If necessary, use it to signify that fieldDescriptor will have another byte
-	 That way, if we ever need a 17th bit, we won't have to change the save format
+	 That way, if we ever need a 25th bit, we won't have to change the save format
 	 */
-	auto partsData = std::unique_ptr<unsigned char[]>(new unsigned char[NPART * (sizeof(Particle)+1)]);
+
+	// Allocate enough space to store all Particles and 3 bytes on top of that per Particle, for the field descriptors.
+	// In practice, a Particle will never need as much space in the save as in memory; this is just an upper bound to simplify allocation.
+	auto partsData = std::unique_ptr<unsigned char[]>(new unsigned char[NPART * (sizeof(Particle)+3)]);
 	unsigned int partsDataLen = 0;
 	auto partsSaveIndex = std::unique_ptr<unsigned[]>(new unsigned[NPART]);
 	unsigned int partsCount = 0;
@@ -2225,8 +2240,8 @@ char * GameSave::serialiseOPS(unsigned int & dataLength)
 			//Loop while there is a pmap entry
 			while (i)
 			{
-				unsigned short fieldDesc = 0;
-				int fieldDescLoc = 0, tempTemp, vTemp;
+				unsigned int fieldDesc = 0;
+				int tempTemp, vTemp;
 
 				//Turn pmap entry into a particles index
 				i = i>>8;
@@ -2238,8 +2253,21 @@ char * GameSave::serialiseOPS(unsigned int & dataLength)
 				partsData[partsDataLen++] = particles[i].type;
 
 				//Location of the field descriptor
-				fieldDescLoc = partsDataLen++;
+				int fieldDesc3Loc = 0;
+				int fieldDescLoc = partsDataLen++;
 				partsDataLen++;
+
+				auto tmp3 = (unsigned int)(particles[i].tmp3);
+				auto tmp4 = (unsigned int)(particles[i].tmp4);
+				if ((tmp3 || tmp4) && (!PressureInTmp3(particles[i].type) || hasPressure))
+				{
+					fieldDesc |= 1 << 13;
+					if ((tmp3 >> 16) || (tmp4 >> 16))
+					{
+						fieldDesc |= 1 << 15;
+						fieldDesc |= 1 << 16;
+					}
+				}
 
 				// Extra type byte if necessary
 				if (particles[i].type & 0xFF00)
@@ -2262,6 +2290,12 @@ char * GameSave::serialiseOPS(unsigned int & dataLength)
 					tempTemp = (int)(particles[i].temp+0.5f);
 					partsData[partsDataLen++] = tempTemp;
 					partsData[partsDataLen++] = tempTemp >> 8;
+				}
+
+				if (fieldDesc & (1 << 15))
+				{
+					RESTRICTVERSION(97, 0);
+					fieldDesc3Loc = partsDataLen++;
 				}
 
 				//Life (optional), 1 to 2 bytes
@@ -2355,41 +2389,29 @@ char * GameSave::serialiseOPS(unsigned int & dataLength)
 					}
 				}
 
-				//Pavg, 4 bytes
-				// save pavg if there's useful pavg to save
-				// and either we save pressure data too
-				// or the current particle is not one that cares about pressure
-				if (particles[i].pavg[0] || particles[i].pavg[1])
+				//tmp3 and tmp4, 4 bytes
+				if (fieldDesc & (1 << 13))
 				{
-					float pavg0 = particles[i].pavg[0];
-					float pavg1 = particles[i].pavg[1];
-					switch (particles[i].type)
+					partsData[partsDataLen++] = tmp3     ;
+					partsData[partsDataLen++] = tmp3 >> 8;
+					partsData[partsDataLen++] = tmp4     ;
+					partsData[partsDataLen++] = tmp4 >> 8;
+					if (fieldDesc & (1 << 16))
 					{
-					// List of elements that save pavg with a multiplicative bias of 2**6
-					// (or not at all if pressure is not saved).
-					// If you change this list, change it in Simulation::Load and GameSave::readOPS too!
-					case PT_QRTZ:
-					case PT_GLAS:
-					case PT_TUNG:
-						if (!hasPressure)
-							break;
-						pavg0 *= 64;
-						pavg1 *= 64;
-						// fallthrough!
-
-					default:
-						fieldDesc |= 1 << 13;
-						partsData[partsDataLen++] = (int)pavg0;
-						partsData[partsDataLen++] = ((int)pavg0)>>8;
-						partsData[partsDataLen++] = (int)pavg1;
-						partsData[partsDataLen++] = ((int)pavg1)>>8;
-						break;
+						partsData[partsDataLen++] = tmp3 >> 16;
+						partsData[partsDataLen++] = tmp3 >> 24;
+						partsData[partsDataLen++] = tmp4 >> 16;
+						partsData[partsDataLen++] = tmp4 >> 24;
 					}
 				}
 
 				//Write the field descriptor
 				partsData[fieldDescLoc] = fieldDesc;
 				partsData[fieldDescLoc+1] = fieldDesc>>8;
+				if (fieldDesc & (1 << 15))
+				{
+					partsData[fieldDesc3Loc] = fieldDesc>>16;
+				}
 
 				if (particles[i].type == PT_SOAP)
 					soapCount++;
@@ -2853,6 +2875,11 @@ bool GameSave::TypeInTmp(int type)
 bool GameSave::TypeInTmp2(int type, int tmp2)
 {
 	return (type == PT_VIRS || type == PT_VRSG || type == PT_VRSS) && (tmp2 >= 0 && tmp2 < PT_NUM);
+}
+
+bool GameSave::PressureInTmp3(int type)
+{
+	return type == PT_QRTZ || type == PT_GLAS || type == PT_TUNG;
 }
 
 void GameSave::dealloc()

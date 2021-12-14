@@ -507,7 +507,7 @@ void SearchView::NotifySaveListChanged(SearchModel * sender)
 		}
 		if (!sender->GetSavesLoaded())
 		{
-			errorLabel->SetText("로드 중...");
+			errorLabel->SetText("불러오는 중...");
 			loadingSpinner->Visible = true;
 		}
 		else
