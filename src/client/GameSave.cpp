@@ -412,9 +412,10 @@ void GameSave::Transform(matrix2d transform, vector2d translate, vector2d transl
 	velocityYNew = Allocate2DArray<float>(newBlockWidth, newBlockHeight, 0.0f);
 	ambientHeatNew = Allocate2DArray<float>(newBlockWidth, newBlockHeight, 0.0f);
 
-
-	// * Patch pipes if the transform is (looks close enough to) a 90-degree counter-clockwise rotation.
-	bool patchPipe90 = fabsf(transform.a * transform.d - transform.b * transform.c - 1) < 1e-3 && fabs(atan2f(transform.b, transform.a) - (0.5f * M_PI)) < 1e-3;
+	// Match these up with the matrices provided in GameView::OnKeyPress.
+	bool patchPipeR = transform.a ==  0 && transform.b ==  1 && transform.c == -1 && transform.d ==  0;
+	bool patchPipeH = transform.a == -1 && transform.b ==  0 && transform.c ==  0 && transform.d ==  1;
+	bool patchPipeV = transform.a ==  1 && transform.b ==  0 && transform.c ==  0 && transform.d == -1;
 
 	// rotate and translate signs, parts, walls
 	for (size_t i = 0; i < signs.size(); i++)
@@ -449,10 +450,23 @@ void GameSave::Transform(matrix2d transform, vector2d translate, vector2d transl
 		vel = m2d_multiply_v2d(transform, vel);
 		particles[i].vx = vel.x;
 		particles[i].vy = vel.y;
-		if (patchPipe90 && (particles[i].type == PT_PIPE || particles[i].type == PT_PPIP))
+		if (particles[i].type == PT_PIPE || particles[i].type == PT_PPIP)
 		{
-			void Element_PIPE_patch90(Particle &part);
-			Element_PIPE_patch90(particles[i]);
+			if (patchPipeR)
+			{
+				void Element_PIPE_patchR(Particle &part);
+				Element_PIPE_patchR(particles[i]);
+			}
+			if (patchPipeH)
+			{
+				void Element_PIPE_patchH(Particle &part);
+				Element_PIPE_patchH(particles[i]);
+			}
+			if (patchPipeV)
+			{
+				void Element_PIPE_patchV(Particle &part);
+				Element_PIPE_patchV(particles[i]);
+			}
 		}
 	}
 
@@ -1352,6 +1366,19 @@ void GameSave::readOPS(char * data, int dataLength)
 									particles[newIndex].dcolour = builtinGol[particles[newIndex].ctype].colour;
 								particles[newIndex].tmp = builtinGol[particles[newIndex].ctype].colour2;
 							}
+						}
+					}
+					if (PressureInTmp3(particles[newIndex].type))
+					{
+						// pavg[1] used to be saved as a u16, which PressureInTmp3 elements then treated as
+						// an i16. tmp3 is now saved as a u32, or as a u16 if it's small enough. PressureInTmp3
+						// elements will never use the upper 16 bits, and should still treat the lower 16 bits
+						// as an i16, so they need sign extension.
+						auto tmp3 = (unsigned int)(particles[newIndex].tmp3);
+						if (tmp3 & 0x8000U)
+						{
+							tmp3 |= 0xFFFF0000U;
+							particles[newIndex].tmp3 = int(tmp3);
 						}
 					}
 					//note: PSv was used in version 77.0 and every version before, add something in PSv too if the element is that old
@@ -2262,10 +2289,14 @@ char * GameSave::serialiseOPS(unsigned int & dataLength)
 				if ((tmp3 || tmp4) && (!PressureInTmp3(particles[i].type) || hasPressure))
 				{
 					fieldDesc |= 1 << 13;
-					if ((tmp3 >> 16) || (tmp4 >> 16))
+					// The tmp3 of PressureInTmp3 elements is okay to truncate because the loading code
+					// sign extends it anyway, expecting the value to not be higher in magnitude than
+					// 256 (max pressure value) * 64 (tmp3 multiplicative bias).
+					if (((tmp3 >> 16) || (tmp4 >> 16)) && !PressureInTmp3(particles[i].type))
 					{
 						fieldDesc |= 1 << 15;
 						fieldDesc |= 1 << 16;
+						RESTRICTVERSION(97, 0);
 					}
 				}
 
@@ -2294,7 +2325,6 @@ char * GameSave::serialiseOPS(unsigned int & dataLength)
 
 				if (fieldDesc & (1 << 15))
 				{
-					RESTRICTVERSION(97, 0);
 					fieldDesc3Loc = partsDataLen++;
 				}
 
