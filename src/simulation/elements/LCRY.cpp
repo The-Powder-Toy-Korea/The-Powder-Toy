@@ -30,7 +30,7 @@ void Element::Element_LCRY()
 	Weight = 100;
 
 	HeatConduct = 251;
-	Description = "액정: 활성화되었을 때 색을 바꿉니다(PSCN으로 활성화, NSCN으로 비활성화).";
+	Description = "액정: 활성화되었을 때 색을 바꿉니다. PSCN으로 활성화하고 NSCN으로 비활성화합니다.";
 
 	Properties = TYPE_SOLID;
 

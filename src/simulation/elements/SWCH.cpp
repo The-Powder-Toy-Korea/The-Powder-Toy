@@ -30,7 +30,7 @@ void Element::Element_SWCH()
 	Weight = 100;
 
 	HeatConduct = 251;
-	Description = "스위치: 스위치가 켜져 있을 때에만 전류가 전달됩니다(PSCN으로 활성화하고 NSCN으로 비활성화합니다).";
+	Description = "스위치: 스위치가 켜져 있을 때에만 전류가 전달됩니다. PSCN으로 활성화하고 NSCN으로 비활성화합니다.";
 
 	Properties = TYPE_SOLID;
 

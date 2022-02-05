@@ -29,7 +29,7 @@ TPT를 빌드하려면 [The Powder Toy 공식 위키](https://powdertoy.co.uk/Wi
 * 네이선 커즌스
 * jacksonmj
 * 펠릭스 월린
-* 리우베 모쉬
+* 리우베 모슈
 * 앤서니 부트
 * Me4502
 * MaksProg

@@ -32,7 +32,7 @@ void Element::Element_PLSM()
 
 	DefaultProperties.temp = MAX_TEMP;
 	HeatConduct = 5;
-	Description = "플라즈마: 극도로 뜨겁습니다.";
+	Description = "플라스마: 극도로 뜨겁습니다.";
 
 	Properties = TYPE_GAS|PROP_LIFE_DEC|PROP_LIFE_KILL;
 

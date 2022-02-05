@@ -281,7 +281,7 @@ GameView::GameView():
 	downVoteButton->SetActionCallback({ [this] { c->Vote(-1); } });
 	AddComponent(downVoteButton);
 
-	tagSimulationButton = new ui::Button(ui::Point(currentX, Size.Y-16), ui::Point(217, 15), "[태그가 설정되지 않음]", "시뮬레이션 태그 설정");
+	tagSimulationButton = new ui::Button(ui::Point(currentX, Size.Y-16), ui::Point(217, 15), "[태그 없음]", "시뮬레이션 태그 설정");
 	tagSimulationButton->Appearance.HorizontalAlign = ui::Appearance::AlignLeft;
 	tagSimulationButton->SetIcon(IconTag);
 	//currentX+=252;
@@ -837,12 +837,12 @@ void GameView::NotifySaveChanged(GameModel * sender)
 			}
 			else
 			{
-				tagSimulationButton->SetText("[태그가 설정되지 않음]");
+				tagSimulationButton->SetText("[태그 없음]");
 			}
 		}
 		else
 		{
-			tagSimulationButton->SetText("[태그가 설정되지 않음]");
+			tagSimulationButton->SetText("[태그 없음]");
 		}
 		currentSaveType = 1;
 		int saveID = sender->GetSave()->GetID();
@@ -864,7 +864,7 @@ void GameView::NotifySaveChanged(GameModel * sender)
 		downVoteButton->Appearance.BackgroundDisabled = (ui::Colour(0, 0, 0));
 		downVoteButton->Appearance.BorderDisabled = ui::Colour(100, 100, 100);
 		tagSimulationButton->Enabled = false;
-		tagSimulationButton->SetText("[태그가 설정되지 않음]");
+		tagSimulationButton->SetText("[태그 없음]");
 		currentSaveType = 2;
 	}
 	else
@@ -879,7 +879,7 @@ void GameView::NotifySaveChanged(GameModel * sender)
 		downVoteButton->Appearance.BackgroundDisabled = (ui::Colour(0, 0, 0));
 		downVoteButton->Appearance.BorderDisabled = ui::Colour(100, 100, 100),
 		tagSimulationButton->Enabled = false;
-		tagSimulationButton->SetText("[태그가 설정되지 않음]");
+		tagSimulationButton->SetText("[태그 없음]");
 		currentSaveType = 0;
 	}
 	saveSimulationButton->Enabled = (saveSimulationButtonEnabled && saveReuploadAllowed) || ctrlBehaviour;
@@ -2309,9 +2309,9 @@ void GameView::OnDraw()
 		if (showDebug)
 		{
 			if (ren->findingElement)
-				fpsInfo << " 입자 수: " << ren->foundElements << "/" << sample.NumParts;
+				fpsInfo << " 입자량: " << ren->foundElements << "/" << sample.NumParts;
 			else
-				fpsInfo << " 입자 수: " << sample.NumParts;
+				fpsInfo << " 총 입자량: " << sample.NumParts;
 		}
 		if (c->GetReplaceModeFlags()&REPLACE_MODE)
 			fpsInfo << " [물질 변경]";

@@ -24,7 +24,7 @@ const char *const introTextData =
 	"\n"
 	"기여자: \bg스타니슬라프 K. 스코로넥 (오리지널 The Powder Toy를 디자인함),\n"
 	"\bg사이먼 로버트쇼, 스크레자노프 사블리, cracker64, Catelite, 브라이언 호일, 네이선 커즌스, jacksonmj,\n"
-	"\bg펠릭스 월린, 리우베 모쉬, 앤서니 부트, Me4502, MaksProg, jacob1, mniip, LBPHacker\n"
+	"\bg펠릭스 월린, 리우베 모슈, 앤서니 부트, Me4502, MaksProg, jacob1, mniip, LBPHacker\n"
 	"\bo번역자: \bg피어(The Xphere), 파토매니아, Hopz, LegenDUST - The Powder Toy 공식 네이버 카페\n"
 	"\n"
 #ifndef BETA

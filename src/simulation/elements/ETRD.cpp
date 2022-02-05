@@ -31,7 +31,7 @@ void Element::Element_ETRD()
 	Weight = 100;
 
 	HeatConduct = 251;
-	Description = "전극: 플라즈마 아크를 생성합니다(조금씩 사용하는 것을 권장합니다).";
+	Description = "전극: 플라스마 아크를 생성합니다(조금씩 사용하는 것을 권장합니다).";
 
 	Properties = TYPE_SOLID|PROP_CONDUCTS|PROP_LIFE_DEC;
 
