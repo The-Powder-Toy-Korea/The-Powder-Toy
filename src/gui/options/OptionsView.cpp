@@ -332,7 +332,7 @@ OptionsView::OptionsView():
 		ByteString from = Platform::originalCwd;
 		ByteString to = Platform::sharedCwd;
 		new ConfirmPrompt("디렉터리를 이동할까요?", "이것은\n\bt" + from.FromUtf8() + "\bw\n에 있는 모든 스탬프, 세이브, 스크립트를 디렉터리\n\bt" + to.FromUtf8() + "\bw로 이동합니다.\n\n" +
-			 "이미 존재하는 파일은 덮어씌여지지 않을 것입니다.", { [=] () {
+			 "이미 존재하는 파일은 덮어쓰이지 않을 것입니다.", { [=] () {
 				 String ret = Platform::DoMigration(from, to);
 				new InformationMessage("이동됨", ret, false);
 			 } });

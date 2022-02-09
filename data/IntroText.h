@@ -2,7 +2,7 @@
 #include "Config.h"
 
 const char *const introTextData =
-	"\blThe Powder Toy " MTOS(SAVE_VERSION) "." MTOS(MINOR_VERSION) " ko-KR_" MTOS(MOD_MAJOR_VERSION) "." MTOS(MOD_MINOR_VERSION) " 한국어 - https://powdertoy.co.uk, irc.libera.chat #powder\n"
+	"\blThe Powder Toy " MTOS(SAVE_VERSION) "." MTOS(MINOR_VERSION) " ko-KR_" MTOS(MOD_MAJOR_VERSION) "." MTOS(MOD_MINOR_VERSION) ".1 한국어 - https://powdertoy.co.uk, irc.libera.chat #powder\n"
 	"\xEE\x81\xA9\xEE\x81\xA9\xEE\x81\xA9\xEE\x81\xA9\xEE\x81\xA9\xEE\x81\xA9\xEE\x81\xA9\xEE\x81\xA9\xEE\x81\xA9\xEE\x81\xA9\xEE\x81\xA9\xEE\x81\xA9\xEE\x81\xA9\xEE\x81\xA9\xEE\x81\xA9\xEE\x81\xA9\xEE\x81\xA9\xEE\x81\xA9\xEE\x81\xA9\n"
 	"\n"
 	"\bg[Ctrl] + [C]/[V]/[X]는 각각 복사, 붙여넣기, 잘라내기입니다.\n"
@@ -22,9 +22,9 @@ const char *const introTextData =
 	"[P]를 눌러 스크린샷을 저장할 수 있으며, 파일은 The Powder Toy 디렉터리에 바로 저장됩니다.\n"
 	"[H]를 눌러 HUD 표시를 전환할 수 있으며, [D]를 눌러 HUD의 디버그 모드를 전환할 수 있습니다.\n"
 	"\n"
-	"기여자: \bg스타니슬라프 K. 스코로넥 (오리지널 The Powder Toy를 디자인함),\n"
-	"\bg사이먼 로버트쇼, 스크레자노프 사블리, cracker64, Catelite, 브라이언 호일, 네이선 커즌스, jacksonmj,\n"
-	"\bg펠릭스 월린, 리우베 모슈, 앤서니 부트, Me4502, MaksProg, jacob1, mniip, LBPHacker\n"
+	"기여자: \bg스타니슬라프 K. 스코브로네크 (오리지널 The Powder Toy를 디자인함),\n"
+	"\bg사이먼 로버트쇼, 스크레사노우 사벨리, cracker64, Catelite, 브라이언 호일, 네이선 커즌스, jacksonmj,\n"
+	"\bg펠릭스 월린, 리우어 모스, 앤서니 부트, Me4502, MaksProg, jacob1, mniip, LBPHacker\n"
 	"\bo번역자: \bg피어(The Xphere), 파토매니아, Hopz, LegenDUST - The Powder Toy 공식 네이버 카페\n"
 	"\n"
 #ifndef BETA

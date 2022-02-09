@@ -2309,9 +2309,9 @@ void GameView::OnDraw()
 		if (showDebug)
 		{
 			if (ren->findingElement)
-				fpsInfo << " 입자량: " << ren->foundElements << "/" << sample.NumParts;
+				fpsInfo << ", 입자량: " << ren->foundElements << "/" << sample.NumParts;
 			else
-				fpsInfo << " 총 입자량: " << sample.NumParts;
+				fpsInfo << ", 총 입자량: " << sample.NumParts;
 		}
 		if (c->GetReplaceModeFlags()&REPLACE_MODE)
 			fpsInfo << " [물질 변경]";
