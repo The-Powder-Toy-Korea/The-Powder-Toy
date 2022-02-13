@@ -32,7 +32,7 @@ void Element::Element_ELEC()
 
 	DefaultProperties.temp = R_TEMP + 200.0f + 273.15f;
 	HeatConduct = 251;
-	Description = "전자: 전도체에 전류를 흐르게 하며, NEUT 및 WATR과 반응합니다.";
+	Description = "전자: 전도체에 전류를 흐르게 하며, 중성자 및 물과 반응합니다.";
 
 	Properties = TYPE_ENERGY|PROP_LIFE_DEC|PROP_LIFE_KILL_DEC;
 

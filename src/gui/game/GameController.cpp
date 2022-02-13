@@ -1591,7 +1591,7 @@ void GameController::NotifyUpdateAvailable(Client * sender)
 #endif
 
 #ifdef SNAPSHOT
-			updateMessage << "스냅샷 " << SNAPSHOT_ID;
+			updateMessage << "스냅숏 " << SNAPSHOT_ID;
 #elif MOD_ID > 0
 			updateMessage << "모드 버전 " << SNAPSHOT_ID;
 #elif defined(BETA)
@@ -1607,7 +1607,7 @@ void GameController::NotifyUpdateAvailable(Client * sender)
 #if MOD_ID > 0
 				updateMessage << "모드 버전 " << info.Time;
 #else
-				updateMessage << "스냅샷 " << info.Time;
+				updateMessage << "스냅숏 " << info.Time;
 #endif
 			else if(info.Type == UpdateInfo::Stable)
 				updateMessage << info.Major << "." << info.Minor << " 안정화, 빌드 " << info.Build;
@@ -1623,16 +1623,16 @@ void GameController::NotifyUpdateAvailable(Client * sender)
 	{
 		case UpdateInfo::Snapshot:
 #if MOD_ID > 0
-			gameModel->AddNotification(new UpdateNotification(this, "새 모드 업데이트를 사용할 수 있습니다. 이 곳을 클릭하여 업데이트하세요."));
+			gameModel->AddNotification(new UpdateNotification(this, "새 모드 업데이트를 사용할 수 있습니다. 여기를 클릭하여 업데이트하세요."));
 #else
-			gameModel->AddNotification(new UpdateNotification(this, "새 스냅샷을 사용할 수 있습니다. 이 곳을 클릭하여 업데이트하세요."));
+			gameModel->AddNotification(new UpdateNotification(this, "새 스냅숏을 사용할 수 있습니다. 여기를 클릭하여 업데이트하세요."));
 #endif
 			break;
 		case UpdateInfo::Stable:
-			gameModel->AddNotification(new UpdateNotification(this, "새 버전을 사용할 수 있습니다. 이 곳을 클릭하여 업데이트하세요."));
+			gameModel->AddNotification(new UpdateNotification(this, "새 버전을 사용할 수 있습니다. 여기를 클릭하여 업데이트하세요."));
 			break;
 		case UpdateInfo::Beta:
-			gameModel->AddNotification(new UpdateNotification(this, "새 베타를 사용할 수 있습니다. 이 곳을 클릭하여 업데이트하세요."));
+			gameModel->AddNotification(new UpdateNotification(this, "새 베타를 사용할 수 있습니다. 여기를 클릭하여 업데이트하세요."));
 			break;
 	}
 }

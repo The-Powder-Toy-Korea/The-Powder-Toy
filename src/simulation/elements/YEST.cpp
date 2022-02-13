@@ -29,7 +29,7 @@ void Element::Element_YEST()
 	Weight = 80;
 
 	HeatConduct = 70;
-	Description = "이스트: 따뜻한 곳에서 성장합니다(~ 37 C).";
+	Description = "이스트: 따뜻한 곳에서 성장합니다(~ 37 \xe2\x84\x83).";
 
 	Properties = TYPE_PART;
 

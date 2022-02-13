@@ -40,7 +40,7 @@ void Element::Element_FIGH()
 
 	DefaultProperties.temp = R_TEMP + 14.6f + 273.15f;
 	HeatConduct = 0;
-	Description = "싸움꾼: STKM을 공격하며, 공격할 무기로 사용될 물질을 선택해 줄 수 있습니다.";
+	Description = "싸움꾼: STKM을 공격하며, 공격할 무기로 사용될 물질을 선택할 수 있습니다.";
 
 	Properties = PROP_NOCTYPEDRAW;
 

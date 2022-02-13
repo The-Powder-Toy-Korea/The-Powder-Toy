@@ -1,2 +1,1 @@
-Fix critical mistake about translating the name of contributors.
-Improved translation and strings.
+Improved translations.

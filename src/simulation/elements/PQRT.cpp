@@ -31,7 +31,7 @@ void Element::Element_PQRT()
 	Weight = 90;
 
 	HeatConduct = 3;
-	Description = "석영 가루: QRTZ가 부서지면 생성됩니다.";
+	Description = "석영 가루: 석영이 부서지면 생성됩니다.";
 
 	Properties = TYPE_PART| PROP_HOT_GLOW;
 
