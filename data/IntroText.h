@@ -33,7 +33,7 @@ const char *const introTextData =
 	"\br이 버전은 베타 버전이며, 시뮬레이션을 업로드할 수 없습니다. 시뮬레이션을 업로드하려면 정식 버전을 사용하세요.\n"
 #endif
 	"\n"
-	"\bt" MTOS(SAVE_VERSION) "." MTOS(MINOR_VERSION) "." MTOS(BUILD_NUM) " " IDENT_PLATFORM
+	"\bt" MTOS(SAVE_VERSION) "." MTOS(MINOR_VERSION) "." MTOS(BUILD_NUM) " " IDENT
 #ifdef SNAPSHOT
 	" SNAPSHOT " MTOS(SNAPSHOT_ID)
 #elif MOD_ID > 0

@@ -1,5 +1,6 @@
 project('the-powder-toy', [ 'c', 'cpp' ], version: 'the.cake.is.a.lie', default_options: [
 	'cpp_std=c++17',
+	'build.cpp_std=c++17', # used when cross-compiling
 ])
 
 to_array = generator(
@@ -31,6 +32,8 @@ if host_machine.cpu_family() in [ 'x86_64' ]
 	copt_architecture = 'x86_64'
 elif host_machine.cpu_family() in [ 'x86' ]
 	copt_architecture = 'i686'
+elif host_machine.cpu_family() in [ 'aarch64' ]
+	copt_architecture = 'arm64'
 else
 	warning('unsupported architecture: ' + host_machine.cpu_family() + '; you are on your own')
 	copt_architecture = 'i686'
@@ -53,7 +56,7 @@ endif
 
 uopt_static = get_option('static')
 use_tpt_libs = 'no'
-tpt_libs_vtag = 'v20211224205921'
+tpt_libs_vtag = 'v20220217170412'
 if uopt_static == 'system'
 	if copt_platform == 'win'
 		error('no way to find static system libraries on windows')
@@ -71,6 +74,9 @@ if use_tpt_libs != 'no'
 		nope = true
 	endif
 	if copt_architecture == 'x86_64' and (copt_platform == 'lin' or copt_platform == 'mac') and copt_compiler != 'gcc'
+		nope = true
+	endif
+	if copt_architecture == 'arm64' and copt_platform != 'mac'
 		nope = true
 	endif
 	quad_compiler = copt_compiler
@@ -221,8 +227,14 @@ else
 		args_ccomp += [ '-mmacosx-version-min=10.9' ]
 		project_link_args += [ '-mmacosx-version-min=10.9' ]
 	endif
-	if copt_platform == 'lin' and not get_option('b_pie') and get_option('workaround_gcc_no_pie') # nice one, meson
-		project_link_args += [ '-no-pie' ]
+	if not get_option('b_pie') and get_option('workaround_gcc_no_pie') # nice one, meson
+		if copt_architecture != 'arm64' # no position independent executable for arm64
+			if cpp_compiler.get_id() in [ 'clang' ]
+				project_link_args += [ '-Wl,-no_pie' ]
+			else
+				project_link_args += [ '-no-pie' ]
+			endif
+		endif
 	endif
 	project_c_args += args_ccomp
 	project_cpp_args += args_ccomp + [ '-Wno-invalid-offsetof' ]
@@ -250,7 +262,7 @@ elif copt_platform == 'lin'
 	endif
 endif
 
-if copt_platform == 'mac' and uopt_lua == 'luajit'
+if copt_platform == 'mac' and uopt_lua == 'luajit' and copt_architecture != 'arm64'
 	project_link_args += [
 		'-pagezero_size', '10000',
 		'-image_base', '100000000',
@@ -258,6 +270,16 @@ if copt_platform == 'mac' and uopt_lua == 'luajit'
 endif
 
 project_inc = include_directories([ 'src', 'data', 'resources' ])
+
+if copt_platform == 'win'
+	copt_identplatform = copt_64bit ? 'WIN64' : 'WIN32'
+elif copt_platform == 'lin'
+	copt_identplatform = copt_64bit ? 'LIN64' : 'LIN32'
+elif copt_platform == 'mac'
+	copt_identplatform = copt_architecture == 'arm64' ? 'MACOSARM' : 'MACOSX'
+else
+	copt_identplatform = 'UNKNOWN'
+endif
 
 conf_data.set('LIN', copt_platform == 'lin')
 conf_data.set('WIN', copt_platform == 'win')
@@ -280,6 +302,9 @@ conf_data.set('SNAPSHOT', get_option('snapshot'))
 conf_data.set('SNAPSHOT_ID', get_option('snapshot_id'))
 conf_data.set('SERVER', '"' + get_option('server') + '"')
 conf_data.set('STATICSERVER', '"' + get_option('static_server') + '"')
+conf_data.set('IDENT_PLATFORM', '"' + copt_identplatform + '"')
+conf_data.set('IDENT', '"@0@-@1@-@2@"'.format(copt_architecture, copt_platform, copt_compiler).to_upper())
+
 if get_option('update_server') != ''
 	conf_data.set('UPDATESERVER', '"' + get_option('update_server') + '"')
 else
@@ -310,7 +335,7 @@ if get_option('build_powder')
 		include_directories: [ project_inc, powder_inc ],
 		c_args: project_c_args,
 		cpp_args: project_cpp_args,
-		gui_app: true,
+		gui_app: not get_option('debug'),
 		link_args: project_link_args,
 		dependencies: powder_deps,
 	)
@@ -347,7 +372,6 @@ if get_option('build_font')
 		include_directories: [ project_inc, font_inc ],
 		c_args: project_c_args,
 		cpp_args: project_cpp_args,
-		gui_app: true,
 		link_args: project_link_args,
 		dependencies: font_deps,
 	)

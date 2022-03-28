@@ -2487,6 +2487,8 @@ void Simulation::init_can_move()
 	can_move[PT_THDR][PT_THDR] = 2;
 	can_move[PT_EMBR][PT_EMBR] = 2;
 	can_move[PT_TRON][PT_SWCH] = 3;
+	can_move[PT_SOAP][PT_OIL] = 0;
+	can_move[PT_OIL][PT_SOAP] = 1;
 }
 
 /*
@@ -2812,6 +2814,14 @@ int Simulation::try_move(int i, int x, int y, int nx, int ny)
 			return 0;
 		}
 		break;
+	// SOAP slowly floats up inside OIL
+	case PT_SOAP:
+		if (parts[i].type == PT_OIL)
+		{
+			if (RNG::Ref().chance(19, 20) || std::abs(parts[i].x - nx) > 3 || std::abs(parts[i].y - ny) > 3)
+				return 0;
+		}
+		break;
 	}
 
 	switch (parts[i].type)
@@ -2863,9 +2873,14 @@ int Simulation::try_move(int i, int x, int y, int nx, int ny)
 
 		if (ID(pmap[ny][nx]) == ri)
 			pmap[ny][nx] = 0;
-		parts[ri].x += float(x-nx);
-		parts[ri].y += float(y-ny);
-		pmap[(int)(parts[ri].y+0.5f)][(int)(parts[ri].x+0.5f)] = PMAP(ri, parts[ri].type);
+		parts[ri].x += float(x - nx);
+		parts[ri].y += float(y - ny);
+		int rx = int(parts[ri].x + 0.5f);
+		int ry = int(parts[ri].y + 0.5f);
+		// This check will never fail unless the pmap array has already been corrupted via another bug
+		// In that case, r's position is inaccurate (not actually at nx/ny) and rx/ry may be out of bounds
+		if (InBounds(rx, ry))
+			pmap[ry][rx] = PMAP(ri, parts[ri].type);
 	}
 	return 1;
 }
@@ -4077,40 +4092,13 @@ void Simulation::UpdateParticles(int start, int end)
 			}
 
 			//call the particle update function, if there is one
-#if !defined(RENDERER) && defined(LUACONSOLE)
-			if (lua_el_mode[parts[i].type] == 3)
-			{
-				if (luacon_elementReplacement(this, i, x, y, surround_space, nt, parts, pmap) || t != parts[i].type)
-					continue;
-				// Need to update variables, in case they've been changed by Lua
-				x = (int)(parts[i].x+0.5f);
-				y = (int)(parts[i].y+0.5f);
-			}
-
-			if (elements[t].Update && lua_el_mode[t] != 2)
-#else
 			if (elements[t].Update)
-#endif
 			{
 				if ((*(elements[t].Update))(this, i, x, y, surround_space, nt, parts, pmap))
 					continue;
-				else if (t==PT_WARP)
-				{
-					// Warp does some movement in its update func, update variables to avoid incorrect data in pmap
-					x = (int)(parts[i].x+0.5f);
-					y = (int)(parts[i].y+0.5f);
-				}
-			}
-#if !defined(RENDERER) && defined(LUACONSOLE)
-			if (lua_el_mode[parts[i].type] && lua_el_mode[parts[i].type] != 3)
-			{
-				if (luacon_elementReplacement(this, i, x, y, surround_space, nt, parts, pmap) || t != parts[i].type)
-					continue;
-				// Need to update variables, in case they've been changed by Lua
 				x = (int)(parts[i].x+0.5f);
 				y = (int)(parts[i].y+0.5f);
 			}
-#endif
 
 			if(legacy_enable)//if heat sim is off
 				Element::legacyUpdate(this, i,x,y,surround_space,nt, parts, pmap);
