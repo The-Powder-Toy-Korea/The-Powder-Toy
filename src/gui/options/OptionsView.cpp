@@ -196,7 +196,7 @@ OptionsView::OptionsView():
 	resizable = new ui::Checkbox(ui::Point(8, currentY), ui::Point(1, 16), "창 크기 조절", "");
 	autowidth(resizable);
 	resizable->SetActionCallback({ [this] { c->SetResizable(resizable->GetChecked()); } });
-	tempLabel = new ui::Label(ui::Point(resizable->Position.X+Graphics::textwidth(resizable->GetText())+20, currentY), ui::Point(1, 16), "\bg- 창 크기를 조절하거나 최대화할 수 있도록\n허용합니다.");
+	tempLabel = new ui::Label(ui::Point(resizable->Position.X+Graphics::textwidth(resizable->GetText())+20, currentY), ui::Point(1, 16), "\bg- 창 크기를 조절할 수 있도록 허용합니다.");
 	autowidth(tempLabel);
 	tempLabel->Appearance.HorizontalAlign = ui::Appearance::AlignLeft;
 	tempLabel->Appearance.VerticalAlign = ui::Appearance::AlignMiddle;
@@ -251,7 +251,7 @@ OptionsView::OptionsView():
 	showAvatars = new ui::Checkbox(ui::Point(8, currentY), ui::Point(1, 16), "프로필 사진 표시", "");
 	autowidth(showAvatars);
 	showAvatars->SetActionCallback({ [this] { c->SetShowAvatars(showAvatars->GetChecked()); } });
-	tempLabel = new ui::Label(ui::Point(showAvatars->Position.X+Graphics::textwidth(showAvatars->GetText())+20, currentY), ui::Point(1, 16), "\bg- 세이브 댓글에서 프로필 사진을 표시합니다.");
+	tempLabel = new ui::Label(ui::Point(showAvatars->Position.X+Graphics::textwidth(showAvatars->GetText())+20, currentY), ui::Point(1, 16), "\bg- 댓글에서 프로필 사진을 표시합니다.");
 	autowidth(tempLabel);
 	tempLabel->Appearance.HorizontalAlign = ui::Appearance::AlignLeft;
 	tempLabel->Appearance.VerticalAlign = ui::Appearance::AlignMiddle;

@@ -91,7 +91,7 @@ RenderView::RenderView():
 #endif
 	addDisplayModeCheckbox(DISPLAY_EFFE, IconEffect    , ui::Point(205,  4), TOOLTIP);
 #undef TOOLTIP
-	addDisplayModeCheckbox(DISPLAY_PERS, IconPersistant, ui::Point(237,  4), "물질이 지나간 곳에 잠시동안 경로를 표시합니다.");
+	addDisplayModeCheckbox(DISPLAY_PERS, IconPersistant, ui::Point(237,  4), "물질이 지나간 곳에 잠시 동안 경로를 표시합니다.");
 	line3 = 270;
 
 	auto addColourModeCheckbox = [this](unsigned int mode, Icon icon, ui::Point offset, String tooltip) {
