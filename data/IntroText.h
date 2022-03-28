@@ -2,7 +2,7 @@
 #include "Config.h"
 
 const char *const introTextData =
-	"\blThe Powder Toy " MTOS(SAVE_VERSION) "." MTOS(MINOR_VERSION) " ko-KR_" MTOS(MOD_MAJOR_VERSION) "." MTOS(MOD_MINOR_VERSION) ".2 한국어 - https://powdertoy.co.uk, irc.libera.chat #powder\n"
+	"\blThe Powder Toy " MTOS(SAVE_VERSION) "." MTOS(MINOR_VERSION) " ko-KR_" MTOS(MOD_MAJOR_VERSION) "." MTOS(MOD_MINOR_VERSION) " 한국어 - https://powdertoy.co.uk, irc.libera.chat #powder\n"
 	"\xEE\x81\xA9\xEE\x81\xA9\xEE\x81\xA9\xEE\x81\xA9\xEE\x81\xA9\xEE\x81\xA9\xEE\x81\xA9\xEE\x81\xA9\xEE\x81\xA9\xEE\x81\xA9\xEE\x81\xA9\xEE\x81\xA9\xEE\x81\xA9\xEE\x81\xA9\xEE\x81\xA9\xEE\x81\xA9\xEE\x81\xA9\xEE\x81\xA9\xEE\x81\xA9\n"
 	"\n"
 	"\bg[Ctrl] + [C]/[V]/[X]는 각각 복사, 붙여넣기, 잘라내기입니다.\n"

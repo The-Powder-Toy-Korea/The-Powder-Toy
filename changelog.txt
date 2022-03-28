@@ -1,1 +1,2 @@
-Improved translations.
+- Update TPT code.
+- Typo correction.
