@@ -9,64 +9,72 @@ to_array = generator(
 	arguments: [ '@OUTPUT0@', '@OUTPUT1@', '@INPUT@', '@EXTRA_ARGS@' ]
 )
 
-cpp_compiler = meson.get_compiler('cpp')
-
-conf_data = configuration_data()
-conf_data.set('CURL_STATICLIB', false)
-conf_data.set('ZLIB_WINAPI', false)
-
-copt_x86 = host_machine.cpu_family() in [ 'x86_64', 'x86' ]
-copt_64bit = host_machine.cpu_family() in [ 'x86_64', 'aarch64' ]
-copt_msvc = cpp_compiler.get_id() in [ 'msvc' ]
-
-if cpp_compiler.get_id() in [ 'msvc' ]
+c_compiler = meson.get_compiler('c')
+copt_x86 = false
+copt_64bit = false
+copt_msvc = false
+if c_compiler.get_id() in [ 'msvc' ]
 	copt_compiler = 'msvc'
-elif cpp_compiler.get_id() in [ 'gcc', 'clang' ]
+	copt_msvc = true
+elif c_compiler.get_id() in [ 'gcc', 'clang' ]
 	copt_compiler = 'gcc'
 else
-	warning('unsupported compiler: ' + cpp_compiler.get_id() + '; you are on your own')
+	warning('unsupported compiler: ' + c_compiler.get_id() + '; you are on your own')
 	copt_compiler = 'gcc'
 endif
-
 if host_machine.cpu_family() in [ 'x86_64' ]
 	copt_architecture = 'x86_64'
+	copt_x86 = true
+	copt_64bit = true
 elif host_machine.cpu_family() in [ 'x86' ]
 	copt_architecture = 'i686'
+	copt_x86 = true
 elif host_machine.cpu_family() in [ 'aarch64' ]
 	copt_architecture = 'arm64'
+	copt_64bit = true
+elif host_machine.cpu_family() in [ 'arm' ]
+	copt_architecture = 'arm'
 else
 	warning('unsupported architecture: ' + host_machine.cpu_family() + '; you are on your own')
 	copt_architecture = 'i686'
 endif
-
 if host_machine.system() in [ 'linux', 'freebsd' ]
 	copt_platform = 'lin'
 elif host_machine.system() in [ 'windows' ]
 	copt_platform = 'win'
 elif host_machine.system() in [ 'darwin' ]
 	copt_platform = 'mac'
+elif host_machine.system() in [ 'android' ]
+	copt_platform = 'and'
 else
 	warning('unsupported platform: ' + host_machine.system() + '; you are on your own')
 	copt_platform = 'lin'
 endif
-
-if get_option('ogli') or get_option('oglr')
-	error('OpenGL features are currently unavailable')
-endif
-
 uopt_static = get_option('static')
 use_tpt_libs = 'no'
-tpt_libs_vtag = 'v20220217170412'
 if uopt_static == 'system'
 	if copt_platform == 'win'
 		error('no way to find static system libraries on windows')
 	endif
 elif uopt_static == 'prebuilt'
 	use_tpt_libs = 'static'
-else
-	if copt_platform == 'win'
-		use_tpt_libs = 'dynamic'
-	endif
+elif copt_platform == 'win'
+	use_tpt_libs = 'dynamic'
+elif copt_platform == 'and'
+	use_tpt_libs = 'static'
+endif
+
+conf_data = configuration_data()
+conf_data.set('CURL_STATICLIB', false)
+conf_data.set('ZLIB_WINAPI', false)
+
+if get_option('ogli') or get_option('oglr')
+	error('OpenGL features are currently unavailable')
+endif
+
+tpt_libs_vtag = get_option('tpt_libs_vtag')
+if tpt_libs_vtag == ''
+	tpt_libs_vtag = 'v20220414193335'
 endif
 if use_tpt_libs != 'no'
 	nope = false
@@ -78,6 +86,9 @@ if use_tpt_libs != 'no'
 	endif
 	if copt_architecture == 'arm64' and copt_platform != 'mac'
 		nope = true
+	endif
+	if copt_platform == 'and'
+		nope = false
 	endif
 	quad_compiler = copt_compiler
 	if copt_platform == 'win' and copt_compiler == 'gcc'
@@ -110,18 +121,22 @@ if not copt_x86 or uopt_native
 endif
 
 uopt_lua = get_option('lua')
+if copt_platform == 'and' and uopt_lua == 'luajit'
+	message('LuaJIT is not supported on Android')
+	uopt_lua = 'lua5.2'
+endif
 if uopt_lua == 'luajit'
 	lua_opt_dep = [ use_tpt_libs != 'no' ? tpt_libs.get_variable('luajit_dep') : dependency('luajit', static: uopt_static == 'system') ]
 elif uopt_lua == 'lua5.2'
-	lua_opt_dep = [ use_tpt_libs != 'no' ? tpt_libs.get_variable('lua52_dep') : dependency('lua5.2-c++', static: uopt_static == 'system') ]
+	lua_opt_dep = [ use_tpt_libs != 'no' ? tpt_libs.get_variable('lua52_dep') : dependency('lua5.2', static: uopt_static == 'system') ]
 elif uopt_lua == 'lua5.1'
-	lua_opt_dep = [ use_tpt_libs != 'no' ? tpt_libs.get_variable('lua51_dep') : dependency('lua5.1-c++', static: uopt_static == 'system') ]
+	lua_opt_dep = [ use_tpt_libs != 'no' ? tpt_libs.get_variable('lua51_dep') : dependency('lua5.1', static: uopt_static == 'system') ]
 else
 	lua_opt_dep = []
 endif
 
 uopt_http = get_option('http')
-if uopt_http
+if uopt_http and copt_platform != 'and'
 	curl_opt_dep = [ use_tpt_libs != 'no' ? tpt_libs.get_variable('libcurl_dep') : dependency('libcurl', static: uopt_static == 'system') ]
 else
 	curl_opt_dep = []
@@ -137,6 +152,7 @@ endif
 threads_dep = dependency('threads')
 zlib_dep = use_tpt_libs != 'no' ? tpt_libs.get_variable('zlib_dep') : dependency('zlib', static: uopt_static == 'system')
 sdl2_dep = use_tpt_libs != 'no' ? tpt_libs.get_variable('sdl2_dep') : dependency('sdl2', static: uopt_static == 'system')
+sdl2main_dep = use_tpt_libs != 'no' ? tpt_libs.get_variable('sdl2main_dep') : []
 
 project_link_args = []
 project_c_args = []
@@ -211,7 +227,7 @@ else
 			'-DUNICODE',
 			'-D_UNICODE',
 		]
-		if uopt_static != 'none'
+		if uopt_static != 'none' and copt_platform != 'and'
 			project_link_args += [ '-static', '-static-libgcc', '-static-libstdc++' ]
 		endif
 	endif
@@ -227,12 +243,19 @@ else
 		args_ccomp += [ '-mmacosx-version-min=10.9' ]
 		project_link_args += [ '-mmacosx-version-min=10.9' ]
 	endif
-	if not get_option('b_pie') and get_option('workaround_gcc_no_pie') # nice one, meson
-		if copt_architecture != 'arm64' # no position independent executable for arm64
-			if cpp_compiler.get_id() in [ 'clang' ]
-				project_link_args += [ '-Wl,-no_pie' ]
-			else
-				project_link_args += [ '-no-pie' ]
+	if copt_platform == 'and'
+		if not copt_64bit
+			args_ccomp += [ '-U_FILE_OFFSET_BITS' ]
+		endif
+		project_link_args += [ '-static-libstdc++' ]
+	else
+		if not get_option('b_pie') and get_option('workaround_gcc_no_pie') # nice one, meson
+			if copt_architecture != 'arm64' # no position independent executable for arm64
+				if c_compiler.get_id() in [ 'clang' ]
+					project_link_args += [ '-Wl,-no_pie' ]
+				else
+					project_link_args += [ '-no-pie' ]
+				endif
 			endif
 		endif
 	endif
@@ -282,6 +305,7 @@ else
 endif
 
 conf_data.set('LIN', copt_platform == 'lin')
+conf_data.set('AND', copt_platform == 'and')
 conf_data.set('WIN', copt_platform == 'win')
 conf_data.set('MACOSX', copt_platform == 'mac')
 conf_data.set('X86', copt_x86)
@@ -322,6 +346,7 @@ if get_option('build_powder')
 		threads_dep,
 		zlib_dep,
 		sdl2_dep,
+		sdl2main_dep,
 		lua_opt_dep,
 		curl_opt_dep,
 		fftw_opt_dep,
@@ -329,16 +354,120 @@ if get_option('build_powder')
 	if copt_platform == 'win'
 		powder_deps += other_dep
 	endif
-	executable(
-		'powder',
-		sources: powder_files,
-		include_directories: [ project_inc, powder_inc ],
-		c_args: project_c_args,
-		cpp_args: project_cpp_args,
-		gui_app: not get_option('debug'),
-		link_args: project_link_args,
-		dependencies: powder_deps,
-	)
+	if copt_platform == 'and'
+		subdir('android')
+		powder_sha = shared_library(
+			'powder',
+			sources: powder_files,
+			include_directories: [ project_inc, powder_inc ],
+			c_args: project_c_args,
+			cpp_args: project_cpp_args,
+			link_args: project_link_args,
+			dependencies: powder_deps,
+		)
+		python3 = find_program('python3')
+		android_platform_jar = meson.get_external_property('android_platform_jar')
+		java_runtime_jar = meson.get_external_property('java_runtime_jar')
+		android_keystore = get_option('android_keystore')
+		sdl_jar = tpt_libs.get_variable('sdl_jar')
+		powder_jar = custom_target(
+			'powder-jar',
+			output: 'powder.jar',
+			command: [
+				python3,
+				files('android/powder-jar.py'),
+				find_program('javac'),
+				find_program('jar'),
+				meson.current_source_dir(),
+				meson.current_build_dir(),
+				'@PRIVATE_DIR@',
+				'@OUTPUT@',
+				android_platform_jar,
+				java_runtime_jar,
+				sdl_jar,
+				get_option('debug') ? 'debug' : 'release',
+				powder_jar_sources,
+			],
+		)
+		unaligned_apk = custom_target(
+			'build-apk',
+			output: 'powder.unaligned.apk',
+			input: powder_sha,
+			command: [
+				python3,
+				files('android/build-apk.py'),
+				find_program('d8'),
+				find_program('aapt'),
+				find_program('aapt2'),
+				meson.current_source_dir(),
+				meson.current_build_dir(),
+				'@PRIVATE_DIR@',
+				'@OUTPUT@',
+				'@INPUT@',
+				android_platform_jar,
+				sdl_jar,
+				powder_jar,
+				copt_architecture,
+				get_option('debug') ? 'debug' : 'release',
+				android_manifest_xml,
+				android_resources,
+			],
+		)
+		unsigned_apk = custom_target(
+			'align-apk',
+			output: 'powder.unsigned.apk',
+			input: unaligned_apk,
+			command: [
+				python3,
+				files('android/align-apk.py'),
+				find_program('zipalign'),
+				meson.current_build_dir(),
+				'@OUTPUT@',
+				'@INPUT@',
+			],
+		)
+		signed_apk = custom_target(
+			'sign-apk',
+			output: 'powder.apk',
+			input: unsigned_apk,
+			command: [
+				python3,
+				files('android/sign-apk.py'),
+				find_program('apksigner'),
+				meson.current_build_dir(),
+				'@OUTPUT@',
+				'@INPUT@',
+				android_keystore,
+				get_option('android_keyalias'),
+			],
+		)
+		adb = find_program('adb', required: false)
+		if adb.found()
+			install_apk = custom_target(
+				'install-apk',
+				input: signed_apk,
+				output: 'install-apk',
+				command: [ python3, files('android/install-apk.py'), adb, meson.current_build_dir(), '@OUTPUT@', '@INPUT@' ],
+			)
+			custom_target(
+				'run-apk',
+				input: [ signed_apk, install_apk ],
+				output: 'run-apk',
+				command: [ python3, files('android/run-apk.py'), adb, meson.current_build_dir(), '@OUTPUT@', '@INPUT0@' ],
+			)
+		endif
+	else
+		executable(
+			'powder',
+			sources: powder_files,
+			include_directories: [ project_inc, powder_inc ],
+			c_args: project_c_args,
+			cpp_args: project_cpp_args,
+			gui_app: not get_option('debug'),
+			link_args: project_link_args,
+			dependencies: powder_deps,
+		)
+	endif
 endif
 
 if get_option('build_render')
@@ -362,6 +491,7 @@ if get_option('build_font')
 		threads_dep,
 		zlib_dep,
 		sdl2_dep,
+		sdl2main_dep,
 	]
 	if copt_platform == 'win'
 		font_deps += other_dep
