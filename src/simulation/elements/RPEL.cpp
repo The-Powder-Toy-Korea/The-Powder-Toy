@@ -30,7 +30,7 @@ void Element::Element_RPEL()
 
 	DefaultProperties.temp = 20.0f + 273.15f;
 	HeatConduct = 0;
-	Description = "리펠러: 온도에 따라 입자를 끌어당기거나 밀어냅니다.";
+	Description = "리펠러: 온도에 따라 입자를 밀어내거나 끌어당깁니다.";
 
 	Properties = TYPE_SOLID;
 

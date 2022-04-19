@@ -38,7 +38,7 @@ void Element::Element_PIPE()
 
 	DefaultProperties.temp = 273.15f;
 	HeatConduct = 0;
-	Description = "파이프: 물질을 이동시킵니다. BRCK에 생성되면 출구를 뚫어 사용할 수 있습니다.";
+	Description = "파이프: 물질을 이동시킵니다. BRCK이 생성되면 출구를 뚫어 사용할 수 있습니다.";
 
 	Properties = TYPE_SOLID|PROP_LIFE_DEC;
 

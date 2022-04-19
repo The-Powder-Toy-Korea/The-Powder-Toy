@@ -29,7 +29,7 @@ void Element::Element_BREC()
 	Weight = 90;
 
 	HeatConduct = 211;
-	Description = "알루미늄: 전자기 충격파에 의해 생성됩니다. 압력이 가해졌을 때 전류가 흐르면 EXOT가 됩니다.";
+	Description = "알루미늄: 전자기 펄스에 의해 생성됩니다. 압력이 가해졌을 때 전류가 흐르면 EXOT가 됩니다.";
 
 	Properties = TYPE_PART|PROP_CONDUCTS|PROP_LIFE_DEC|PROP_HOT_GLOW;
 

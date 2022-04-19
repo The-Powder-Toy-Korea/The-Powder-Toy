@@ -57,7 +57,7 @@
 #endif
 
 #define MOD_MAJOR_VERSION 1
-#define MOD_MINOR_VERSION 8
+#define MOD_MINOR_VERSION 9
 //VersionInfoEnd
 
 #if !(defined(MACOSX) && defined(DEBUG))

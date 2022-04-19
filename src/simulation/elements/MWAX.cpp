@@ -28,7 +28,7 @@ void Element::Element_MWAX()
 
 	DefaultProperties.temp = R_TEMP + 28.0f + 273.15f;
 	HeatConduct = 44;
-	Description = "융해된 왁스: 45 \xe2\x84\x83 이상에서 WAX로 응고합니다.";
+	Description = "융해된 왁스: 45 \xe2\x84\x83 이하에서 WAX로 응고합니다.";
 
 	Properties = TYPE_LIQUID;
 
