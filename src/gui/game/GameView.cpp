@@ -2170,11 +2170,11 @@ void GameView::OnDraw()
 				{
 					if (ctype == PT_LAVA && c->IsValidElement(sample.particle.tmp4))
 					{
-						sampleInfo << "융해된 " << c->ElementResolve(type, 0) << "이(가) 들어있는 " << c->ElementResolve(sample.particle.tmp4, -1);
+						sampleInfo << "융해된 " << c->ElementResolve(sample.particle.tmp4, -1) << "이(가) 들어 있는 " << c->ElementResolve(type, 0);
 					}
 					else
 					{
-						sampleInfo << c->ElementResolve(type, 0) << "이(가) 들어있는 " << c->ElementResolve(ctype, sample.particle.tmp4);
+						sampleInfo << c->ElementResolve(ctype, sample.particle.tmp4) << "이(가) 들어 있는 " << c->ElementResolve(type, 0);
 					}
 				}
 				else if (type == PT_LIFE)
