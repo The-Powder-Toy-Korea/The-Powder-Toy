@@ -1,6 +1,6 @@
 --TPT Integrated Script Manager Korea
 --The autorun to end all autoruns
---Version 3.11
+--Version 3.12
 
 --TODO:
 --manual file addition (that can be anywhere and any extension)
@@ -8,6 +8,7 @@
 --prettier, organize code
 
 --CHANGES:
+--Version 3.12: Use https for all requests, online view loads async, add FILTER button to online, fix rare failure on startup if downloaded scripts list is corrupted
 --Version 3.11: Fix icons in 94.0, fix "view script in browser"
 --Version 3.10: Fix HTTP requests, without this update the online section may break
 --Version 3.9: Minor icon fix for latest version of jacob1's mod
@@ -35,6 +36,7 @@
 local icons = {
 	["manager"] = "\xEE\x81\xAA",
 	["cancel"] = "\xEE\x9C\x91",
+	["filter"] = "\xEE\x9C\x9C",
 	["search"] = "\xEE\x9C\xA1",
 	["back"] = "\xEE\x9C\xAB",
 	["refresh"] = "\xEE\x9C\xAC",
@@ -57,8 +59,8 @@ local icons = {
 if not socket then error("TPT version not supported") end
 if MANAGER then error("manager is already running") end
 
-local scriptversion = 13
-MANAGER = {["version"] = "3.11", ["scriptversion"] = scriptversion, ["hidden"] = true}
+local scriptversion = 14
+MANAGER = {["version"] = "3.12", ["scriptversion"] = scriptversion, ["hidden"] = true}
 
 local type = type -- people like to overwrite this function with a global a lot
 local TPT_LUA_PATH = 'scripts'
@@ -99,11 +101,15 @@ local running = {}
 local requiresrestart=false
 local online = false
 local first_online = true
+local online_req = nil
+local script_manager_update_req = nil
 local updatetable --temporarily holds info on script manager updates
 local gen_buttons
+local check_req_status
 local sidebutton
 local download_file
 local settings = {}
+local search_terms = {}
 math.randomseed(os.time()) math.random() math.random() math.random() --some filler randoms
 
 --get line that can be saved into scriptinfo file
@@ -128,7 +134,11 @@ local function readScriptInfo(list)
 		for k,v in i:gmatch("(%w+):\"([^\"]*)\"") do
 			t[k]= tonumber(v) or v:gsub("\r",""):gsub("\\n","\n")
 		end
-		scriptlist[t.ID] = t
+		if not t.ID then
+			print("Skipping invalid script in script list")
+		else
+			scriptlist[t.ID] = t
+		end
 	end
 	return scriptlist
 end
@@ -374,14 +384,14 @@ new = function(x,y,h,t,m)
 	bar.total=t
 	bar.numshown=m
 	bar.pos=0
-	bar.length=math.floor((1/math.ceil(bar.total-bar.numshown+1))*bar.h)
+	bar.length=math.floor(bar.numshown / bar.total * bar.h)
 	bar.soffset=math.floor(bar.pos*((bar.h-bar.length)/(bar.total-bar.numshown)))
 	function bar:update(total,shown,pos)
 		self.pos=pos or 0
 		if self.pos<0 then self.pos=0 end
 		self.total=total
 		self.numshown=shown
-		self.length= math.floor((1/math.ceil(self.total-self.numshown+1))*self.h)
+		self.length= math.floor(bar.numshown / bar.total * bar.h)
 		self.soffset= math.floor(self.pos*((self.h-self.length)/(self.total-self.numshown)))
 	end
 	function bar:move(wheel)
@@ -743,6 +753,7 @@ new = function(x,y,w,h)
 	function w:add(m,name)
 		if name then w[name]=m end
 		table.insert(self.sub,m)
+		return m
 	end
 	w:drawadd(function(self)
 		for i,sub in ipairs(self.sub) do
@@ -784,7 +795,7 @@ function MANAGER.download(url)
 	return download_file(url)
 end
 function MANAGER.scriptinfo(id)
-	local url = "http://starcatcher.us/scripts/main.lua"
+	local url = "https://starcatcher.us/scripts/main.lua"
 	if id then
 		url = url.."?info="..id
 	end
@@ -823,45 +834,33 @@ end
 --mniip's download thing (mostly)
 local pattern = "http://w*%.?(.-)(/.*)"
 function download_file(url)
-	local _,_,host,rest = url:find(pattern)
-	if not host or not rest then MANAGER.print("Bad link") return end
-	local conn=socket.tcp()
-	if not conn then return end
-	local succ=pcall(conn.connect,conn,host,80)
-	conn:settimeout(5)
-	if not succ then return end
-	local userAgent = "PowderToy/"..tpt.version.major.."."..tpt.version.minor.."."..tpt.version.build.." ("..((OS == "WIN32" or OS == "WIN64") and "WIN; " or (os == "MACOSX" and "OSX; " or "LIN; "))..(false and "M1" or "M0")..") SCRIPT/"..MANAGER.version
-	succ,resp,something=pcall(conn.send,conn,"GET "..rest.." HTTP/1.1\r\nHost: "..host.."\r\nConnection: close\r\nUser-Agent: "..userAgent.."\r\n\r\n")
-	if not succ then return end
-	local data=""
-	local c=""
-	while c do
-		c=conn:receive("*l")
-		if c then
-			data=data.."\n"..c
-		end
+	if not http then
+		MANAGER.print("TPT 95.0 or greater required to use http api", 255, 0, 0)
+		return false
 	end
-	if data=="" then MANAGER.print("no data") return end
-	local first,last,code = data:find("HTTP/1%.1 (.-) .-\n")
-	while last do
-		data = data:sub(last+1)
-		first,last,header = data:find("^([^\n]-:.-)\n")
-		--read something from headers?
-		if header then
-			if tonumber(code)==302 then
-				local _,_,new = header:find("^Location: (.*)")
-				if new then return download_file(new) end
+	local req = http.get(url)
+	local timeout_after = socket.gettime() + 3
+	while true do
+		local status = req:status()
+		if status ~= "running" then
+			local body, status_code = req:finish()
+			if status_code and status_code ~= 200 then
+				MANAGER.print("http download failed with status code " .. status_code, 255, 0, 0)
+				return nil
 			end
+			return body
+		end
+
+		if socket.gettime() > timeout_after then
+			MANAGER.print("http download timed out ", 255, 0, 0)
+			req:cancel()
+			return
 		end
 	end
-	if host:find("pastebin.com") then --pastebin adds some weird numbers
-		_,_,data=data:find("\n[^\n]*\n(.*)\n.+\n$")
-	end
-	return data
 end
 --Downloads to a location
 local function download_script(ID,location)
-	local file = download_file("http://starcatcher.us/scripts/main.lua?get="..ID)
+	local file = download_file("https://starcatcher.us/scripts/main.lua?get="..ID)
 	if file then
 		f=io.open(location,"w")
 		f:write(file)
@@ -906,6 +905,11 @@ local function step()
 	end
 	tpt.drawtext(302,75,"콘솔 출력:")
 	tooltip:draw()
+
+	if online_req and online then
+		local textwidth = tpt.textwidth("불러오는 중...")
+		tpt.drawtext(mainwindow.checkbox.x + (mainwindow.checkbox.w - textwidth) / 2, mainwindow.checkbox.y + (mainwindow.checkbox.h - 6) / 2, "불러오는 중...")
+	end
 end
 local function mouseclick(mousex,mousey,button,event,wheel)
 	sidebutton:process(mousex,mousey,button,event,wheel)
@@ -940,18 +944,28 @@ local function smallstep()
 		color=BLACK
 	end
 	tpt.drawtext(sidebutton.x+2, sidebutton.y+4, icons["manager"], color[1], color[2], color[3], 255)
+	check_req_status()
 end
 --button functions on click
 function ui_button.reloadpressed(self)
-	load_filenames()
-	load_downloaded()
-	gen_buttons()
-	mainwindow.checkbox:updatescroll()
-	if num_files == 0 then
-		MANAGER.print("No scripts found in '"..TPT_LUA_PATH.."' folder",255,255,0)
-		fs.makeDirectory(TPT_LUA_PATH)
+	if not online then
+		load_filenames()
+		load_downloaded()
+		gen_buttons()
+		mainwindow.checkbox:updatescroll()
+		if num_files == 0 then
+			MANAGER.print("No scripts found in '"..TPT_LUA_PATH.."' folder",255,255,0)
+			fs.makeDirectory(TPT_LUA_PATH)
+		else
+			MANAGER.print("Reloaded file list, found "..num_files.." scripts")
+		end
 	else
-		MANAGER.print("Reloaded file list, found "..num_files.." scripts")
+		search_terms = {}
+		local filter = tpt.input("스크립트 검색", "스크립트를 검색합니다.")
+		for match in filter:gmatch("%w+") do
+			table.insert(search_terms, match)
+		end
+		gen_buttons()
 	end
 end
 function ui_button.selectnone(self)
@@ -1022,12 +1036,17 @@ function ui_button.donepressed(self)
 	save_last()
 end
 function ui_button.downloadpressed(self)
+	local successful_download = false
 	for i,but in ipairs(mainwindow.checkbox.list) do
 		if but.selected then
 			--maybe do better display names later
 			local displayName
 			local function get_script(butt)
-				local script = download_file("http://starcatcher.us/scripts/main.lua?get="..butt.ID)
+				local script = download_file("https://starcatcher.us/scripts/main.lua?get="..butt.ID)
+				if not script then
+					MANAGER.print("Failed to download " .. but.t.text, 255, 0, 0)
+					return false
+				end
 				displayName = "downloaded"..PATH_SEP..butt.ID.." "..onlinescripts[butt.ID].author:gsub("[^%w _-]", "_").."-"..onlinescripts[butt.ID].name:gsub("[^%w _-]", "_")..".lua"
 				local name = TPT_LUA_PATH..PATH_SEP..displayName
 				if not fs.exists(TPT_LUA_PATH..PATH_SEP.."downloaded") then
@@ -1045,21 +1064,26 @@ function ui_button.downloadpressed(self)
 				localscripts[butt.ID] = onlinescripts[butt.ID]
 				localscripts[butt.ID]["path"] = displayName
 				dofile(name)
+
+				return true
 			end
 			local status,err = pcall(get_script, but)
 			if not status then
 				MANAGER.print(err,255,0,0)
 				print(err)
 				but.selected = false
-			else
+			elseif err == true then
 				MANAGER.print("Downloaded and started "..but.t.text)
 				running[displayName] = true
+				successful_download = true
 			end
 		end
 	end
-	MANAGER.hidden = true
-	ui_button.localview()
-	save_last()
+	if successful_download then
+		MANAGER.hidden = true
+		ui_button.localview()
+		save_last()
+	end
 end
 
 function ui_button.pressed(self)
@@ -1110,7 +1134,7 @@ function ui_button.doupdate(self)
 end
 local globebutton
 local donebutton
-local uploadscriptbutton
+local uploadscriptbutton, reloadbutton
 function ui_button.localview(self)
 	if online then
 		online = false
@@ -1123,6 +1147,7 @@ function ui_button.localview(self)
 		donebutton.x2 = 550
 		donebutton.f = ui_button.donepressed
 		uploadscriptbutton.t.text = icons["fileexplorer"]
+		reloadbutton.t.text = icons["refresh"]
 	end
 end
 function ui_button.onlineview(self)
@@ -1137,16 +1162,19 @@ function ui_button.onlineview(self)
 		donebutton.x2 = 274
 		donebutton.f = ui_button.downloadpressed
 		uploadscriptbutton.t.text = icons["upload"]
+		reloadbutton.t.text = icons["filter"]
+		search_terms = {}
 	end
 end
 --add buttons to window
 mainwindow:add(ui_button.new(59, 53, 15, 15, ui_button.sidepressed, icons["back"]))
 globebutton = ui_button.new(191, 53, 15, 15, ui_button.onlineview, icons["globe"])
 mainwindow:add(globebutton)
-mainwindow:add(ui_button.new(208, 53, 15, 15, ui_button.reloadpressed, icons["refresh"]))
+reloadbutton = ui_button.new(208, 53, 15, 15, ui_button.reloadpressed, icons["refresh"])
+mainwindow:add(reloadbutton)
 uploadscriptbutton = ui_button.new(225, 53, 15, 15, ui_button.uploadscript, icons["fileexplorer"])
-mainwindow:add(ui_button.new(242, 53, 15, 15, ui_button.changedir, icons["search"]))
 mainwindow:add(uploadscriptbutton)
+mainwindow:add(ui_button.new(242, 53, 15, 15, ui_button.changedir, icons["search"]))
 donebutton = ui_button.new(535, 53, 15, 15, ui_button.donepressed, icons["accept"])
 mainwindow:add(donebutton)
 mainwindow:add(ui_button.new(552, 53, 15, 15, ui_button.sidepressed, icons["cancel"]))
@@ -1187,29 +1215,82 @@ local function gen_buttons_local()
 	num_files = count + #filenames
 end
 local function gen_buttons_online()
-	local list = download_file("http://starcatcher.us/scripts/main.lua")
-	onlinescripts = readScriptInfo(list)
-	local sorted = {}
-	for k,v in pairs(onlinescripts) do table.insert(sorted, v) end
-	table.sort(sorted, function(first,second) return first.ID < second.ID end)
-	for k,v in pairs(sorted) do
-		local check = mainwindow.checkbox:add(ui_button.pressed, ui_button.viewonline, v.name, false)
-		check.ID = v.ID
-		check.checkbut.ID = v.ID
-		if localscripts[v.ID] then
-			check.running = true
-			if tonumber(v.version) > tonumber(localscripts[check.ID].version) then
-				check.checkbut.canupdate = true
-			end
-		end
+	if not http then
+		MANAGER.print("TPT 95.0 or greater required to use the online tab", 255, 0, 0)
+		return
 	end
+
+	if online_req then
+		online_req:cancel()
+	end
+
+	online_req = http.get("https://starcatcher.us/scripts/main.lua")
+
 	if first_online then
 		first_online = false
-		local updateinfo = download_file("http://starcatcher.us/scripts/main.lua?info=1")
+		script_manager_update_req = http.get("https://starcatcher.us/scripts/main.lua?info=1")
+	end
+end
+
+local function check_search_term(script, search_term)
+	search_term = search_term:lower()
+	return script.name and script.name:lower():match(search_term)
+		or script.description and script.description:lower():match(search_term)
+		or script.author and script.author:lower():match(search_term)
+end
+
+-- Check status of "Online" tab request
+local function check_online_req_status()
+	if online_req and online_req:status() ~= "running" then
+		local list, status_code = online_req:finish()
+		online_req = nil
+		if status_code ~= 200 then
+			MANAGER.print("script list download failed with status code " .. status_code, 255, 0, 0)
+			return
+		end
+
+		if not online then return end
+
+		onlinescripts = readScriptInfo(list)
+		local sorted = {}
+		for k,v in pairs(onlinescripts) do table.insert(sorted, v) end
+		table.sort(sorted, function(first,second) return first.ID < second.ID end)
+		for k,v in pairs(sorted) do
+			local matches = true
+			for i,term in ipairs(search_terms) do
+				matches = matches and check_search_term(v, term)
+			end
+			if matches then
+				local check = mainwindow.checkbox:add(ui_button.pressed, ui_button.viewonline, v.name, false)
+				check.ID = v.ID
+				check.checkbut.ID = v.ID
+				if localscripts[v.ID] then
+					check.running = true
+					if tonumber(v.version) > tonumber(localscripts[check.ID].version) then
+						check.checkbut.canupdate = true
+					end
+				end
+			end
+		end
+
+		mainwindow.checkbox:updatescroll()
+	end
+end
+
+-- Check status of self update check
+local function check_update_req_status()
+	if script_manager_update_req and script_manager_update_req:status() ~= "running" then
+		local updateinfo, status_code = script_manager_update_req:finish()
+		script_manager_update_req = nil
+		if status_code ~= 200 then
+			MANAGER.print("self update check failed with status code " .. status_code, 255, 0, 0)
+			return
+		end
+
 		updatetable = readScriptInfo(updateinfo)
 		if not updatetable[1] then return end
 		if tonumber(updatetable[1].version) > scriptversion then
-			local updatebutton = ui_button.new(278,127,40,10,ui_button.doupdate,"업데이트")
+			local updatebutton = ui_button.new(276,53,110,15,ui_button.doupdate,icons["sync"].." 업데이트 사용 가능")
 			updatebutton.t:setcolor(25,255,25)
 			mainwindow:add(updatebutton)
 			MANAGER.print("A script manager update is available! Click UPDATE",25,255,55)
@@ -1217,6 +1298,13 @@ local function gen_buttons_online()
 		end
 	end
 end
+
+-- Check status of pending requests
+function check_req_status()
+	check_online_req_status()
+	check_update_req_status()
+end
+
 gen_buttons = function()
 	mainwindow.checkbox:clear()
 	if online then
