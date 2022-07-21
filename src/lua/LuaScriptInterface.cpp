@@ -218,8 +218,6 @@ LuaScriptInterface::LuaScriptInterface(GameController * c, GameModel * m):
 		{"screenshot",&luatpt_screenshot},
 		{"record",&luatpt_record},
 		{"element",&luatpt_getelement},
-		{"element_func",&luatpt_element_func},
-		{"graphics_func",&luatpt_graphics_func},
 		{"get_clipboard", &platform_clipboardCopy},
 		{"set_clipboard", &platform_clipboardPaste},
 		{"setdrawcap", &luatpt_setdrawcap},
@@ -816,6 +814,7 @@ void LuaScriptInterface::initSimulationAPI()
 		{"partPosition", simulation_partPosition},
 		{"partID", simulation_partID},
 		{"partKill", simulation_partKill},
+		{"partExists", simulation_partExists},
 		{"pressure", simulation_pressure},
 		{"ambientHeat", simulation_ambientHeat},
 		{"velocityX", simulation_velocityX},
@@ -1042,7 +1041,11 @@ int LuaScriptInterface::simulation_partCreate(lua_State * l)
 	}
 	int type = lua_tointeger(l, 4);
 	int v = -1;
-	if (ID(type))
+	if (lua_gettop(l) >= 5)
+	{
+		v = lua_tointeger(l, 5);
+	}
+	else if (ID(type))
 	{
 		v = ID(type);
 		type = TYP(type);
@@ -1177,6 +1180,13 @@ int LuaScriptInterface::simulation_partKill(lua_State * l)
 			luacon_sim->kill_part(i);
 	}
 	return 0;
+}
+
+int LuaScriptInterface::simulation_partExists(lua_State * l)
+{
+	int i = luaL_checkinteger(l, 1);
+	lua_pushboolean(l, i >= 0 && i < NPART && luacon_sim->parts[i].type);
+	return 1;
 }
 
 int LuaScriptInterface::simulation_pressure(lua_State* l)
@@ -2655,6 +2665,7 @@ void LuaScriptInterface::initElementsAPI()
 		{"element", elements_element},
 		{"property", elements_property},
 		{"free", elements_free},
+		{"exists", elements_exists},
 		{"loadDefault", elements_loadDefault},
 		{NULL, NULL}
 	};
@@ -3493,6 +3504,12 @@ int LuaScriptInterface::elements_free(lua_State * l)
 	lua_pop(l, 1);
 
 	return 0;
+}
+
+int LuaScriptInterface::elements_exists(lua_State * l)
+{
+	lua_pushboolean(l, luacon_sim->IsElement(luaL_checkinteger(l, 1)));
+	return 1;
 }
 
 void LuaScriptInterface::initGraphicsAPI()
