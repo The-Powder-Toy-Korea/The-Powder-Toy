@@ -544,11 +544,11 @@ bool GameController::MouseDown(int x, int y, unsigned button)
 	return ret;
 }
 
-bool GameController::MouseUp(int x, int y, unsigned button, char type)
+bool GameController::MouseUp(int x, int y, unsigned button, MouseupReason reason)
 {
-	MouseUpEvent ev(x, y, button, type);
+	MouseUpEvent ev(x, y, button, reason);
 	bool ret = commandInterface->HandleEvent(LuaEvents::mouseup, &ev);
-	if (type)
+	if (reason != mouseUpNormal)
 		return ret;
 	if (ret && foundSignID != -1 && y<YRES && x<XRES && !gameView->GetPlacingSave())
 	{
@@ -764,7 +764,7 @@ void GameController::Tick()
 void GameController::Blur()
 {
 	// Tell lua that mouse is up (even if it really isn't)
-	MouseUp(0, 0, 0, 1);
+	MouseUp(0, 0, 0, mouseUpBlur);
 	BlurEvent ev;
 	commandInterface->HandleEvent(LuaEvents::blur, &ev);
 }
@@ -809,7 +809,7 @@ void GameController::ResetSpark()
 
 void GameController::SwitchGravity()
 {
-	gameModel->GetSimulation()->gravityMode = (gameModel->GetSimulation()->gravityMode+1)%3;
+	gameModel->GetSimulation()->gravityMode = (gameModel->GetSimulation()->gravityMode+1)%4;
 
 	switch (gameModel->GetSimulation()->gravityMode)
 	{
@@ -821,6 +821,9 @@ void GameController::SwitchGravity()
 		break;
 	case 2:
 		gameModel->SetInfoTip("중력: 중심");
+		break;
+	case 3:
+		gameModel->SetInfoTip("중력: 사용자 지정");
 		break;
 	}
 }

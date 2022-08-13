@@ -1069,7 +1069,7 @@ void GameView::OnMouseMove(int x, int y, int dx, int dy)
 		{
 			isMouseDown = false;
 			drawMode = DrawPoints;
-			c->MouseUp(x, y, 0, 2);
+			c->MouseUp(x, y, 0, GameController::mouseUpDrawEnd);
 		}
 	}
 	mouseInZoom = newMouseInZoom;
@@ -1750,7 +1750,7 @@ void GameView::DoMouseDown(int x, int y, unsigned button)
 
 void GameView::DoMouseUp(int x, int y, unsigned button)
 {
-	if(c->MouseUp(x, y, button, 0))
+	if(c->MouseUp(x, y, button, GameController::mouseUpNormal))
 		Window::DoMouseUp(x, y, button);
 }
 
