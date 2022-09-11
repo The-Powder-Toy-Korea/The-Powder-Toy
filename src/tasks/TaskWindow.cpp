@@ -70,7 +70,7 @@ void TaskWindow::NotifyProgress(Task * task)
 	if(progress>-1)
 		progressStatus = String::Build(progress, "%");
 	else
-		progressStatus = "Please wait...";
+		progressStatus = "잠시 기다려 주세요...";
 }
 
 void TaskWindow::OnTick(float dt)
