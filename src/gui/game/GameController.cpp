@@ -256,9 +256,9 @@ void GameController::PlaceSave(ui::Point position)
 void GameController::Install()
 {
 #if defined(MACOSX)
-	new InformationMessage("설치가 필요하지 않음", "macOS에서는 The Powder Toy를 설치하지 않아도 됩니다.", false);
+	new InformationMessage("설치가 필요하지 않음", "macOS에서는 " APPNAME "를 설치하지 않아도 됩니다.", false);
 #elif defined(WIN) || defined(LIN)
-	new ConfirmPrompt("The Powder Toy 설치", "이 컴퓨터에 The Powder Toy를 설치하시겠습니까?\n설치를 하면 세이브 파일을 웹 사이트에서 바로 열 수 있습니다.", { [] {
+	new ConfirmPrompt(APPNAME " 설치", "이 컴퓨터에 " APPNAME "를 설치하시겠습니까?\n설치를 하면 세이브 파일을 웹 사이트에서 바로 열 수 있습니다.", { [] {
 		if (Client::Ref().DoInstallation())
 		{
 			new InformationMessage("완료", "설치가 완료되었습니다.", false);
@@ -269,7 +269,7 @@ void GameController::Install()
 		}
 	} });
 #else
-	new ErrorMessage("설치할 수 없음", "이 플랫폼에서는 The Powder Toy를 설치할 수 없습니다.");
+	new ErrorMessage("설치할 수 없음", "이 플랫폼에서는 " APPNAME "를 설치할 수 없습니다.");
 #endif
 }
 
@@ -1210,7 +1210,7 @@ void GameController::OpenLocalSaveWindow(bool asCurrent)
 			std::vector<char> saveData = gameSave->Serialise();
 			if (saveData.size() == 0)
 				new ErrorMessage("오류", "게임 데이터를 시리얼화할 수 없습니다.");
-			else if (Client::Ref().WriteFile(saveData, gameModel->GetSaveFile()->GetName()))
+			else if (!Client::Ref().WriteFile(saveData, gameModel->GetSaveFile()->GetName()))
 				new ErrorMessage("오류", "세이브 파일을 쓸 수 없습니다.");
 			else
 				gameModel->SetInfoTip("저장됨");

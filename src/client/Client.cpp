@@ -1,5 +1,7 @@
 #include "Client.h"
 
+#include "client/http/Request.h" // includes curl.h, needs to come first to silence a warning on windows
+
 #include <cstdlib>
 #include <vector>
 #include <map>
@@ -8,10 +10,17 @@
 #include <ctime>
 #include <cstdio>
 #include <fstream>
-#include <dirent.h>
 
 #ifdef MACOSX
 # include "common/macosx.h"
+#endif
+
+#ifdef LIN
+# include "cps16.png.h"
+# include "cps32.png.h"
+# include "exe48.png.h"
+# include "save.xml.h"
+# include "powder.desktop.h"
 #endif
 
 #ifdef WIN
@@ -23,6 +32,7 @@
 # include <shlwapi.h>
 # include <windows.h>
 # include <direct.h>
+# include "resource.h"
 #else
 # include <sys/stat.h>
 # include <unistd.h>
@@ -46,19 +56,8 @@
 # include "lua/LuaScriptInterface.h"
 #endif
 
-#include "client/http/Request.h"
 #include "client/http/RequestManager.h"
 #include "gui/preview/Comment.h"
-
-extern "C"
-{
-#if defined(WIN) && !defined(__GNUC__)
-#include <io.h>
-#else
-#include <dirent.h>
-#endif
-}
-
 
 Client::Client():
 	messageOfTheDay("Fetching the message of the day..."),
@@ -158,342 +157,6 @@ void Client::Initialise(ByteString proxyString, bool disableNetwork)
 bool Client::IsFirstRun()
 {
 	return firstRun;
-}
-
-bool Client::DoInstallation()
-{
-#if defined(WIN)
-	CoInitializeEx(NULL, COINIT_MULTITHREADED);
-	wchar_t programsPath[MAX_PATH];
-	IShellLinkW *shellLink = NULL;
-	IPersistFile *shellLinkPersist = NULL;
-
-	int returnval = 0;
-	LONG rresult;
-	HKEY newkey;
-	ByteString currentfilename = Platform::ExecutableName();
-	ByteString iconname = currentfilename + ",-102";
-	ByteString AppDataPath = Platform::WinNarrow(_wgetcwd(NULL, 0));
-	ByteString opencommand = "\"" + currentfilename + "\" open \"%1\" ddir \"" + AppDataPath + "\"";
-	ByteString protocolcommand = "\"" + currentfilename + "\" ddir \"" + AppDataPath + "\" ptsave \"%1\"";
-
-	auto createKey = [](ByteString s, HKEY &k) {
-		return RegCreateKeyExW(HKEY_CURRENT_USER, Platform::WinWiden(s).c_str(), 0, 0, REG_OPTION_NON_VOLATILE, KEY_ALL_ACCESS, NULL, &k, NULL);
-	};
-	auto setValue = [](HKEY k, ByteString s) {
-		auto w = Platform::WinWiden(s);
-		return RegSetValueExW(k, NULL, 0, REG_SZ, (LPBYTE)&w[0], (w.size() + 1) * 2);
-	};
-
-	//Create protocol entry
-	rresult = createKey("Software\\Classes\\ptsave", newkey);
-	if (rresult != ERROR_SUCCESS) {
-		goto finalise;
-	}
-	rresult = setValue(newkey, "Powder Toy Save");
-	if (rresult != ERROR_SUCCESS) {
-		RegCloseKey(newkey);
-		goto finalise;
-	}
-	rresult = RegSetValueExW(newkey, (LPWSTR)L"URL Protocol", 0, REG_SZ, (LPBYTE)L"", 1);
-	if (rresult != ERROR_SUCCESS) {
-		RegCloseKey(newkey);
-		goto finalise;
-	}
-	RegCloseKey(newkey);
-
-	//Set Protocol DefaultIcon
-	rresult = createKey("Software\\Classes\\ptsave\\DefaultIcon", newkey);
-	if (rresult != ERROR_SUCCESS) {
-		goto finalise;
-	}
-	rresult = setValue(newkey, iconname);
-	if (rresult != ERROR_SUCCESS) {
-		RegCloseKey(newkey);
-		goto finalise;
-	}
-	RegCloseKey(newkey);
-
-	//Set Protocol Launch command
-	rresult = createKey("Software\\Classes\\ptsave\\shell\\open\\command", newkey);
-	if (rresult != ERROR_SUCCESS) {
-		goto finalise;
-	}
-	rresult = setValue(newkey, protocolcommand);
-	if (rresult != ERROR_SUCCESS) {
-		RegCloseKey(newkey);
-		goto finalise;
-	}
-	RegCloseKey(newkey);
-
-	//Create extension entry
-	rresult = createKey("Software\\Classes\\.cps", newkey);
-	if (rresult != ERROR_SUCCESS) {
-		goto finalise;
-	}
-	rresult = setValue(newkey, "PowderToySave");
-	if (rresult != ERROR_SUCCESS) {
-		RegCloseKey(newkey);
-		goto finalise;
-	}
-	RegCloseKey(newkey);
-
-	rresult = createKey("Software\\Classes\\.stm", newkey);
-	if (rresult != ERROR_SUCCESS) {
-		goto finalise;
-	}
-	rresult = setValue(newkey, "PowderToySave");
-	if (rresult != ERROR_SUCCESS) {
-		RegCloseKey(newkey);
-		goto finalise;
-	}
-	RegCloseKey(newkey);
-
-	//Create program entry
-	rresult = createKey("Software\\Classes\\PowderToySave", newkey);
-	if (rresult != ERROR_SUCCESS) {
-		goto finalise;
-	}
-	rresult = setValue(newkey, "Powder Toy Save");
-	if (rresult != ERROR_SUCCESS) {
-		RegCloseKey(newkey);
-		goto finalise;
-	}
-	RegCloseKey(newkey);
-
-	//Set DefaultIcon
-	rresult = createKey("Software\\Classes\\PowderToySave\\DefaultIcon", newkey);
-	if (rresult != ERROR_SUCCESS) {
-		goto finalise;
-	}
-	rresult = setValue(newkey, iconname);
-	if (rresult != ERROR_SUCCESS) {
-		RegCloseKey(newkey);
-		goto finalise;
-	}
-	RegCloseKey(newkey);
-
-	//Set Launch command
-	rresult = createKey("Software\\Classes\\PowderToySave\\shell\\open\\command", newkey);
-	if (rresult != ERROR_SUCCESS) {
-		goto finalise;
-	}
-	rresult = setValue(newkey, opencommand);
-	if (rresult != ERROR_SUCCESS) {
-		RegCloseKey(newkey);
-		goto finalise;
-	}
-	RegCloseKey(newkey);
-
-	if (SHGetFolderPathW(NULL, CSIDL_PROGRAMS, NULL, SHGFP_TYPE_CURRENT, programsPath) != S_OK)
-		goto finalise;
-	if (CoCreateInstance(CLSID_ShellLink, NULL, CLSCTX_INPROC_SERVER, IID_IShellLinkW, (LPVOID *)&shellLink) != S_OK)
-		goto finalise;
-	shellLink->SetPath(Platform::WinWiden(currentfilename).c_str());
-	shellLink->SetWorkingDirectory(Platform::WinWiden(AppDataPath).c_str());
-	shellLink->SetDescription(L"The Powder Toy");
-	if (shellLink->QueryInterface(IID_IPersistFile, (LPVOID *)&shellLinkPersist) != S_OK)
-		goto finalise;
-	shellLinkPersist->Save(Platform::WinWiden(Platform::WinNarrow(programsPath) + "\\The Powder Toy.lnk").c_str(), TRUE);
-
-	returnval = 1;
-	finalise:
-
-	if (shellLinkPersist)
-		shellLinkPersist->Release();
-	if (shellLink)
-		shellLink->Release();
-	CoUninitialize();
-
-	return returnval;
-#elif defined(LIN)
-	#include "icondoc.h"
-
-	int success = 1;
-	ByteString filename = Platform::ExecutableName(), pathname = filename.SplitFromEndBy('/').Before();
-	filename.Substitute('\'', "'\\''");
-	filename = '\'' + filename + '\'';
-
-	FILE *f;
-	const char *mimedata =
-"<?xml version=\"1.0\"?>\n"
-"	<mime-info xmlns='http://www.freedesktop.org/standards/shared-mime-info'>\n"
-"	<mime-type type=\"application/vnd.powdertoy.save\">\n"
-"		<comment>Powder Toy save</comment>\n"
-"		<glob pattern=\"*.cps\"/>\n"
-"		<glob pattern=\"*.stm\"/>\n"
-"	</mime-type>\n"
-"</mime-info>\n";
-	f = fopen("powdertoy-save.xml", "wb");
-	if (!f)
-		return 0;
-	fwrite(mimedata, 1, strlen(mimedata), f);
-	fclose(f);
-
-	const char *protocolfiledata_tmp =
-"[Desktop Entry]\n"
-"Type=Application\n"
-"Name=Powder Toy\n"
-"Comment=Physics sandbox game\n"
-"MimeType=x-scheme-handler/ptsave;\n"
-"NoDisplay=true\n"
-"Categories=Game;Simulation\n"
-"Icon=powdertoy.png\n";
-	ByteString protocolfiledata = ByteString::Build(protocolfiledata_tmp, "Exec=", filename, " ptsave %u\nPath=", pathname, "\n");
-	f = fopen("powdertoy-tpt-ptsave.desktop", "wb");
-	if (!f)
-		return 0;
-	fwrite(protocolfiledata.c_str(), 1, protocolfiledata.size(), f);
-	fclose(f);
-	success = system("xdg-desktop-menu install powdertoy-tpt-ptsave.desktop");
-
-	const char *desktopopenfiledata_tmp =
-"[Desktop Entry]\n"
-"Type=Application\n"
-"Name=Powder Toy\n"
-"Comment=Physics sandbox game\n"
-"MimeType=application/vnd.powdertoy.save;\n"
-"NoDisplay=true\n"
-"Categories=Game;Simulation\n"
-"Icon=powdertoy.png\n";
-	ByteString desktopopenfiledata = ByteString::Build(desktopopenfiledata_tmp, "Exec=", filename, " open %f\nPath=", pathname, "\n");
-	f = fopen("powdertoy-tpt-open.desktop", "wb");
-	if (!f)
-		return 0;
-	fwrite(desktopopenfiledata.c_str(), 1, desktopopenfiledata.size(), f);
-	fclose(f);
-	success = system("xdg-mime install powdertoy-save.xml") && success;
-	success = system("xdg-desktop-menu install powdertoy-tpt-open.desktop") && success;
-
-	const char *desktopfiledata_tmp =
-"[Desktop Entry]\n"
-"Version=1.0\n"
-"Encoding=UTF-8\n"
-"Name=Powder Toy\n"
-"Type=Application\n"
-"Comment=Physics sandbox game\n"
-"Categories=Game;Simulation\n"
-"Icon=powdertoy.png\n";
-	ByteString desktopfiledata = ByteString::Build(desktopfiledata_tmp, "Exec=", filename, "\nPath=", pathname, "\n");
-	f = fopen("powdertoy-tpt.desktop", "wb");
-	if (!f)
-		return 0;
-	fwrite(desktopfiledata.c_str(), 1, desktopfiledata.size(), f);
-	fclose(f);
-	success = system("xdg-desktop-menu install powdertoy-tpt.desktop") && success;
-
-	f = fopen("powdertoy-save-32.png", "wb");
-	if (!f)
-		return 0;
-	fwrite(icon_doc_32_png, 1, sizeof(icon_doc_32_png), f);
-	fclose(f);
-	f = fopen("powdertoy-save-16.png", "wb");
-	if (!f)
-		return 0;
-	fwrite(icon_doc_16_png, 1, sizeof(icon_doc_16_png), f);
-	fclose(f);
-	f = fopen("powdertoy.png", "wb");
-	if (!f)
-		return 0;
-	fwrite(icon_desktop_48_png, 1, sizeof(icon_desktop_48_png), f);
-	fclose(f);
-	success = system("xdg-icon-resource install --noupdate --context mimetypes --size 32 powdertoy-save-32.png application-vnd.powdertoy.save") && success;
-	success = system("xdg-icon-resource install --noupdate --context mimetypes --size 16 powdertoy-save-16.png application-vnd.powdertoy.save") && success;
-	success = system("xdg-icon-resource install --noupdate --novendor --size 48 powdertoy.png") && success;
-	success = system("xdg-icon-resource forceupdate") && success;
-	success = system("xdg-mime default powdertoy-tpt-open.desktop application/vnd.powdertoy.save") && success;
-	success = system("xdg-mime default powdertoy-tpt-ptsave.desktop x-scheme-handler/ptsave") && success;
-	unlink("powdertoy.png");
-	unlink("powdertoy-save-32.png");
-	unlink("powdertoy-save-16.png");
-	unlink("powdertoy-save.xml");
-	unlink("powdertoy-tpt.desktop");
-	unlink("powdertoy-tpt-open.desktop");
-	unlink("powdertoy-tpt-ptsave.desktop");
-	return !success;
-#else
-	return false;
-#endif
-}
-
-bool Client::WriteFile(std::vector<unsigned char> fileData, ByteString filename)
-{
-	bool saveError = false;
-	try
-	{
-		std::ofstream fileStream;
-		fileStream.open(filename, std::ios::binary);
-		if(fileStream.is_open())
-		{
-			fileStream.write((char*)&fileData[0], fileData.size());
-			fileStream.close();
-		}
-		else
-			saveError = true;
-	}
-	catch (std::exception & e)
-	{
-		std::cerr << "WriteFile:" << e.what() << std::endl;
-		saveError = true;
-	}
-	return saveError;
-}
-
-bool Client::WriteFile(std::vector<char> fileData, ByteString filename)
-{
-	bool saveError = false;
-	try
-	{
-		std::ofstream fileStream;
-		fileStream.open(filename, std::ios::binary);
-		if(fileStream.is_open())
-		{
-			fileStream.write(&fileData[0], fileData.size());
-			fileStream.close();
-		}
-		else
-			saveError = true;
-	}
-	catch (std::exception & e)
-	{
-		std::cerr << "WriteFile:" << e.what() << std::endl;
-		saveError = true;
-	}
-	return saveError;
-}
-
-std::vector<unsigned char> Client::ReadFile(ByteString filename)
-{
-	try
-	{
-		std::ifstream fileStream;
-		fileStream.open(filename, std::ios::binary);
-		if(fileStream.is_open())
-		{
-			fileStream.seekg(0, std::ios::end);
-			size_t fileSize = fileStream.tellg();
-			fileStream.seekg(0);
-
-			unsigned char * tempData = new unsigned char[fileSize];
-			fileStream.read((char *)tempData, fileSize);
-			fileStream.close();
-
-			std::vector<unsigned char> fileData;
-			fileData.insert(fileData.end(), tempData, tempData+fileSize);
-			delete[] tempData;
-
-			return fileData;
-		}
-		else
-		{
-			return std::vector<unsigned char>();
-		}
-	}
-	catch(std::exception & e)
-	{
-		std::cerr << "Readfile: " << e.what() << std::endl;
-		throw;
-	}
 }
 
 void Client::SetMessageOfTheDay(String message)
@@ -991,22 +654,16 @@ void Client::updateStamps()
 
 void Client::RescanStamps()
 {
-	DIR * directory;
-	struct dirent * entry;
-	directory = opendir("stamps");
-	if (directory != NULL)
+	stampIDs.clear();
+	for (auto &stamp : Platform::DirectorySearch("stamps", "", { ".stm" }))
 	{
-		stampIDs.clear();
-		while ((entry = readdir(directory)))
+		if (stamp.size() == 14)
 		{
-			ByteString name = entry->d_name;
-			if(name != ".." && name != "." && name.EndsWith(".stm") && name.size() == 14)
-				stampIDs.push_front(name.Substr(0, 10));
+			stampIDs.push_front(stamp.Substr(0, 10));
 		}
-		closedir(directory);
-		stampIDs.sort(std::greater<ByteString>());
-		updateStamps();
 	}
+	stampIDs.sort(std::greater<ByteString>());
+	updateStamps();
 }
 
 int Client::GetStampsCount()
@@ -1058,7 +715,7 @@ RequestStatus Client::ExecVote(int saveID, int direction)
 	return ret;
 }
 
-std::vector<unsigned char> Client::GetSaveData(int saveID, int saveDate)
+std::vector<char> Client::GetSaveData(int saveID, int saveDate)
 {
 	lastError = "";
 	int dataStatus;
@@ -1075,9 +732,9 @@ std::vector<unsigned char> Client::GetSaveData(int saveID, int saveDate)
 	ParseServerReturn(data, dataStatus, false);
 	if (data.size() && dataStatus == 200)
 	{
-		return std::vector<unsigned char>(data.begin(), data.end());
+		return std::vector<char>(data.begin(), data.end());
 	}
-	return std::vector<unsigned char>();
+	return {};
 }
 
 LoginStatus Client::Login(ByteString username, ByteString password, User & user)
@@ -1345,21 +1002,39 @@ SaveInfo * Client::GetSave(int saveID, int saveDate)
 
 SaveFile * Client::LoadSaveFile(ByteString filename)
 {
-	if (!Platform::FileExists(filename))
-		return nullptr;
-	SaveFile * file = new SaveFile(filename);
-	try
+	ByteString err;
+	SaveFile *file = nullptr;
+	if (Platform::FileExists(filename))
 	{
-		GameSave * tempSave = new GameSave(ReadFile(filename));
-		file->SetGameSave(tempSave);
+		file = new SaveFile(filename);
+		try
+		{
+			std::vector<char> data;
+			if (ReadFile(data, filename))
+			{
+				file->SetGameSave(new GameSave(std::move(data)));
+			}
+			else
+			{
+				err = "failed to open";
+			}
+		}
+		catch (const ParseException &e)
+		{
+			err = e.what();
+		}
 	}
-	catch (const ParseException &e)
+	else
 	{
+		err = "does not exist";
+	}
+	if (err.size())
+	{
+		std::cerr << "Client: " << filename << ": " << err << std::endl;
+		file->SetLoadingError(err.FromUtf8());
 #ifdef LUACONSOLE
-		luacon_ci->SetLastError(ByteString(e.what()).FromUtf8());
+		luacon_ci->SetLastError(err.FromUtf8());
 #endif
-		std::cerr << "Client: Invalid save file '" << filename << "': " << e.what() << std::endl;
-		file->SetLoadingError(ByteString(e.what()).FromUtf8());
 	}
 	return file;
 }
@@ -1870,4 +1545,176 @@ void Client::SetPref(ByteString prop, std::vector<Json::Value> value)
 void Client::SetPrefUnicode(ByteString prop, String value)
 {
 	SetPref(prop, value.ToUtf8());
+}
+
+bool Client::ReadFile(std::vector<char> &fileData, ByteString filename)
+{
+	std::ifstream f(filename, std::ios::binary);
+	if (f) f.seekg(0, std::ios::end);
+	if (f) fileData.resize(f.tellg());
+	if (f) f.seekg(0);
+	if (f) f.read(&fileData[0], fileData.size());
+	if (!f)
+	{
+		std::cerr << "ReadFile: " << filename << ": " << strerror(errno) << std::endl;
+		return false;
+	}
+	return true;
+}
+
+bool Client::WriteFile(std::vector<char> fileData, ByteString filename)
+{
+	std::ofstream f(filename, std::ios::binary);
+	if (f) f.write(&fileData[0], fileData.size());
+	if (!f)
+	{
+		std::cerr << "WriteFile: " << filename << ": " << strerror(errno) << std::endl;
+		return false;
+	}
+	return true;
+}
+
+bool Client::DoInstallation()
+{
+	bool ok = true;
+#if defined(WIN)
+	auto deleteKey = [](ByteString path) {
+		RegDeleteKeyW(HKEY_CURRENT_USER, Platform::WinWiden(path).c_str());
+	};
+	auto createKey = [](ByteString path, ByteString value, ByteString extraKey = {}, ByteString extraValue = {}) {
+		auto ok = true;
+		auto wPath = Platform::WinWiden(path);
+		auto wValue = Platform::WinWiden(value);
+		auto wExtraKey = Platform::WinWiden(extraKey);
+		auto wExtraValue = Platform::WinWiden(extraValue);
+		HKEY k;
+		ok = ok && RegCreateKeyExW(HKEY_CURRENT_USER, wPath.c_str(), 0, 0, REG_OPTION_NON_VOLATILE, KEY_ALL_ACCESS, NULL, &k, NULL) == ERROR_SUCCESS;
+		ok = ok && RegSetValueExW(k, NULL, 0, REG_SZ, reinterpret_cast<const BYTE *>(wValue.c_str()), (wValue.size() + 1) * 2) == ERROR_SUCCESS;
+		if (wExtraKey.size())
+		{
+			ok = ok && RegSetValueExW(k, wExtraKey.c_str(), 0, REG_SZ, reinterpret_cast<const BYTE *>(wExtraValue.c_str()), (wExtraValue.size() + 1) * 2) == ERROR_SUCCESS;
+		}
+		RegCloseKey(k);
+		return ok;
+	};
+
+	CoInitializeEx(NULL, COINIT_MULTITHREADED);
+	auto exe = Platform::ExecutableName();
+	auto icon = exe + ",-" MTOS(IDI_DOC_ICON);
+	auto path = Platform::GetCwd();
+	auto open = ByteString::Build("\"", exe, "\" ddir \"", path, "\" \"file://%1\"");
+	auto ptsave = ByteString::Build("\"", exe, "\" ddir \"", path, "\" \"%1\"");
+	deleteKey("Software\\Classes\\ptsave");
+	deleteKey("Software\\Classes\\.cps");
+	deleteKey("Software\\Classes\\.stm");
+	deleteKey("Software\\Classes\\PowderToySave");
+	ok = ok && createKey("Software\\Classes\\ptsave", "Powder Toy Save", "URL Protocol", "");
+	ok = ok && createKey("Software\\Classes\\ptsave\\DefaultIcon", icon);
+	ok = ok && createKey("Software\\Classes\\ptsave\\shell\\open\\command", ptsave);
+	ok = ok && createKey("Software\\Classes\\.cps", "PowderToySave");
+	ok = ok && createKey("Software\\Classes\\.stm", "PowderToySave");
+	ok = ok && createKey("Software\\Classes\\PowderToySave", "Powder Toy Save");
+	ok = ok && createKey("Software\\Classes\\PowderToySave\\DefaultIcon", icon);
+	ok = ok && createKey("Software\\Classes\\PowderToySave\\shell\\open\\command", open);
+	IShellLinkW *shellLink = NULL;
+	IPersistFile *shellLinkPersist = NULL;
+	wchar_t programsPath[MAX_PATH];
+	ok = ok && SHGetFolderPathW(NULL, CSIDL_PROGRAMS, NULL, SHGFP_TYPE_CURRENT, programsPath) == S_OK;
+	ok = ok && CoCreateInstance(CLSID_ShellLink, NULL, CLSCTX_INPROC_SERVER, IID_IShellLinkW, (LPVOID *)&shellLink) == S_OK;
+	ok = ok && shellLink->SetPath(Platform::WinWiden(exe).c_str()) == S_OK;
+	ok = ok && shellLink->SetWorkingDirectory(Platform::WinWiden(path).c_str()) == S_OK;
+	ok = ok && shellLink->SetDescription(Platform::WinWiden(APPNAME).c_str()) == S_OK;
+	ok = ok && shellLink->QueryInterface(IID_IPersistFile, (LPVOID *)&shellLinkPersist) == S_OK;
+	ok = ok && shellLinkPersist->Save(Platform::WinWiden(Platform::WinNarrow(programsPath) + "\\" APPNAME ".lnk").c_str(), TRUE) == S_OK;
+	if (shellLinkPersist)
+	{
+		shellLinkPersist->Release();
+	}
+	if (shellLink)
+	{
+		shellLink->Release();
+	}
+	CoUninitialize();
+#elif defined(LIN)
+	auto desktopEscapeString = [](ByteString str) {
+		ByteString escaped;
+		for (auto ch : str)
+		{
+			auto from = " " "\n" "\t" "\r" "\\";
+			auto to   = "s"  "n"  "t"  "r" "\\";
+			if (auto off = strchr(from, ch))
+			{
+				escaped.append(1, '\\');
+				escaped.append(1, to[off - from]);
+			}
+			else
+			{
+				escaped.append(1, ch);
+			}
+		}
+		return escaped;
+	};
+	auto desktopEscapeExec = [](ByteString str) {
+		ByteString escaped;
+		for (auto ch : str)
+		{
+			if (strchr(" \t\n\"\'\\><~|&;$*?#()`", ch))
+			{
+				escaped.append(1, '\\');
+			}
+			escaped.append(1, ch);
+		}
+		return escaped;
+	};
+
+	if (ok)
+	{
+		ByteString desktopData(powder_desktop, powder_desktop + powder_desktop_size);
+		auto exe = Platform::ExecutableName();
+		auto path = exe.SplitFromEndBy('/').Before();
+		desktopData = desktopData.Substitute("Exec=" APPEXE, "Exec=" + desktopEscapeString(desktopEscapeExec(exe)));
+		desktopData += ByteString::Build("Path=", desktopEscapeString(path), "\n");
+		ByteString file = APPVENDOR "-" APPID ".desktop";
+		ok = ok && WriteFile(std::vector<char>(desktopData.begin(), desktopData.end()), file);
+		ok = ok && !system(ByteString::Build("xdg-desktop-menu install ", file).c_str());
+		ok = ok && !system(ByteString::Build("xdg-mime default ", file, " application/vnd.powdertoy.save").c_str());
+		ok = ok && !system(ByteString::Build("xdg-mime default ", file, " x-scheme-handler/ptsave").c_str());
+		Platform::RemoveFile(file);
+	}
+	if (ok)
+	{
+		ByteString file = APPVENDOR "-save.xml";
+		ok = ok && WriteFile(std::vector<char>(save_xml, save_xml + save_xml_size), file);
+		ok = ok && !system(ByteString::Build("xdg-mime install ", file).c_str());
+		Platform::RemoveFile(file);
+	}
+	if (ok)
+	{
+		ByteString file = APPVENDOR "-cps32.png";
+		ok = ok && WriteFile(std::vector<char>(cps32_png, cps32_png + cps32_png_size), file);
+		ok = ok && !system(ByteString::Build("xdg-icon-resource install --noupdate --context mimetypes --size 32 ", file, " application-vnd.powdertoy.save").c_str());
+		Platform::RemoveFile(file);
+	}
+	if (ok)
+	{
+		ByteString file = APPVENDOR "-cps16.png";
+		ok = ok && WriteFile(std::vector<char>(cps16_png, cps16_png + cps16_png_size), file);
+		ok = ok && !system(ByteString::Build("xdg-icon-resource install --noupdate --context mimetypes --size 16 ", file, " application-vnd.powdertoy.save").c_str());
+		Platform::RemoveFile(file);
+	}
+	if (ok)
+	{
+		ByteString file = APPVENDOR "-exe48.png";
+		ok = ok && WriteFile(std::vector<char>(exe48_png, exe48_png + exe48_png_size), file);
+		ok = ok && !system(ByteString::Build("xdg-icon-resource install --noupdate --size 48 ", file, " " APPVENDOR "-" APPEXE).c_str());
+		Platform::RemoveFile(file);
+	}
+	if (ok)
+	{
+		ok = ok && !system("xdg-icon-resource forceupdate");
+	}
+#else
+	ok = false;
+#endif
+	return ok;
 }

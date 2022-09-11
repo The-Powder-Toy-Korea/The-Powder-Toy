@@ -1,3 +1,5 @@
+#include "client/http/Request.h" // includes curl.h, needs to come first to silence a warning on windows
+
 #include "PreviewModel.h"
 
 #include <cmath>
@@ -8,7 +10,6 @@
 #include "client/Client.h"
 #include "client/GameSave.h"
 #include "client/SaveInfo.h"
-#include "client/http/Request.h"
 
 #include "gui/dialogues/ErrorMessage.h"
 #include "gui/preview/Comment.h"
@@ -300,7 +301,7 @@ void PreviewModel::Update()
 		if (status == 200 && ret.size())
 		{
 			delete saveData;
-			saveData = new std::vector<unsigned char>(ret.begin(), ret.end());
+			saveData = new std::vector<char>(ret.begin(), ret.end());
 			if (saveInfo && saveData)
 				OnSaveReady();
 		}

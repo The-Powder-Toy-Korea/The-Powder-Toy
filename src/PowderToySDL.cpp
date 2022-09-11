@@ -277,7 +277,7 @@ bool RecreateWindow()
 		SDL_DestroyWindow(sdl_window);
 	}
 
-	sdl_window = SDL_CreateWindow("The Powder Toy (ko-KR)", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, WINDOWW * scale, WINDOWH * scale,
+	sdl_window = SDL_CreateWindow(APPNAME " (ko-KR)", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, WINDOWW * scale, WINDOWH * scale,
 	                              flags);
 	if (!sdl_window)
 	{
@@ -366,6 +366,10 @@ std::map<ByteString, ByteString> readArguments(int argc, char * argv[])
 		{
 			arguments["scripts"] = "true";
 		}
+		else if (!strncmp(argv[i], "file:", 5) && strlen(argv[i]) >= 7)
+		{
+			arguments["open"] = format::URLDecode(argv[i] + 7); // skip "file://"
+		}
 		else if (!strncmp(argv[i], "open", 5) && i+1<argc)
 		{
 			arguments["open"] = argv[i+1];
@@ -375,6 +379,11 @@ std::map<ByteString, ByteString> readArguments(int argc, char * argv[])
 		{
 			arguments["ddir"] = argv[i+1];
 			i++;
+		}
+		else if (!strncmp(argv[i], "ptsave:", 7) && strlen(argv[i]) >= 8)
+		{
+			arguments["ptsave"] = argv[i];
+			break;
 		}
 		else if (!strncmp(argv[i], "ptsave", 7) && i+1<argc)
 		{
@@ -446,11 +455,11 @@ void EventProcess(SDL_Event event)
 		break;
 	case SDL_MOUSEWHEEL:
 	{
-		int x = event.wheel.x;
+		// int x = event.wheel.x;
 		int y = event.wheel.y;
 		if (event.wheel.direction == SDL_MOUSEWHEEL_FLIPPED)
 		{
-			x *= -1;
+			// x *= -1;
 			y *= -1;
 		}
 
@@ -746,7 +755,7 @@ int main(int argc, char * argv[])
 	}
 	else
 	{
-		char *ddir = SDL_GetPrefPath(NULL, "The Powder Toy");
+		char *ddir = SDL_GetPrefPath(NULL, APPDATA);
 #ifdef WIN
 		struct _stat s;
 		if (_stat("powder.pref", &s) != 0)
@@ -916,15 +925,15 @@ int main(int argc, char * argv[])
 			{
 				try
 				{
-					std::vector<unsigned char> gameSaveData = Client::Ref().ReadFile(arguments["open"]);
-					if (!gameSaveData.size())
+					std::vector<char> gameSaveData;
+					if (!Client::Ref().ReadFile(gameSaveData, arguments["open"]))
 					{
 						new ErrorMessage("Error", "Could not read file");
 					}
 					else
 					{
 						SaveFile * newFile = new SaveFile(arguments["open"]);
-						GameSave * newSave = new GameSave(gameSaveData);
+						GameSave * newSave = new GameSave(std::move(gameSaveData));
 						newFile->SetGameSave(newSave);
 						gameController->LoadSaveFile(newFile);
 						delete newFile;
@@ -976,10 +985,10 @@ int main(int argc, char * argv[])
 				SaveInfo * newSave = Client::Ref().GetSave(saveId, 0);
 				if (!newSave)
 					throw std::runtime_error("Could not load save info");
-				std::vector<unsigned char> saveData = Client::Ref().GetSaveData(saveId, 0);
+				auto saveData = Client::Ref().GetSaveData(saveId, 0);
 				if (!saveData.size())
 					throw std::runtime_error(("Could not load save\n" + Client::Ref().GetLastError()).ToUtf8());
-				GameSave * newGameSave = new GameSave(saveData);
+				GameSave * newGameSave = new GameSave(std::move(saveData));
 				newSave->SetGameSave(newGameSave);
 
 				gameController->LoadSave(newSave);

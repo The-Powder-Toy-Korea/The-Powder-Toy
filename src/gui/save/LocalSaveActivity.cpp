@@ -115,7 +115,7 @@ void LocalSaveActivity::saveWrite(ByteString finalFilename)
 	std::vector<char> saveData = gameSave->Serialise();
 	if (saveData.size() == 0)
 		new ErrorMessage("오류", "게임 데이터를 시리얼화할 수 없습니다.");
-	else if (Client::Ref().WriteFile(saveData, finalFilename))
+	else if (!Client::Ref().WriteFile(saveData, finalFilename))
 		new ErrorMessage("오류", "세이브 파일을 쓸 수 없습니다.");
 	else
 	{

@@ -99,55 +99,6 @@ GameSave::GameSave(std::vector<char> data)
 	Collapse();
 }
 
-GameSave::GameSave(std::vector<unsigned char> data)
-{
-	blockWidth = 0;
-	blockHeight = 0;
-
-	InitData();
-	InitVars();
-	expanded = false;
-	hasOriginalData = true;
-	originalData = std::vector<char>(data.begin(), data.end());
-	try
-	{
-		Expand();
-	}
-	catch(ParseException & e)
-	{
-		std::cout << e.what() << std::endl;
-		dealloc();	//Free any allocated memory
-		throw;
-	}
-	Collapse();
-}
-
-GameSave::GameSave(char * data, int dataSize)
-{
-	blockWidth = 0;
-	blockHeight = 0;
-
-	InitData();
-	InitVars();
-	expanded = false;
-	hasOriginalData = true;
-	originalData = std::vector<char>(data, data+dataSize);
-#ifdef DEBUG
-	std::cout << "Creating Expanded save from data" << std::endl;
-#endif
-	try
-	{
-		Expand();
-	}
-	catch(ParseException & e)
-	{
-		std::cout << e.what() << std::endl;
-		dealloc();	//Free any allocated memory
-		throw;
-	}
-	//Collapse();
-}
-
 // Called on every new GameSave, including the copy constructor
 void GameSave::InitData()
 {
@@ -2619,6 +2570,7 @@ char * GameSave::serialiseOPS(unsigned int & dataLength)
 	bson_append_string(&b, "releaseType", IDENT_RELTYPE);
 	bson_append_string(&b, "platform", IDENT_PLATFORM);
 	bson_append_string(&b, "builtType", IDENT_BUILD);
+	bson_append_string(&b, "ident", IDENT);
 	bson_append_finish_object(&b);
 	if (gravityMode == 3)
 	{

@@ -3329,8 +3329,8 @@ void Simulation::GetGravityField(int x, int y, float particleGrav, float newtonG
 		{
 			pGravX = 0;
 			pGravY = 0;
-			auto dx = x-XCNTR;
-			auto dy = y-YCNTR;
+			auto dx = float(x - XCNTR);
+			auto dy = float(y - YCNTR);
 			if (dx || dy)
 			{
 				auto pGravD = 0.01f - hypotf(dx, dy);
@@ -3596,8 +3596,8 @@ void Simulation::UpdateParticles(int start, int end)
 				{
 					float convGravX, convGravY;
 					GetGravityField(x, y, -2.0f, -2.0f, convGravX, convGravY);
-					int offsetX = std::round(convGravX + x);
-					int offsetY = std::round(convGravY + y);
+					auto offsetX = int(std::round(convGravX + x));
+					auto offsetY = int(std::round(convGravY + y));
 					if ((offsetX != x || offsetY != y) && offsetX >= 0 && offsetX < XRES && offsetY >= 0 && offsetY < YRES) {//some heat convection for liquids
 						r = pmap[offsetY][offsetX];
 						if (!(!r || parts[i].type != TYP(r))) {
@@ -4626,18 +4626,18 @@ movedone:
 
 int Simulation::GetParticleType(ByteString type)
 {
-	char * txt = (char*)type.c_str();
+	type = type.ToUpper();
 
 	// alternative names for some elements
-	if (!strcasecmp(txt, "C4"))
+	if (byteStringEqualsLiteral(type, "C4"))
 		return PT_PLEX;
-	else if (!strcasecmp(txt, "C5"))
+	else if (byteStringEqualsLiteral(type, "C5"))
 		return PT_C5;
-	else if (!strcasecmp(txt, "NONE"))
+	else if (byteStringEqualsLiteral(type, "NONE"))
 		return PT_NONE;
 	for (int i = 1; i < PT_NUM; i++)
 	{
-		if (!strcasecmp(txt, elements[i].Name.ToUtf8().c_str()) && elements[i].Name.size() && elements[i].Enabled)
+		if (elements[i].Name.size() && elements[i].Enabled && type == elements[i].Name.ToUtf8().ToUpper())
 		{
 			return i;
 		}
