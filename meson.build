@@ -68,7 +68,7 @@ tpt_libs_debug = is_debug ? 'debug' : 'release'
 tpt_libs_variant = '@0@-@1@-@2@-@3@'.format(host_arch, host_platform, host_libc, tpt_libs_static)
 tpt_libs_vtag = get_option('tpt_libs_vtag')
 if tpt_libs_vtag == ''
-	tpt_libs_vtag = 'v20220901212941'
+	tpt_libs_vtag = 'v20220922162009'
 endif
 if tpt_libs_static != 'none'
 	if tpt_libs_variant not in [
@@ -114,9 +114,7 @@ endif
 lua_variant = get_option('lua')
 if lua_variant == 'auto'
 	lua_variant = 'luajit'
-	# TODO: sometimes luajit is not available
 endif
-# TODO: check UNICODE on windows
 if lua_variant == 'none'
 	lua_dep = []
 elif lua_variant == 'lua5.1' or lua_variant == 'lua5.2'
@@ -153,7 +151,7 @@ fftw_dep = enable_gravfft ? dependency('fftw3f', static: is_static) : []
 
 threads_dep = dependency('threads')
 zlib_dep = dependency('zlib', static: is_static)
-sdl2_dep = dependency('sdl2', static: is_static) # TODO: check UNICODE on windows
+sdl2_dep = dependency('sdl2', static: is_static)
 
 project_link_args = []
 project_c_args = []

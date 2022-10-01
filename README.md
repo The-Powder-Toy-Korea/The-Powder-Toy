@@ -58,6 +58,7 @@ TPT를 빌드하려면 [The Powder Toy 공식 위키](https://powdertoy.co.uk/Wi
 * [LuaJIT](https://luajit.org/)
 * [LuaSocket](http://w3.impa.br/~diego/software/luasocket/)
 * [Mallangche](https://github.com/JammPark/Mallangche)
+* [mbedtls](https://www.trustedfirmware.org/projects/mbed-tls/)
 * [SDL](https://libsdl.org/)
 * [zlib](https://www.zlib.net/)
 
@@ -129,3 +130,5 @@ TPT를 빌드하려면 [The Powder Toy 공식 위키](https://powdertoy.co.uk/Wi
 | `ptsave:SAVEID`       | 온라인 세이브 열기, URL이 ptsave에서 사용됨         | `ptsave:2198`                     |
 | `disable-network`     | 인터넷 연결 비활성화                               |                                   |
 | `redirect`            | 출력을 stdout.txt / stderr.txt에 리다이렉트        |                                   |
+| `cafile:CAFILE`       | 인증서 번들 경로 설정                                | `cafile:/etc/ssl/certs/ca-certificates.crt` |
+| `capath:CAPATH`       | 인증서 디렉터리 경로 설정                             | `capath:/etc/ssl/certs`           |
