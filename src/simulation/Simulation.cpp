@@ -2287,6 +2287,8 @@ void Simulation::clear_sim(void)
 	memset(gol, 0, sizeof(gol));
 	memset(portalp, 0, sizeof(portalp));
 	memset(fighters, 0, sizeof(fighters));
+	memset(&player, 0, sizeof(player));
+	memset(&player2, 0, sizeof(player2));
 	std::fill(elementCount, elementCount+PT_NUM, 0);
 	elementRecount = true;
 	fighcount = 0;
@@ -3081,6 +3083,10 @@ int Simulation::get_normal_interp(int pt, float x0, float y0, float dx, float dy
 	for (i=0; i<NORMAL_INTERP; i++) {
 		x = (int)(x0 + 0.5f);
 		y = (int)(y0 + 0.5f);
+		if (x < 0 || y < 0 || x >= XRES || y >= YRES)
+		{
+			return 0;
+		}
 		if (is_boundary(pt, x, y))
 			break;
 		x0 += dx;

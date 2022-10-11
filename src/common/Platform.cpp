@@ -5,6 +5,7 @@
 #include <cstdio>
 #include <cassert>
 #include <fstream>
+#include <iostream>
 #include <sys/stat.h>
 
 #ifdef WIN
@@ -279,13 +280,26 @@ bool DirectoryExists(ByteString directory)
 
 bool RemoveFile(ByteString filename)
 {
-	return std::remove(filename.c_str()) == 0;
+#ifdef WIN
+	return _wremove(WinWiden(filename).c_str()) == 0;
+#else
+	return remove(filename.c_str()) == 0;
+#endif
+}
+
+bool RenameFile(ByteString filename, ByteString newFilename)
+{
+#ifdef WIN
+	return _wrename(WinWiden(filename).c_str(), WinWiden(newFilename).c_str()) == 0;
+#else
+	return rename(filename.c_str(), newFilename.c_str()) == 0;
+#endif
 }
 
 bool DeleteDirectory(ByteString folder)
 {
 #ifdef WIN
-	return _rmdir(folder.c_str()) == 0;
+	return _wrmdir(WinWiden(folder).c_str()) == 0;
 #else
 	return rmdir(folder.c_str()) == 0;
 #endif
@@ -294,7 +308,7 @@ bool DeleteDirectory(ByteString folder)
 bool MakeDirectory(ByteString dir)
 {
 #ifdef WIN
-	return _mkdir(dir.c_str()) == 0;
+	return _wmkdir(WinWiden(dir).c_str()) == 0;
 #else
 	return mkdir(dir.c_str(), 0755) == 0;
 #endif
@@ -532,5 +546,32 @@ std::wstring WinWiden(const ByteString &source)
 	return output;
 }
 #endif
+
+bool ReadFile(std::vector<char> &fileData, ByteString filename)
+{
+	std::ifstream f(filename, std::ios::binary);
+	if (f) f.seekg(0, std::ios::end);
+	if (f) fileData.resize(f.tellg());
+	if (f) f.seekg(0);
+	if (f) f.read(&fileData[0], fileData.size());
+	if (!f)
+	{
+		std::cerr << "ReadFile: " << filename << ": " << strerror(errno) << std::endl;
+		return false;
+	}
+	return true;
+}
+
+bool WriteFile(std::vector<char> fileData, ByteString filename)
+{
+	std::ofstream f(filename, std::ios::binary);
+	if (f) f.write(&fileData[0], fileData.size());
+	if (!f)
+	{
+		std::cerr << "WriteFile: " << filename << ": " << strerror(errno) << std::endl;
+		return false;
+	}
+	return true;
+}
 
 }

@@ -83,14 +83,8 @@ RenderView::RenderView():
 	addDisplayModeCheckbox(DISPLAY_AIRV, IconVelocity, ui::Point(167,  4), "속도와 양압을 표시합니다. 위/아래는 파란색, 왼쪽/오른쪽은 빨간색, 양압은 초록색으로 표시됩니다.");
 	addDisplayModeCheckbox(DISPLAY_AIRH, IconHeat    , ui::Point(167, 22), "공기의 온도를 열 디스플레이와 같이 표시합니다.");
 	line2 = 200;
-	addDisplayModeCheckbox(DISPLAY_WARP, IconWarp    , ui::Point(205, 22), "중력 렌즈 디스플레이: 뉴턴 중력이 발생하는 곳에서 빛을 왜곡하는 효과를 표시합니다.");
-#ifdef OGLR
-# define TOOLTIP "OpenGL 효과 중 하나로 추정됨\xe2\x80\xa6"
-#else
-# define TOOLTIP "고체 이동 활성화, 스틱맨 총, 프리미엄\xE2\x84\xA2 그래픽 (패러디)"
-#endif
-	addDisplayModeCheckbox(DISPLAY_EFFE, IconEffect    , ui::Point(205,  4), TOOLTIP);
-#undef TOOLTIP
+	addDisplayModeCheckbox(DISPLAY_WARP, IconWarp      , ui::Point(205, 22), "중력 렌즈 디스플레이: 뉴턴 중력이 발생하는 곳에서 빛을 왜곡하는 효과를 표시합니다.");
+	addDisplayModeCheckbox(DISPLAY_EFFE, IconEffect    , ui::Point(205,  4), "고체 이동 활성화, 스틱맨 총, 프리미엄\xE2\x84\xA2 그래픽 (패러디)");
 	addDisplayModeCheckbox(DISPLAY_PERS, IconPersistant, ui::Point(237,  4), "물질이 지나간 곳에 잠시 동안 경로를 표시합니다.");
 	line3 = 270;
 

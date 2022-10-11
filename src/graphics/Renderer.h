@@ -3,9 +3,6 @@
 #include "Config.h"
 
 #include <vector>
-#ifdef OGLR
-#include "OpenGLHeaders.h"
-#endif
 
 #include "Graphics.h"
 #include "gui/interface/Point.h"
@@ -97,13 +94,6 @@ public:
 	void clearScreen(float alpha);
 	void SetSample(int x, int y);
 
-#ifdef OGLR
-	void checkShader(GLuint shader, const char * shname);
-	void checkProgram(GLuint program, const char * progname);
-	void loadShaders();
-	GLuint vidBuf,textTexture;
-	GLint prevFbo;
-#endif
 	pixel * vid;
 	pixel * persistentVid;
 	pixel * warpVid;
@@ -130,9 +120,8 @@ public:
 	void clearrect(int x, int y, int width, int height);
 	void gradientrect(int x, int y, int width, int height, int r, int g, int b, int a, int r2, int g2, int b2, int a2);
 
-	void draw_image(pixel *img, int x, int y, int w, int h, int a);
-	void draw_image(const VideoBuffer & vidBuf, int w, int h, int a);
-	void draw_image(VideoBuffer * vidBuf, int w, int h, int a);
+	void draw_image(const pixel *img, int x, int y, int w, int h, int a);
+	void draw_image(const VideoBuffer * vidBuf, int w, int h, int a);
 
 	VideoBuffer DumpFrame();
 
@@ -166,26 +155,6 @@ public:
 
 private:
 	int gridSize;
-#ifdef OGLR
-	GLuint zoomTex, airBuf, fireAlpha, glowAlpha, blurAlpha, partsFboTex, partsFbo, partsTFX, partsTFY, airPV, airVY, airVX;
-	GLuint fireProg, airProg_Pressure, airProg_Velocity, airProg_Cracker, lensProg;
-	GLuint fireV[(YRES*XRES)*2];
-	GLfloat fireC[(YRES*XRES)*4];
-	GLuint smokeV[(YRES*XRES)*2];
-	GLfloat smokeC[(YRES*XRES)*4];
-	GLuint blobV[(YRES*XRES)*2];
-	GLfloat blobC[(YRES*XRES)*4];
-	GLuint blurV[(YRES*XRES)*2];
-	GLfloat blurC[(YRES*XRES)*4];
-	GLuint glowV[(YRES*XRES)*2];
-	GLfloat glowC[(YRES*XRES)*4];
-	GLuint flatV[(YRES*XRES)*2];
-	GLfloat flatC[(YRES*XRES)*4];
-	GLuint addV[(YRES*XRES)*2];
-	GLfloat addC[(YRES*XRES)*4];
-	GLfloat lineV[(((YRES*XRES)*2)*6)];
-	GLfloat lineC[(((YRES*XRES)*2)*6)];
-#endif
 };
 
 #endif

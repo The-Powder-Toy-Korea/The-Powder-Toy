@@ -28,6 +28,7 @@ namespace Platform
 	 * @return true on success
 	 */
 	bool RemoveFile(ByteString filename);
+	bool RenameFile(ByteString filename, ByteString newFilename);
 
 	/**
 	 * @return true on success
@@ -40,6 +41,9 @@ namespace Platform
 	bool MakeDirectory(ByteString dir);
 	std::vector<ByteString> DirectorySearch(ByteString directory, ByteString search, std::vector<ByteString> extensions);
 	String DoMigration(ByteString fromDir, ByteString toDir);
+
+	bool ReadFile(std::vector<char> &fileData, ByteString filename);
+	bool WriteFile(std::vector<char> fileData, ByteString filename);
 
 #ifdef WIN
 	ByteString WinNarrow(const std::wstring &source);
