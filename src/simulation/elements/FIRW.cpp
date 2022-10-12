@@ -31,7 +31,7 @@ void Element::Element_FIRW()
 	Weight = 55;
 
 	HeatConduct = 70;
-	Description = "폭죽: 불로 점화여 아름다운 불꽃을 뿜어내게 할 수 있습니다.";
+	Description = "폭죽: 불로 점화하여 아름다운 불꽃을 뿜어내게 할 수 있습니다.";
 
 	Properties = TYPE_PART|PROP_LIFE_DEC;
 

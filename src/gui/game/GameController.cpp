@@ -1595,7 +1595,7 @@ void GameController::NotifyUpdateAvailable(Client * sender)
 #ifndef MACOSX
 			updateMessage << "업데이터를 실행하시겠습니까? 업데이트하려면 변경 사항을 저장하세요.\n\n현재 버전:\n ";
 #else
-			updateMessage << "\"계속\"을 클릭하여 웹 사이트에서 최신 버전을 다운로드합니다. \n\n현재 버전:\n ";
+			updateMessage << "\"계속\"을 클릭하여 웹 사이트에서 최신 버전을 내려받습니다. \n\n현재 버전:\n ";
 #endif
 
 #ifdef SNAPSHOT

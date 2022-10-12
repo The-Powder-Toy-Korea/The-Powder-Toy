@@ -34,7 +34,7 @@ private:
 		String error;
 		http::Request *request = new http::Request(updateName);
 		request->Start();
-		notifyStatus("업데이트를 다운로드하는 중");
+		notifyStatus("업데이트를 내려받는 중");
 		notifyProgress(-1);
 		while(!request->CheckDone())
 		{
@@ -49,7 +49,7 @@ private:
 		if (status!=200)
 		{
 			error = String::Build("서버가 다음 코드로 응답함: Status ", status);
-			notifyError("업데이트를 다운로드할 수 없음: " + error);
+			notifyError("업데이트를 내려받을 수 없음: " + error);
 			return false;
 		}
 		if (!data.size())
@@ -112,7 +112,7 @@ private:
 		return true;
 
 	corrupt:
-		notifyError("다운로드된 업데이트가 손상되었습니다\n" + error);
+		notifyError("내려받은 업데이트가 손상되었습니다\n" + error);
 		return false;
 	}
 };
@@ -125,7 +125,7 @@ UpdateActivity::UpdateActivity() {
 	file = ByteString::Build(SCHEME, SERVER, Client::Ref().GetUpdateInfo().File);
 #endif
 	updateDownloadTask = new UpdateDownloadTask(file, this);
-	updateWindow = new TaskWindow("업데이트를 다운로드하는 중...", updateDownloadTask, true);
+	updateWindow = new TaskWindow("업데이트를 내려받는 중...", updateDownloadTask, true);
 }
 
 void UpdateActivity::NotifyDone(Task * sender)
@@ -148,7 +148,7 @@ void UpdateActivity::NotifyError(Task * sender)
 #ifdef UPDATESERVER
 # define FIRST_LINE "Please go online to manually download a newer version.\n"
 #else
-# define FIRST_LINE "The Powder Toy 공식 홈페이지에서 게임을 다운로드해 보세요.\n"
+# define FIRST_LINE "The Powder Toy 공식 홈페이지에서 게임을 내려받아 보세요.\n"
 #endif
 	new ConfirmPrompt("자동 업데이트에 실패함", FIRST_LINE "오류: " + sender->GetError(), { [this] {
 #ifndef UPDATESERVER
