@@ -26,10 +26,10 @@ void AvatarButton::OnResponse(std::unique_ptr<VideoBuffer> Avatar)
 
 void AvatarButton::Tick(float dt)
 {
-	if(!avatar && !tried && name.size() > 0)
+	if (!avatar && !tried && name.size() > 0)
 	{
 		tried = true;
-		RequestSetup(name, Size.X, Size.Y);
+		RequestSetup(SCHEME STATICSERVER "/avatars/" + name + ".png", Size.X, Size.Y);
 		RequestStart();
 	}
 

@@ -413,24 +413,32 @@ int luatpt_setconsole(lua_State* l)
 		luacon_controller->HideConsole();
 	return 0;
 }
+
 int luatpt_log(lua_State* l)
 {
 	int args = lua_gettop(l);
 	String text;
+	bool hasText = false;
 	for(int i = 1; i <= args; i++)
 	{
 		luaL_tostring(l, -1);
-		if(text.length())
-			text=tpt_lua_optString(l, -1, "") + ", " + text;
+		if (hasText)
+		{
+			text = tpt_lua_optString(l, -1, "") + ", " + text;
+		}
 		else
-			text=tpt_lua_optString(l, -1, "");
+		{
+			text = tpt_lua_optString(l, -1, "");
+			hasText = true;
+		}
 		lua_pop(l, 2);
 	}
-	if((*luacon_currentCommand))
+	if ((*luacon_currentCommand))
 	{
-		if(luacon_lastError->length())
+		if (luacon_hasLastError)
 			*luacon_lastError += "; ";
 		*luacon_lastError += text;
+		luacon_hasLastError = true;
 	}
 	else
 		luacon_ci->Log(CommandInterface::LogNotice, text);
@@ -1315,8 +1323,12 @@ int luatpt_screenshot(lua_State* l)
 	int fileType = luaL_optint(l, 2, 0);
 
 	ByteString filename = luacon_controller->TakeScreenshot(captureUI, fileType);
-	tpt_lua_pushByteString(l, filename);
-	return 1;
+	if (filename.size())
+	{
+		tpt_lua_pushByteString(l, filename);
+		return 1;
+	}
+	return 0;
 }
 
 int luatpt_record(lua_State* l)

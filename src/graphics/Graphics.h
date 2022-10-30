@@ -66,6 +66,7 @@ public:
 	~VideoBuffer();
 
 	void CopyData(pixel * buffer, int width, int height, int pitch);
+	bool WritePNG(const ByteString &path) const;
 };
 
 class Graphics
@@ -83,8 +84,6 @@ public:
 	static char * GenerateGradient(pixel * colours, float * points, int pointcount, int size);
 
 	//PTIF methods
-	static void *ptif_pack(pixel *src, int w, int h, int *result_size);
-	static pixel *ptif_unpack(void *datain, int size, int *w, int *h);
 	static pixel *resample_img_nn(pixel *src, int sw, int sh, int rw, int rh);
 	static pixel *resample_img(pixel *src, int sw, int sh, int rw, int rh);
 	static pixel *rescale_img(pixel *src, int sw, int sh, int *qw, int *qh, int f);
@@ -92,12 +91,9 @@ public:
 
 	//Font/text metrics
 	static int CharWidth(String::value_type c);
-	static int textnwidth(String s, int n);
-	static void textnpos(String s, int n, int w, int *cx, int *cy);
-	static int textwidthx(String s, int w);
-	static int textwrapheight(String s, int width);
-	static int textwidth(String s);
-	static void textsize(String s, int & width, int & height);
+	static int textwidthx(const String &s, int w);
+	static int textwidth(const String &s);
+	static void textsize(const String &s, int & width, int & height);
 
 	VideoBuffer DumpFrame();
 
@@ -109,8 +105,8 @@ public:
 	void Clear();
 	void Finalise();
 	//
-	int drawtext_outline(int x, int y, String s, int r, int g, int b, int a);
-	int drawtext(int x, int y, String s, int r, int g, int b, int a);
+	int drawtext_outline(int x, int y, const String &s, int r, int g, int b, int a);
+	int drawtext(int x, int y, const String &s, int r, int g, int b, int a);
 	int drawchar(int x, int y, String::value_type c, int r, int g, int b, int a);
 	int addchar(int x, int y, String::value_type c, int r, int g, int b, int a);
 
@@ -136,5 +132,7 @@ public:
 
 	void SetClipRect(int &x, int &y, int &w, int &h);
 };
+
+bool PngDataToPixels(std::vector<pixel> &imageData, int &imgw, int &imgh, const char *pngData, size_t pngDataSize, bool addBackground);
 
 #endif

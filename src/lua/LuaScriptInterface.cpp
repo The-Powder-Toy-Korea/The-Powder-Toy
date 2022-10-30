@@ -84,6 +84,7 @@ Renderer * luacon_ren;
 
 bool *luacon_currentCommand;
 String *luacon_lastError;
+bool luacon_hasLastError;
 String lastCode;
 
 int *lua_el_mode;
@@ -233,6 +234,7 @@ LuaScriptInterface::LuaScriptInterface(GameController * c, GameModel * m):
 
 	luacon_currentCommand = &currentCommand;
 	luacon_lastError = &lastError;
+	luacon_hasLastError = false;
 
 	lastCode = "";
 
@@ -4353,9 +4355,10 @@ void LuaScriptInterface::OnTick()
 
 int LuaScriptInterface::Command(String command)
 {
+	lastError = "";
+	luacon_hasLastError = false;
 	if (command[0] == '!')
 	{
-		lastError = "";
 		int ret = legacy->Command(command.Substr(1));
 		lastError = legacy->GetLastError();
 		return ret;
@@ -4363,8 +4366,6 @@ int LuaScriptInterface::Command(String command)
 	else
 	{
 		int level = lua_gettop(l), ret = -1;
-		String text = "";
-		lastError = "";
 		currentCommand = true;
 		if (lastCode.length())
 			lastCode += "\n";
@@ -4392,16 +4393,25 @@ int LuaScriptInterface::Command(String command)
 			lastCode = "";
 			ret = lua_pcall(l, 0, LUA_MULTRET, 0);
 			if (ret)
+			{
 				lastError = luacon_geterror();
+			}
 			else
 			{
-				for (level++;level<=lua_gettop(l);level++)
+				String text = "";
+				bool hasText = false;
+				for (level++; level <= lua_gettop(l); level++)
 				{
 					luaL_tostring(l, level);
-					if (text.length())
+					if (hasText)
+					{
 						text += ", " + tpt_lua_optString(l, -1, "");
+					}
 					else
+					{
 						text = tpt_lua_optString(l, -1, "");
+						hasText = true;
+					}
 					lua_pop(l, 1);
 				}
 				if (text.length())
