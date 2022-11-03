@@ -368,7 +368,7 @@ void PreviewView::OnTick(float dt)
 	c->Update();
 	if (doError)
 	{
-		ErrorMessage::Blocking("세이브를 불러오는 중 오류가 발생함.", doErrorMessage);
+		ErrorMessage::Blocking("세이브 불러오기 오류가 발생하였습니다.", doErrorMessage);
 		c->Exit();
 	}
 }

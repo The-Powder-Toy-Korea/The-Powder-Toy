@@ -1,4 +1,5 @@
 **Pray for Itaewon, Rest in peace.**
 
-Based on The Powder Toy, Snapshot-243.
+Based on The Powder Toy, Snapshot-244.
 - Updated TPT code.
+- Improved Translations.
