@@ -90,7 +90,7 @@ void TagsView::NotifyTagsChanged(TagsModel * sender)
 					}
 					catch(TagsModelException & ex)
 					{
-						new ErrorMessage("Could not remove tag", ByteString(ex.what()).FromUtf8());
+						new ErrorMessage("태그를 제거할 수 없음", ByteString(ex.what()).FromUtf8());
 					}
 				} });
 				tags.push_back(tempButton);
@@ -121,7 +121,7 @@ void TagsView::addTag()
 {
 	if (tagInput->GetText().length() < 4)
 	{
-		new ErrorMessage("Tag not long enough", "Must be at least 4 letters");
+		new ErrorMessage("태그가 너무 짧음", "네 글자 이상의 태그를 입력해야 합니다.");
 		return;
 	}
 	try
@@ -130,7 +130,7 @@ void TagsView::addTag()
 	}
 	catch(TagsModelException & ex)
 	{
-		new ErrorMessage("Could not add tag", ByteString(ex.what()).FromUtf8());
+		new ErrorMessage("태그를 추가할 수 없음", ByteString(ex.what()).FromUtf8());
 	}
 	tagInput->SetText("");
 }

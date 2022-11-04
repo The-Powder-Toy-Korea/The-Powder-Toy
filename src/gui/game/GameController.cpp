@@ -1640,7 +1640,7 @@ void GameController::NotifyUpdateAvailable(Client * sender)
 			gameModel->AddNotification(new UpdateNotification(this, "새 버전을 사용할 수 있습니다. 여기를 클릭하여 업데이트하세요."));
 			break;
 		case UpdateInfo::Beta:
-			gameModel->AddNotification(new UpdateNotification(this, "새 베타를 사용할 수 있습니다. 여기를 클릭하여 업데이트하세요."));
+			gameModel->AddNotification(new UpdateNotification(this, "새 베타 버전을 사용할 수 있습니다. 여기를 클릭하여 업데이트하세요."));
 			break;
 	}
 }

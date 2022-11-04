@@ -340,7 +340,7 @@ void ServerSaveActivity::ShowRules()
 		"\n"
 		"어떤 행위가 규칙에 맞는지 어긋나는지 묻고 싶다면 언제나 관리자에게 연락하십시오.";
 
-	new InformationMessage("Save Uploading Rules", rules, true);
+	new InformationMessage("세이브 업로드 규칙", rules, true);
 }
 
 void ServerSaveActivity::CheckName(String newname)

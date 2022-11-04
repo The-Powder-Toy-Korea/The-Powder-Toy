@@ -176,7 +176,7 @@ void PreviewModel::OnSaveReady()
 	{
 		GameSave *gameSave = new GameSave(*saveData);
 		if (gameSave->fromNewerVersion)
-			new ErrorMessage("이 세이브는 더 높은 버전의 게임을 요구합니다", "The Powderr Toy를 게임이나 https://powdertoy.co.uk/에서 업데이트하세요.");
+			new ErrorMessage("이 세이브는 더 높은 버전의 게임을 요구합니다", "The Powder Toy를 게임이나 https://powdertoy.co.uk/에서 업데이트하세요.");
 		saveInfo->SetGameSave(gameSave);
 	}
 	catch(ParseException &e)

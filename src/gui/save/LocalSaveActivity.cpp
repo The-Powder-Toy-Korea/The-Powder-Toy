@@ -77,7 +77,7 @@ void LocalSaveActivity::Save()
 {
 	if (filenameField->GetText().Contains('/') || filenameField->GetText().BeginsWith("."))
 	{
-		new ErrorMessage("오류", "잘못된 파일 이름.");
+		new ErrorMessage("오류", "파일 이름이 잘못되었습니다.");
 	}
 	else if (filenameField->GetText().length())
 	{

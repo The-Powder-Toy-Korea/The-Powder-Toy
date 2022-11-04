@@ -279,7 +279,7 @@ void FileBrowserActivity::OnTick(float dt)
 			[this, saveButton] { DeleteSave(saveButton->GetSaveFile()); }
 		});
 
-		progressBar->SetStatus("썸네일을 렌더하는 중");
+		progressBar->SetStatus("섬네일을 렌더하는 중");
 		progressBar->SetProgress(totalFiles ? (totalFiles - files.size()) * 100 / totalFiles : 0);
 		componentsQueue.push_back(saveButton);
 		fileX++;

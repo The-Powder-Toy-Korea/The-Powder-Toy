@@ -183,7 +183,7 @@ void PropertyWindow::SetProperty(bool warn)
 					{
 						tool->validProperty = false;
 						if (warn)
-							new ErrorMessage("속성을 설정할 수 없음", "잘못된 물질 유형");
+							new ErrorMessage("속성을 설정할 수 없음", "물질 유형이 잘못되었습니다.");
 						return;
 					}
 
@@ -225,7 +225,7 @@ void PropertyWindow::SetProperty(bool warn)
 				default:
 					tool->validProperty = false;
 					if (warn)
-						new ErrorMessage("속성을 설정할 수 없음", "잘못된 속성");
+						new ErrorMessage("속성을 설정할 수 없음", "속성이 잘못되었습니다.");
 					return;
 			}
 			tool->propOffset = properties[property->GetOption().second].Offset;

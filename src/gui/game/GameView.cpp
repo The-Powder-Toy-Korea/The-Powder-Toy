@@ -1689,10 +1689,10 @@ void GameView::OnTick(float dt)
 		switch (si.second)
 		{
 		case sign::Type::Save:
-			tooltip << "다음 세이브 ID로 이동합니다: " << str.Substr(3, si.first - 3);
+			tooltip << "세이브 ID " << str.Substr(3, si.first - 3) << "(으)로 이동합니다.";
 			break;
 		case sign::Type::Thread:
-			tooltip << "포럼 스레드 " << str.Substr(3, si.first - 3) << "를 브라우저에서 엽니다.";
+			tooltip << "포럼 스레드 " << str.Substr(3, si.first - 3) << "을(를) 브라우저에서 엽니다.";
 			break;
 		case sign::Type::Search:
 			tooltip << str.Substr(3, si.first - 3) << "을(를) 검색합니다.";

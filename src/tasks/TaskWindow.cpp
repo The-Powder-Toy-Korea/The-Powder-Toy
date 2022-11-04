@@ -45,7 +45,7 @@ void TaskWindow::NotifyStatus(Task * task)
 
 void TaskWindow::NotifyError(Task * task)
 {
-	new ErrorMessage("Error", task->GetError());
+	new ErrorMessage("오류", task->GetError());
 	done = true;
 }
 

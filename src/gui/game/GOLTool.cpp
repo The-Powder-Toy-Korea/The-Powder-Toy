@@ -135,14 +135,14 @@ void GOLWindow::Validate()
 	auto ruleString = ruleField->GetText();
 	if (!ValidateGOLName(nameString))
 	{
-		new ErrorMessage("새 생명 게임을 추가할 수 없음", "잘못된 이름이 입력됨");
+		new ErrorMessage("새 생명 게임을 추가할 수 없음", "잘못된 이름이 입력되었습니다.");
 		return;
 	}
 	nameString = nameString.ToUpper();
 	int rule = ParseGOLString(ruleString);
 	if (rule == -1)
 	{
-		new ErrorMessage("새 생명 게임을 추가할 수 없음", "잘못된 규칙이 입력됨");
+		new ErrorMessage("새 생명 게임을 추가할 수 없음", "잘못된 규칙이 입력되었습니다.");
 		return;
 	}
 	if (sim->GetCustomGOLByRule(rule))
@@ -159,7 +159,7 @@ void GOLWindow::Validate()
 	auto color2 = (((lowColour.Red << 8) | lowColour.Green) << 8) | lowColour.Blue;
 	if (!AddCustomGol(ruleString, nameString, color1, color2))
 	{
-		new ErrorMessage("새 생명 게임을 추가할 수 없음", "이름이 중복됨");
+		new ErrorMessage("새 생명 게임을 추가할 수 없음", "이 이름을 이미 사용하였습니다.");
 		return;
 	}
 
