@@ -4,11 +4,13 @@
 #include "Config.h"
 //#include "Simulation.h"
 
-#define R_TEMP 22
 #define MAX_TEMP 9999
 #define MIN_TEMP 0
 #define O_MAX_TEMP 3500
 #define O_MIN_TEMP -273
+
+#define MAX_PRESSURE 256.0f
+#define MIN_PRESSURE -256.0f
 
 #define TYPE_PART			0x00001  //1 Powders
 #define TYPE_LIQUID			0x00002  //2 Liquids
