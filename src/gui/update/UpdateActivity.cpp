@@ -55,7 +55,7 @@ private:
 		if (!data.size())
 		{
 			error = "서버가 응답하지 않음";
-			notifyError("서버가 아무 데이터를 반환하지 않음");
+			notifyError("서버가 데이터를 반환하지 않음");
 			return false;
 		}
 
