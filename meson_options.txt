@@ -207,3 +207,15 @@ option(
 	value: true,
 	description: 'Enforce encrypted HTTP traffic, may be disabled for debugging'
 )
+option(
+	'prepare',
+	type: 'boolean',
+	value: false,
+	description: 'Used by ghactions workflows, not useful otherwise'
+)
+option(
+	'render_icons_with_inkscape',
+	type: 'feature',
+	value: 'disabled',
+	description: 'Render icons with Inkscape (inkscape binary needs to be in PATH)'
+)

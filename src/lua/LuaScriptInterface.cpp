@@ -945,10 +945,14 @@ void LuaScriptInterface::initSimulationAPI()
 		{"framerender", simulation_framerender},
 		{"gspeed", simulation_gspeed},
 		{"takeSnapshot", simulation_takeSnapshot},
+		{"historyRestore", simulation_historyRestore},
+		{"historyForward", simulation_historyForward},
 		{"replaceModeFlags", simulation_replaceModeFlags},
 		{"listCustomGol", simulation_listCustomGol},
 		{"addCustomGol", simulation_addCustomGol},
 		{"removeCustomGol", simulation_removeCustomGol},
+		{"lastUpdatedID", simulation_lastUpdatedID},
+		{"updateUpTo", simulation_updateUpTo},
 		{NULL, NULL}
 	};
 	luaL_register(l, "simulation", simulationAPIMethods);
@@ -2407,6 +2411,21 @@ int LuaScriptInterface::simulation_takeSnapshot(lua_State * l)
 	return 0;
 }
 
+
+int LuaScriptInterface::simulation_historyRestore(lua_State *l)
+{
+	bool successful = luacon_controller->HistoryRestore();
+	lua_pushboolean(l, successful);
+	return 1;
+}
+
+int LuaScriptInterface::simulation_historyForward(lua_State *l)
+{
+	bool successful = luacon_controller->HistoryForward();
+	lua_pushboolean(l, successful);
+	return 1;
+}
+
 int LuaScriptInterface::simulation_replaceModeFlags(lua_State *l)
 {
 	if (lua_gettop(l) == 0)
@@ -2485,6 +2504,53 @@ int LuaScriptInterface::simulation_removeCustomGol(lua_State *l)
 		luacon_model->BuildMenus();
 	lua_pushboolean(l, removedAny);
 	return 1;
+}
+
+int LuaScriptInterface::simulation_lastUpdatedID(lua_State *l)
+{
+	if (luacon_sim->debug_mostRecentlyUpdated != -1)
+	{
+		lua_pushinteger(l, luacon_sim->debug_mostRecentlyUpdated);
+	}
+	else
+	{
+		lua_pushnil(l);
+	}
+	return 1;
+}
+
+int LuaScriptInterface::simulation_updateUpTo(lua_State *l)
+{
+	int upTo = NPART - 1;
+	if (lua_gettop(l) > 0)
+	{
+		upTo = luaL_checkinteger(l, 1);
+	}
+	if (upTo < 0 || upTo >= NPART)
+	{
+		return luaL_error(l, "ID not in valid range");
+	}
+	if (upTo < luacon_sim->debug_currentParticle)
+	{
+		upTo = NPART - 1;
+	}
+	if (luacon_sim->debug_currentParticle == 0)
+	{
+		luacon_sim->framerender = 1;
+		luacon_sim->BeforeSim();
+		luacon_sim->framerender = 0;
+	}
+	luacon_sim->UpdateParticles(luacon_sim->debug_currentParticle, upTo);
+	if (upTo < NPART - 1)
+	{
+		luacon_sim->debug_currentParticle = upTo + 1;
+	}
+	else
+	{
+		luacon_sim->AfterSim();
+		luacon_sim->debug_currentParticle = 0;
+	}
+	return 0;
 }
 
 //// Begin Renderer API
@@ -4087,6 +4153,8 @@ void LuaScriptInterface::initEventAPI()
 	lua_pushinteger(l, LuaEvents::tick); lua_setfield(l, -2, "tick");
 	lua_pushinteger(l, LuaEvents::blur); lua_setfield(l, -2, "blur");
 	lua_pushinteger(l, LuaEvents::close); lua_setfield(l, -2, "close");
+	lua_pushinteger(l, LuaEvents::beforesim); lua_setfield(l, -2, "beforesim");
+	lua_pushinteger(l, LuaEvents::aftersim); lua_setfield(l, -2, "aftersim");
 }
 
 int LuaScriptInterface::event_register(lua_State * l)

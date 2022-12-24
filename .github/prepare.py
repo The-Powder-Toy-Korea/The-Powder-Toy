@@ -2,6 +2,7 @@ import datetime
 import json
 import os
 import re
+import subprocess
 import sys
 
 ref = os.getenv('GITHUB_REF')
@@ -39,8 +40,27 @@ do_publish = publish_hostport and do_release
 set_output('release_type', release_type)
 set_output('release_name', release_name)
 
-with open('.github/mod_id.txt') as f:
-	set_output('mod_id', f.read())
+subprocess.run([ 'meson', 'setup', '-Dprepare=true', 'build-prepare' ], check = True)
+build_options = {}
+with open('build-prepare/meson-info/intro-buildoptions.json') as f:
+	for option in json.loads(f.read()):
+		build_options[option['name']] = option['value']
+
+if int(build_options['mod_id']) == 0 and os.path.exists('.github/mod_id.txt'):
+	with open('.github/mod_id.txt') as f:
+		build_options['mod_id'] = f.read()
+
+set_output('mod_id'     , build_options['mod_id'     ])
+set_output('app_name'   , build_options['app_name'   ])
+set_output('app_comment', build_options['app_comment'])
+set_output('app_exe'    , build_options['app_exe'    ])
+set_output('app_id'     , build_options['app_id'     ])
+set_output('app_data'   , build_options['app_data'   ])
+set_output('app_vendor' , build_options['app_vendor' ])
+
+app_exe = build_options['app_exe']
+app_name = build_options['app_name']
+app_name_slug = re.sub('[^A-Za-z0-9]', '_', app_name)
 
 build_matrix = []
 publish_matrix = []
@@ -67,14 +87,14 @@ for        arch,  platform,     libc,   statdyn, bplatform,         runson, suff
 	(     'x86', 'windows',   'msvc',  'static', 'windows', 'windows-2019', '.exe',    True,     True,    '.pdb',       None,  'i686-win-msvc-static', 'release' ),
 	(     'x86', 'windows',   'msvc', 'dynamic', 'windows', 'windows-2019', '.exe',   False,    False,      None,       None,                    None,   'debug' ),
 	(     'x86', 'windows',   'msvc', 'dynamic', 'windows', 'windows-2019', '.exe',   False,    False,      None,       None,                    None, 'release' ),
-	(  'x86_64',  'darwin',  'macos',  'static',  'darwin',   'macos-11.0',     '',   False,    False,      None,       None,                    None,   'debug' ),
-	(  'x86_64',  'darwin',  'macos',  'static',  'darwin',   'macos-11.0',     '',    True,     True,      None,       None, 'x86_64-mac-gcc-static', 'release' ), # I have no idea how to separate debug info on macos
-	(  'x86_64',  'darwin',  'macos', 'dynamic',  'darwin',   'macos-11.0',     '',   False,    False,      None,       None,                    None,   'debug' ),
-	(  'x86_64',  'darwin',  'macos', 'dynamic',  'darwin',   'macos-11.0',     '',   False,    False,      None,       None,                    None, 'release' ),
-	( 'aarch64',  'darwin',  'macos',  'static',  'darwin',   'macos-11.0',     '',   False,    False,      None,       None,                    None,   'debug' ),
-	( 'aarch64',  'darwin',  'macos',  'static',  'darwin',   'macos-11.0',     '',    True,     True,      None,       None,  'arm64-mac-gcc-static', 'release' ),
-#	( 'aarch64',  'darwin',  'macos', 'dynamic',  'darwin',   'macos-11.0',     '',   False,    False,      None,       None,                    None,   'debug' ), # macos-11.0 is x86_64 and I haven't yet figured out how to get homebrew to install aarch64 libs on x86_64
-#	( 'aarch64',  'darwin',  'macos', 'dynamic',  'darwin',   'macos-11.0',     '',   False,    False,      None,       None,                    None, 'release' ), # macos-11.0 is x86_64 and I haven't yet figured out how to get homebrew to install aarch64 libs on x86_64
+	(  'x86_64',  'darwin',  'macos',  'static',  'darwin',   'macos-11.0', '.dmg',   False,    False,      None,      'dmg',                    None,   'debug' ),
+	(  'x86_64',  'darwin',  'macos',  'static',  'darwin',   'macos-11.0', '.dmg',    True,     True,      None,      'dmg', 'x86_64-mac-gcc-static', 'release' ), # I have no idea how to separate debug info on macos
+	(  'x86_64',  'darwin',  'macos', 'dynamic',  'darwin',   'macos-11.0', '.dmg',   False,    False,      None,      'dmg',                    None,   'debug' ),
+	(  'x86_64',  'darwin',  'macos', 'dynamic',  'darwin',   'macos-11.0', '.dmg',   False,    False,      None,      'dmg',                    None, 'release' ),
+	( 'aarch64',  'darwin',  'macos',  'static',  'darwin',   'macos-11.0', '.dmg',   False,    False,      None,      'dmg',                    None,   'debug' ),
+	( 'aarch64',  'darwin',  'macos',  'static',  'darwin',   'macos-11.0', '.dmg',    True,     True,      None,      'dmg',  'arm64-mac-gcc-static', 'release' ),
+#	( 'aarch64',  'darwin',  'macos', 'dynamic',  'darwin',   'macos-11.0', '.dmg',   False,    False,      None,      'dmg',                    None,   'debug' ), # macos-11.0 is x86_64 and I haven't yet figured out how to get homebrew to install aarch64 libs on x86_64
+#	( 'aarch64',  'darwin',  'macos', 'dynamic',  'darwin',   'macos-11.0', '.dmg',   False,    False,      None,      'dmg',                    None, 'release' ), # macos-11.0 is x86_64 and I haven't yet figured out how to get homebrew to install aarch64 libs on x86_64
 	(     'x86', 'android', 'bionic',  'static',   'linux', 'ubuntu-18.04', '.apk',   False,    False,      None,       None,                    None,   'debug' ),
 	(     'x86', 'android', 'bionic',  'static',   'linux', 'ubuntu-18.04', '.apk',    True,     True,    '.dbg',       None,   'i686-and-gcc-static', 'release' ),
 	(  'x86_64', 'android', 'bionic',  'static',   'linux', 'ubuntu-18.04', '.apk',   False,    False,      None,       None,                    None,   'debug' ),
@@ -97,15 +117,15 @@ for        arch,  platform,     libc,   statdyn, bplatform,         runson, suff
 	if dbgrel != 'release':
 		assert not publish
 		assert not artifact
-	asset_path = f'powder{suffix}'
-	asset_name = f'powder-{release_name}-{arch}-{platform}-{libc}{suffix}'
-	debug_asset_path = f'powder{dbgsuffix}'
-	debug_asset_name = f'powder-{release_name}-{arch}-{platform}-{libc}{dbgsuffix}'
+	asset_path = f'{app_exe}{suffix}'
+	asset_name = f'{app_exe}-{release_name}-{arch}-{platform}-{libc}{suffix}'
+	debug_asset_path = f'{app_exe}{dbgsuffix}'
+	debug_asset_name = f'{app_exe}-{release_name}-{arch}-{platform}-{libc}{dbgsuffix}'
 	if mode	== 'appimage':
-		asset_path = f'The_Powder_Toy-{arch}.AppImage'
-		asset_name = f'The_Powder_Toy-{arch}.AppImage'
-		debug_asset_path = f'The_Powder_Toy-{arch}.AppImage.dbg'
-		debug_asset_name = f'The_Powder_Toy-{arch}.AppImage.dbg'
+		asset_path = f'{app_name_slug}-{arch}.AppImage'
+		asset_name = f'{app_name_slug}-{arch}.AppImage'
+		debug_asset_path = f'{app_name_slug}-{arch}.AppImage.dbg'
+		debug_asset_name = f'{app_name_slug}-{arch}.AppImage.dbg'
 	starcatcher_name = f'powder-{release_name}-{starcatcher}{suffix}'
 	build_matrix.append({
 		'bsh_build_platform': bplatform, # part of the unique portion of the matrix

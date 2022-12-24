@@ -18,7 +18,7 @@
 
 #include <iostream>
 #if defined(LIN)
-# include "powder-128.png.h"
+# include "icon_exe.png.h"
 #endif
 #include <csignal>
 #include <stdexcept>
@@ -53,7 +53,6 @@
 #include "gui/interface/Engine.h"
 #include "gui/interface/Keys.h"
 
-#define INCLUDE_SYSWM
 #include "SDLCompat.h"
 
 int desktopWidth = 1280, desktopHeight = 1024;
@@ -195,27 +194,10 @@ void SDLOpen()
 		}
 	}
 
-#ifdef WIN
-	SDL_SysWMinfo SysInfo;
-	SDL_VERSION(&SysInfo.version);
-	if(SDL_GetWindowWMInfo(sdl_window, &SysInfo) <= 0)
-	{
-	    printf("%s : %p\n", SDL_GetError(), SysInfo.info.win.window);
-	    exit(-1);
-	}
-	HWND WindowHandle = SysInfo.info.win.window;
-
-	// Use GetModuleHandle to get the Exe HMODULE/HINSTANCE
-	HMODULE hModExe = GetModuleHandle(NULL);
-	HICON hIconSmall = (HICON)LoadImage(hModExe, MAKEINTRESOURCE(101), IMAGE_ICON, 16, 16, LR_SHARED);
-	HICON hIconBig = (HICON)LoadImage(hModExe, MAKEINTRESOURCE(101), IMAGE_ICON, 32, 32, LR_SHARED);
-	SendMessage(WindowHandle, WM_SETICON, ICON_SMALL, (LPARAM)hIconSmall);
-	SendMessage(WindowHandle, WM_SETICON, ICON_BIG, (LPARAM)hIconBig);
-#endif
 #ifdef LIN
 	std::vector<pixel> imageData;
 	int imgw, imgh;
-	if (PngDataToPixels(imageData, imgw, imgh, reinterpret_cast<const char *>(icon_png), icon_png_size, false))
+	if (PngDataToPixels(imageData, imgw, imgh, reinterpret_cast<const char *>(icon_exe_png), icon_exe_png_size, false))
 	{
 		SDL_Surface *icon = SDL_CreateRGBSurfaceFrom(&imageData[0], imgw, imgh, 32, imgw * sizeof(pixel), 0x00FF0000, 0x0000FF00, 0x000000FF, 0xFF000000);
 		SDL_SetWindowIcon(sdl_window, icon);

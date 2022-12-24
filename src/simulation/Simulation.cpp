@@ -1915,6 +1915,11 @@ int Simulation::FloodParts(int x, int y, int fullc, int cm, int flags)
 	int coord_stack_size = 0;
 	int created_something = 0;
 
+	// Bitmap for checking where we've already looked
+	auto bitmapPtr = std::unique_ptr<char[]>(new char[XRES * YRES]);
+	char *bitmap = bitmapPtr.get();
+	std::fill(&bitmap[0], &bitmap[XRES * YRES], 0);
+
 	if (cm==-1)
 	{
 		//if initial flood point is out of bounds, do nothing
@@ -1962,7 +1967,7 @@ int Simulation::FloodParts(int x, int y, int fullc, int cm, int flags)
 		// go left as far as possible
 		while (c?x1>CELL:x1>0)
 		{
-			if (!FloodFillPmapCheck(x1-1, y, cm) || (c != 0 && IsWallBlocking(x1-1, y, c)))
+			if (bitmap[(y * XRES) + x1 - 1] || !FloodFillPmapCheck(x1-1, y, cm) || (c != 0 && IsWallBlocking(x1-1, y, c)))
 			{
 				break;
 			}
@@ -1971,7 +1976,7 @@ int Simulation::FloodParts(int x, int y, int fullc, int cm, int flags)
 		// go right as far as possible
 		while (c?x2<XRES-CELL-1:x2<XRES-1)
 		{
-			if (!FloodFillPmapCheck(x2+1, y, cm) || (c != 0 && IsWallBlocking(x2+1, y, c)))
+			if (bitmap[(y * XRES) + x2 + 1] || !FloodFillPmapCheck(x2+1, y, cm) || (c != 0 && IsWallBlocking(x2+1, y, c)))
 			{
 				break;
 			}
@@ -1998,11 +2003,12 @@ int Simulation::FloodParts(int x, int y, int fullc, int cm, int flags)
 			}
 			else if (CreateParts(x, y, 0, 0, fullc, flags))
 				created_something = 1;
+			bitmap[(y * XRES) + x] = 1;
 		}
 
 		if (c?y>=CELL+dy:y>=dy)
 			for (x=x1; x<=x2; x++)
-				if (FloodFillPmapCheck(x, y-dy, cm) && (c == 0 || !IsWallBlocking(x, y-dy, c)))
+				if (!bitmap[((y - dy) * XRES) + x] && FloodFillPmapCheck(x, y-dy, cm) && (c == 0 || !IsWallBlocking(x, y-dy, c)))
 				{
 					coord_stack[coord_stack_size][0] = x;
 					coord_stack[coord_stack_size][1] = y-dy;
@@ -2016,7 +2022,7 @@ int Simulation::FloodParts(int x, int y, int fullc, int cm, int flags)
 
 		if (c?y<YRES-CELL-dy:y<YRES-dy)
 			for (x=x1; x<=x2; x++)
-				if (FloodFillPmapCheck(x, y+dy, cm) && (c == 0 || !IsWallBlocking(x, y+dy, c)))
+				if (!bitmap[((y + dy) * XRES) + x] && FloodFillPmapCheck(x, y+dy, cm) && (c == 0 || !IsWallBlocking(x, y+dy, c)))
 				{
 					coord_stack[coord_stack_size][0] = x;
 					coord_stack[coord_stack_size][1] = y+dy;
@@ -2321,6 +2327,8 @@ bool Simulation::IsWallBlocking(int x, int y, int type)
 		else if (wall == WL_ALLOWAIR || wall == WL_WALL || wall == WL_WALLELEC)
 			return true;
 		else if (wall == WL_EWALL && !emap[y/CELL][x/CELL])
+			return true;
+		else if (wall == WL_DETECT && (elements[type].Properties&TYPE_SOLID))
 			return true;
 	}
 	return false;
@@ -3219,8 +3227,6 @@ int Simulation::create_part(int p, int x, int y, int t, int v)
 		}
 		else if (IsWallBlocking(x, y, t))
 			return -1;
-		else if (bmap[y/CELL][x/CELL]==WL_DETECT && elements[t].Properties & TYPE_SOLID)
-			return -1;
 		else if (photons[y][x] && (elements[t].Properties & TYPE_ENERGY))
 			return -1;
 	}
@@ -3478,6 +3484,7 @@ void Simulation::UpdateParticles(int start, int end)
 	for (i = start; i <= end && i <= parts_lastActiveIndex; i++)
 		if (parts[i].type)
 		{
+			debug_mostRecentlyUpdated = i;
 			t = parts[i].type;
 
 			x = (int)(parts[i].x+0.5f);
@@ -4982,6 +4989,10 @@ void Simulation::BeforeSim()
 {
 	if (!sys_pause||framerender)
 	{
+#ifdef LUACONSOLE
+		luacon_ci->HandleEvent(LuaEvents::beforesim, new BeforeSimEvent());
+#endif
+
 		air->update_air();
 
 		if(aheat_enable)
@@ -5173,6 +5184,8 @@ void Simulation::BeforeSim()
 
 void Simulation::AfterSim()
 {
+	debug_mostRecentlyUpdated = -1;
+
 	if (emp_trigger_count)
 	{
 		// pitiful attempt at trying to keep code relating to a given element in the same file
@@ -5180,6 +5193,10 @@ void Simulation::AfterSim()
 		Element_EMP_Trigger(this, emp_trigger_count);
 		emp_trigger_count = 0;
 	}
+
+#ifdef LUACONSOLE
+	luacon_ci->HandleEvent(LuaEvents::aftersim, new AfterSimEvent());
+#endif
 }
 
 Simulation::~Simulation()

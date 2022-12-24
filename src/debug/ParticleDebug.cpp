@@ -23,9 +23,9 @@ void ParticleDebug::Debug(int mode, int x, int y)
 		if (!sim->NUM_PARTS)
 			return;
 		i = debug_currentParticle;
-		while (i < NPART && !sim->parts[i].type)
+		while (i < NPART - 1 && !sim->parts[i].type)
 			i++;
-		if (i == NPART)
+		if (i == NPART - 1)
 			logmessage = "End of particles reached, updated sim";
 		else
 			logmessage = String::Build("Updated particle #", i);
@@ -34,7 +34,7 @@ void ParticleDebug::Debug(int mode, int x, int y)
 	{
 		if (x < 0 || x >= XRES || y < 0 || y >= YRES || !sim->pmap[y][x] || (i = ID(sim->pmap[y][x])) < debug_currentParticle)
 		{
-			i = NPART;
+			i = NPART - 1;
 			logmessage = String::Build("Updated particles from #", debug_currentParticle, " to end, updated sim");
 		}
 		else
@@ -88,7 +88,7 @@ bool ParticleDebug::KeyPress(int key, int scan, bool shift, bool ctrl, bool alt,
 				return true;
 			if (sim->debug_currentParticle > 0)
 			{
-				sim->UpdateParticles(sim->debug_currentParticle, NPART);
+				sim->UpdateParticles(sim->debug_currentParticle, NPART - 1);
 				sim->AfterSim();
 				String logmessage = String::Build("Updated particles from #", sim->debug_currentParticle, " to end, updated sim");
 				model->Log(logmessage, false);

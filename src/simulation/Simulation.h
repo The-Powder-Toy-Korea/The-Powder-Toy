@@ -55,6 +55,7 @@ public:
 
 	char can_move[PT_NUM][PT_NUM];
 	int debug_currentParticle;
+	int debug_mostRecentlyUpdated = -1; // -1 when between full update loops
 	int parts_lastActiveIndex;
 	int pfree;
 	int NUM_PARTS;
@@ -162,7 +163,7 @@ public:
 	void set_emap(int x, int y);
 	int parts_avg(int ci, int ni, int t);
 	void create_arc(int sx, int sy, int dx, int dy, int midpoints, int variance, int type, int flags);
-	void UpdateParticles(int start, int end);
+	void UpdateParticles(int start, int end); // range inclusive on both ends
 	void SimulateGoL();
 	void RecalcFreeParticles(bool do_life_dec);
 	void CheckStacking();
