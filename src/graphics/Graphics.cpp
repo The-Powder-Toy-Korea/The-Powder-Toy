@@ -137,58 +137,6 @@ VideoBuffer::~VideoBuffer()
 	delete[] Buffer;
 }
 
-/**
- * Common graphics functions, mostly static methods that provide
- * encoding/decoding of different formats and font metrics
- */
-
-char * Graphics::GenerateGradient(pixel * colours, float * points, int pointcount, int size)
-{
-	int cp, i, j;
-	pixel ptemp;
-	char * newdata = (char*)malloc(size * 3);
-	float poss, pose, temp;
-	memset(newdata, 0, size*3);
-	//Sort the Colours and Points
-	for (i = (pointcount - 1); i > 0; i--)
-	{
-		for (j = 1; j <= i; j++)
-		{
-			if (points[j-1] > points[j])
-			{
-				temp = points[j-1];
-				points[j-1] = points[j];
-				points[j] = temp;
-
-				ptemp = colours[j-1];
-				colours[j-1] = colours[j];
-				colours[j] = ptemp;
-			}
-		}
-	}
-	i = 0;
-	j = 1;
-	poss = points[i];
-	pose = points[j];
-	for (cp = 0; cp < size; cp++)
-	{
-		float cpos = (float)cp / (float)size, ccpos, cccpos;
-		if(cpos > pose && j+1 < pointcount)
-		{
-			poss = points[++i];
-			pose = points[++j];
-		}
-		ccpos = cpos - poss;
-		cccpos = ccpos / (pose - poss);
-		if(cccpos > 1.0f)
-			cccpos = 1.0f;
-		newdata[(cp*3)  ] = char(PIXR(colours[i])*(1.0f-cccpos) + PIXR(colours[j])*(cccpos));
-		newdata[(cp*3)+1] = char(PIXG(colours[i])*(1.0f-cccpos) + PIXG(colours[j])*(cccpos));
-		newdata[(cp*3)+2] = char(PIXB(colours[i])*(1.0f-cccpos) + PIXB(colours[j])*(cccpos));
-	}
-	return newdata;
-}
-
 pixel *Graphics::resample_img_nn(pixel * src, int sw, int sh, int rw, int rh)
 {
 	int y, x;
@@ -404,43 +352,6 @@ pixel *Graphics::resample_img(pixel *src, int sw, int sh, int rw, int rh)
 	}
 	return q;
 #endif
-}
-
-pixel *Graphics::rescale_img(pixel *src, int sw, int sh, int *qw, int *qh, int f)
-{
-	int i,j,x,y,w,h,r,g,b,c;
-	pixel p, *q;
-	w = (sw+f-1)/f;
-	h = (sh+f-1)/f;
-	q = (pixel *)malloc(w*h*PIXELSIZE);
-	for (y=0; y<h; y++)
-		for (x=0; x<w; x++)
-		{
-			r = g = b = c = 0;
-			for (j=0; j<f; j++)
-				for (i=0; i<f; i++)
-					if (x*f+i<sw && y*f+j<sh)
-					{
-						p = src[(y*f+j)*sw + (x*f+i)];
-						if (p)
-						{
-							r += PIXR(p);
-							g += PIXG(p);
-							b += PIXB(p);
-							c ++;
-						}
-					}
-			if (c>1)
-			{
-				r = (r+c/2)/c;
-				g = (g+c/2)/c;
-				b = (b+c/2)/c;
-			}
-			q[y*w+x] = PIXRGB(r, g, b);
-		}
-	*qw = w;
-	*qh = h;
-	return q;
 }
 
 int Graphics::textwidth(const String &str)
@@ -812,57 +723,20 @@ void Graphics::draw_icon(int x, int y, Icon icon, unsigned char alpha, bool inve
 	}
 }
 
-void Graphics::draw_rgba_image(const unsigned char *data_, int x, int y, float alpha)
+void Graphics::draw_rgba_image(const pixel *data, int w, int h, int x, int y, float alpha)
 {
-	unsigned char w, h;
-	int i, j;
-	unsigned char r, g, b, a;
-	unsigned char *data = (unsigned char*)data_;
-	if (!data) return;
-	w = *(data++)&0xFF;
-	h = *(data++)&0xFF;
-	for (j=0; j<h; j++)
+	for (int j = 0; j < h; j++)
 	{
-		for (i=0; i<w; i++)
+		for (int i = 0; i < w; i++)
 		{
-			r = *(data++)&0xFF;
-			g = *(data++)&0xFF;
-			b = *(data++)&0xFF;
-			a = *(data++)&0xFF;
+			auto rgba = *(data++);
+			auto a = (rgba >> 24) & 0xFF;
+			auto r = (rgba >> 16) & 0xFF;
+			auto g = (rgba >>  8) & 0xFF;
+			auto b = (rgba      ) & 0xFF;
 			addpixel(x+i, y+j, r, g, b, (int)(a*alpha));
 		}
 	}
-}
-
-pixel *Graphics::render_packed_rgb(void *image, int width, int height, int cmp_size)
-{
-	unsigned char *tmp;
-	pixel *res;
-	int i;
-
-	tmp = (unsigned char *)malloc(width*height*3);
-	if (!tmp)
-		return NULL;
-	res = (pixel *)malloc(width*height*PIXELSIZE);
-	if (!res)
-	{
-		free(tmp);
-		return NULL;
-	}
-
-	i = width*height*3;
-	if (BZ2_bzBuffToBuffDecompress((char *)tmp, (unsigned *)&i, (char *)image, cmp_size, 0, 0))
-	{
-		free(res);
-		free(tmp);
-		return NULL;
-	}
-
-	for (i=0; i<width*height; i++)
-		res[i] = PIXRGB(tmp[3*i], tmp[3*i+1], tmp[3*i+2]);
-
-	free(tmp);
-	return res;
 }
 
 VideoBuffer Graphics::DumpFrame()
@@ -1038,4 +912,40 @@ bool PngDataToPixels(std::vector<pixel> &imageData, int &imgw, int &imgh, const 
 	png_read_image(png, (png_bytepp)&rowPointers[0]);
 	png_destroy_read_struct(&png, &info, (png_infopp)NULL);
 	return true;
+}
+
+bool Graphics::GradientStop::operator <(const GradientStop &other) const
+{
+	return point < other.point;
+}
+
+std::vector<pixel> Graphics::Gradient(std::vector<GradientStop> stops, int resolution)
+{
+	std::vector<pixel> table(resolution, 0);
+	if (stops.size() >= 2)
+	{
+		std::sort(stops.begin(), stops.end());
+		auto stop = -1;
+		for (auto i = 0; i < resolution; ++i)
+		{
+			auto point = i / (float)resolution;
+			while (stop < (int)stops.size() - 1 && stops[stop + 1].point <= point)
+			{
+				++stop;
+			}
+			if (stop < 0 || stop >= (int)stops.size() - 1)
+			{
+				continue;
+			}
+			auto &left = stops[stop];
+			auto &right = stops[stop + 1];
+			auto f = (point - left.point) / (right.point - left.point);
+			table[i] = PIXRGB(
+				int(int(PIXR(left.color)) + (int(PIXR(right.color)) - int(PIXR(left.color))) * f),
+				int(int(PIXG(left.color)) + (int(PIXG(right.color)) - int(PIXG(left.color))) * f),
+				int(int(PIXB(left.color)) + (int(PIXB(right.color)) - int(PIXB(left.color))) * f)
+			);
+		}
+	}
+	return table;
 }
