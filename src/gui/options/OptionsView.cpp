@@ -239,12 +239,12 @@ OptionsView::OptionsView():
 	currentY+=20;
 	temperatureScale = new ui::DropDown(ui::Point(Size.X-95, currentY), ui::Point(80, 16));
 	scrollPanel->AddChild(temperatureScale);
-	temperatureScale->AddOption(std::pair<String, int>("Kelvin", 0));
-	temperatureScale->AddOption(std::pair<String, int>("Celsius", 1));
-	temperatureScale->AddOption(std::pair<String, int>("Fahrenheit", 2));
+	temperatureScale->AddOption(std::pair<String, int>("절대온도", 0));
+	temperatureScale->AddOption(std::pair<String, int>("섭씨", 1));
+	temperatureScale->AddOption(std::pair<String, int>("화씨", 2));
 	temperatureScale->SetActionCallback({ [this] { c->SetTemperatureScale(temperatureScale->GetOption().second); } });
 
-	tempLabel = new ui::Label(ui::Point(8, currentY), ui::Point(Size.X-96, 16), "Temperature Scale");
+	tempLabel = new ui::Label(ui::Point(8, currentY), ui::Point(Size.X-96, 16), "온도 단위");
 	tempLabel->Appearance.HorizontalAlign = ui::Appearance::AlignLeft;
 	tempLabel->Appearance.VerticalAlign = ui::Appearance::AlignMiddle;
 	scrollPanel->AddChild(tempLabel);
@@ -473,7 +473,7 @@ void OptionsView::AmbientAirTempToTextBox(float airTemp)
 void OptionsView::UpdateAirTemp(String temp, bool isDefocus)
 {
 	// Parse air temp and determine validity
-	float airTemp;
+	float airTemp = 0;
 	bool isValid;
 	try
 	{

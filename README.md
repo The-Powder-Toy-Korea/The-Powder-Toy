@@ -1,4 +1,4 @@
-The Powder Toy - 2022년 12월
+The Powder Toy - 2023년 1월
 ==========================
 
 [The Powder Toy 공식 홈페이지](https://powdertoy.co.uk/Download.html)에서 최신 버전의 오리지널 TPT를 내려받으세요.
@@ -120,15 +120,15 @@ TPT를 빌드하려면 [The Powder Toy 공식 위키](https://powdertoy.co.uk/Wi
 명령줄 명령
 ---------------------------------------------------------------------------
 
-| 명령                  | 설명                                              | 예시                              |
-| --------------------- | ------------------------------------------------ | --------------------------------- |
-| `scale:SIZE`          | 창 스케일 조정                                    | `scale:2`                         |
-| `kiosk`               | 전체 화면                                         |                                   |
-| `proxy:SERVER[:PORT]` | 사용할 프록시 서버                                 | `proxy:wwwcache.lancs.ac.uk:8080` |
-| `open FILE`           | 세이브 및 스탬프 열기                              |                                   |
-| `ddir DIRECTORY`      | 설정 및 스탬프가 저장된 디렉터리                    |                                   |
-| `ptsave:SAVEID`       | 온라인 세이브 열기, URL이 ptsave에서 사용됨         | `ptsave:2198`                     |
-| `disable-network`     | 인터넷 연결 비활성화                               |                                   |
-| `redirect`            | 출력을 stdout.txt / stderr.txt에 리다이렉트        |                                   |
-| `cafile:CAFILE`       | 인증서 번들 경로 설정                                | `cafile:/etc/ssl/certs/ca-certificates.crt` |
-| `capath:CAPATH`       | 인증서 디렉터리 경로 설정                             | `capath:/etc/ssl/certs`           |
+| 명령                  | 설명                                        | 예시                                        |
+| --------------------- | ------------------------------------------- | ------------------------------------------- |
+| `scale:SIZE`          | 창 스케일 조정                              | `scale:2`                                   |
+| `kiosk`               | 전체 화면                                   |                                             |
+| `proxy:SERVER[:PORT]` | 사용할 프록시 서버                          | `proxy:wwwcache.lancs.ac.uk:8080`           |
+| `open FILE`           | 세이브 및 스탬프 열기                       |                                             |
+| `ddir DIRECTORY`      | 설정 및 스탬프가 저장된 디렉터리            |                                             |
+| `ptsave:SAVEID`       | 온라인 세이브 열기, URL이 ptsave에서 사용됨 | `ptsave:2198`                               |
+| `disable-network`     | 인터넷 연결 비활성화                        |                                             |
+| `redirect`            | 출력을 stdout.txt / stderr.txt에 리다이렉트 |                                             |
+| `cafile:CAFILE`       | 인증서 번들 경로 설정                       | `cafile:/etc/ssl/certs/ca-certificates.crt` |
+| `capath:CAPATH`       | 인증서 디렉터리 경로 설정                   | `capath:/etc/ssl/certs`                     |
