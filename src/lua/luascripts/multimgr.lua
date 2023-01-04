@@ -24,6 +24,8 @@ rawset(env__, "require", require)
 
 require_preload__["tptmp.client"] = function()
 
+	local common_util = require("tptmp.common.util")
+	
 	local loadtime_error
 	local http = rawget(_G, "http")
 	local socket = rawget(_G, "socket")
@@ -31,7 +33,7 @@ require_preload__["tptmp.client"] = function()
 		loadtime_error = "CELL size is not 4"
 	elseif sim.PMAPBITS >= 13 then -- * Required by how non-element tools are encoded (extended tool IDs, XIDs).
 		loadtime_error = "PMAPBITS is too large"
-	elseif not (tpt.version and tpt.version.major >= 96 and tpt.version.minor >= 2) then
+	elseif not tpt.version or common_util.version_less({ tpt.version.major, tpt.version.minor }, { 97, 0 }) then
 		loadtime_error = "version not supported"
 	elseif not rawget(_G, "bit") then
 		loadtime_error = "no bit API"
@@ -69,22 +71,6 @@ require_preload__["tptmp.client"] = function()
 		if loadtime_error then
 			print("TPTMP " .. config.versionstr .. ": Cannot load: " .. loadtime_error)
 			return
-		end
-	
-		-- * Prevent c1k's mod from deleting us.
-		if tpt.version.modid == 6 then
-			local protect_from_malware = {
-				[ "scripts/downloaded/2 LBPHacker-TPTMulti.lua" ] = true,
-				[ "scripts/downloaded/219 Maticzpl-Notifications.lua" ] = true,
-			}
-	
-			local real_remove = os.remove
-			function os.remove(path)
-				if path and protect_from_malware[path] then
-					return nil, "malware :/"
-				end
-				return real_remove(path)
-			end
 		end
 	
 		local hooks_enabled = false
@@ -587,27 +573,23 @@ require_preload__["tptmp.client.client"] = function()
 		[ 3 ] = "tool_x",
 	}
 	
-	local function get_auth_token(uid, sess, audience)
-		local req = http.get(config.auth_backend .. "?Action=Get&Audience=" .. util.urlencode(audience), {
-			[ "X-Auth-User-Id" ] = uid,
-			[ "X-Auth-Session-Key" ] = sess,
-		})
+	local function get_auth_token(audience)
+		local req = http.getAuthToken(audience)
 		local started_at = socket.gettime()
 		while req:status() == "running" do
 			if socket.gettime() > started_at + config.auth_backend_timeout then
-				return nil, "timeout", "authentication backend down"
+				return nil, "timeout", "failed to contact authentication backend"
 			end
 			coroutine.yield()
 		end
 		local body, code = req:finish()
+		if code == 403 then
+			return nil, "refused", body
+		end
 		if code ~= 200 then
 			return nil, "non200", code
 		end
-		local status = body:match([["Status":"([^"]+)"]])
-		if status ~= "OK" then
-			return nil, "refused", status
-		end
-		return body:match([["Token":"([^"]+)"]])
+		return body
 	end
 	
 	function client_i:proto_error_(...)
@@ -906,7 +888,7 @@ require_preload__["tptmp.client.client"] = function()
 		},
 		{
 			format = "Gravity mode set to %s by %s",
-			states = { "vertical", "off", "radial" },
+			states = { "vertical", "off", "radial", "custom" },
 			func = sim.gravityMode,
 			shift = 8,
 			size = 2,
@@ -930,6 +912,8 @@ require_preload__["tptmp.client.client"] = function()
 		local member = self:member_prefix_()
 		local lo, hi = self:read_bytes_(2)
 		local temp = self:read_24be_()
+		local gravx = self:read_24be_()
+		local gravy = self:read_24be_()
 		local bits = bit.bor(lo, bit.lshift(hi, 8))
 		for i = 1, #simstates do
 			local desc = simstates[i]
@@ -945,6 +929,15 @@ require_preload__["tptmp.client.client"] = function()
 		if util.ambient_air_temp() ~= temp then
 			local set = util.ambient_air_temp(temp)
 			self.log_event_func_(colours.commonstr.event .. ("Ambient air temperature set to %.2f by %s"):format(set, member.formatted_nick))
+		end
+		do
+			local cgx, cgy = util.custom_gravity()
+			if cgx ~= gravx or cgy ~= gravy then
+				local setx, sety = util.custom_gravity(gravx, gravy)
+				if sim.gravityMode() == 3 then
+					self.log_event_func_(colours.commonstr.event .. ("Custom gravity set to (%+.2f, %+.2f) by %s"):format(setx, sety, member.formatted_nick))
+				end
+			end
 		end
 		self.profile_:sample_simstate()
 	end
@@ -1265,12 +1258,12 @@ require_preload__["tptmp.client.client"] = function()
 	
 	function client_i:handshake_()
 		self.window_:set_subtitle("status", "Registering")
-		local uid, sess, name = util.get_user()
+		local name = util.get_name()
 		self:write_bytes_(tpt.version.major, tpt.version.minor, config.version)
 		self:write_nullstr_((name or tpt.get_name() or ""):sub(1, 255))
 		self:write_bytes_(0) -- * Flags, currently unused.
-		local qa_host, qa_port, qa_uid, qa_token = self.get_qa_func_():match("^([^:]+):([^:]+):([^:]+):([^:]+)$")
-		self:write_str8_(qa_token and qa_uid == uid and qa_host == self.host_ and tonumber(qa_port) == self.port_ and qa_token or "")
+		local qa_host, qa_port, qa_name, qa_token = self.get_qa_func_():match("^([^:]+):([^:]+):([^:]+):([^:]+)$")
+		self:write_str8_(qa_token and qa_name == name and qa_host == self.host_ and tonumber(qa_port) == self.port_ and qa_token or "")
 		self:write_str8_(self.initial_room_ or "")
 		self:write_flush_()
 		local conn_status = self:read_bytes_(1)
@@ -1278,8 +1271,8 @@ require_preload__["tptmp.client.client"] = function()
 		if conn_status == 4 then -- * Quickauth failed.
 			self.window_:set_subtitle("status", "Authenticating")
 			local token = ""
-			if uid then
-				local fresh_token, err, info = get_auth_token(uid, sess, self.host_ .. ":" .. self.port_)
+			if name then
+				local fresh_token, err, info = get_auth_token(self.host_ .. ":" .. self.port_)
 				if fresh_token then
 					token = fresh_token
 				else
@@ -1295,8 +1288,8 @@ require_preload__["tptmp.client.client"] = function()
 			self:write_str8_(token)
 			self:write_flush_()
 			conn_status = self:read_bytes_(1)
-			if uid then
-				self.set_qa_func_((conn_status == 1) and (self.host_ .. ":" .. self.port_ .. ":" .. uid .. ":" .. token) or "")
+			if name then
+				self.set_qa_func_((conn_status == 1) and (self.host_ .. ":" .. self.port_ .. ":" .. name .. ":" .. token) or "")
 			end
 		end
 		local downgrade_reason
@@ -1384,7 +1377,7 @@ require_preload__["tptmp.client.client"] = function()
 		self:write_flush_()
 	end
 	
-	function client_i:send_simstate(ss_p, ss_h, ss_u, ss_n, ss_w, ss_g, ss_a, ss_e, ss_y, ss_t)
+	function client_i:send_simstate(ss_p, ss_h, ss_u, ss_n, ss_w, ss_g, ss_a, ss_e, ss_y, ss_t, ss_r, ss_s)
 		self:write_("\38")
 		local toggles = bit.bor(
 			           ss_p    ,
@@ -1401,6 +1394,8 @@ require_preload__["tptmp.client.client"] = function()
 		)
 		self:write_bytes_(toggles, multis)
 		self:write_24be_(ss_t)
+		self:write_24be_(ss_r)
+		self:write_24be_(ss_s)
 		self:write_flush_()
 	end
 	
@@ -2090,7 +2085,7 @@ require_preload__["tptmp.client.config"] = function()
 
 	local common_config = require("tptmp.common.config")
 	
-	local versionstr = "v2.0.25"
+	local versionstr = "v2.0.28"
 	
 	local config = {
 		-- ***********************************************************************
@@ -2923,42 +2918,6 @@ require_preload__["tptmp.client.profile.vanilla"] = function()
 		end
 	end
 	
-	local function stash_part()
-		local id = sim.parts()()
-		local info
-		if id then
-			local x, y = sim.partPosition(id)
-			id = sim.partID(math.floor(x + 0.5), math.floor(y + 0.5))
-			local ty = sim.partProperty(id, "type")
-			if ty then
-				info = { [ sim.FIELD_TYPE ] = ty }
-				for _, v in ipairs(props) do
-					info[v] = sim.partProperty(id, v)
-				end
-			else
-				info = false
-			end
-			sim.partProperty(id, "type", elem.DEFAULT_PT_ELEC)
-		else
-			id = sim.partCreate(-3, 0, 0, elem.DEFAULT_PT_ELEC)
-		end
-		return id, info
-	end
-	
-	local function unstash_part(id, info)
-		if info == nil then
-			return
-		end
-		if not info then
-			sim.partKill(id)
-			return
-		end
-		sim.partProperty(id, "type", info[sim.FIELD_TYPE])
-		for _, v in ipairs(props) do
-			sim.partProperty(id, v, info[v])
-		end
-	end
-	
 	local function in_zoom_window(x, y)
 		local ax, ay = sim.adjustCoords(x, y)
 		return ren.zoomEnabled() and (ax ~= x or ay ~= y)
@@ -3142,7 +3101,7 @@ require_preload__["tptmp.client.profile.vanilla"] = function()
 	
 	function profile_i:simstate_sync()
 		if self.client_ then
-			self.client_:send_simstate(self.ss_p_, self.ss_h_, self.ss_u_, self.ss_n_, self.ss_w_, self.ss_g_, self.ss_a_, self.ss_e_, self.ss_y_, self.ss_t_)
+			self.client_:send_simstate(self.ss_p_, self.ss_h_, self.ss_u_, self.ss_n_, self.ss_w_, self.ss_g_, self.ss_a_, self.ss_e_, self.ss_y_, self.ss_t_, self.ss_r_, self.ss_s_)
 		end
 	end
 	
@@ -3335,6 +3294,7 @@ require_preload__["tptmp.client.profile.vanilla"] = function()
 		local ss_e = sim.edgeMode()
 		local ss_y = sim.prettyPowders()
 		local ss_t = util.ambient_air_temp()
+		local ss_r, ss_s = util.custom_gravity()
 		if self.ss_p_ ~= ss_p or
 		   self.ss_h_ ~= ss_h or
 		   self.ss_u_ ~= ss_u or
@@ -3344,7 +3304,9 @@ require_preload__["tptmp.client.profile.vanilla"] = function()
 		   self.ss_a_ ~= ss_a or
 		   self.ss_e_ ~= ss_e or
 		   self.ss_y_ ~= ss_y or
-		   self.ss_t_ ~= ss_t then
+		   self.ss_t_ ~= ss_t or
+		   self.ss_r_ ~= ss_r or
+		   self.ss_s_ ~= ss_s then
 			self.ss_p_ = ss_p
 			self.ss_h_ = ss_h
 			self.ss_u_ = ss_u
@@ -3355,6 +3317,8 @@ require_preload__["tptmp.client.profile.vanilla"] = function()
 			self.ss_e_ = ss_e
 			self.ss_y_ = ss_y
 			self.ss_t_ = ss_t
+			self.ss_r_ = ss_r
+			self.ss_s_ = ss_s
 			return true
 		end
 		return false
@@ -5015,29 +4979,6 @@ require_preload__["tptmp.client.util"] = function()
 		return data
 	end
 	
-	local function get_user()
-		local pref = io.open("powder.pref")
-		if not pref then
-			return
-		end
-		local pref_data = pref:read("*a")
-		pref:close()
-		local user = pref_data:match([["User"%s*:%s*(%b{})]])
-		if not user then
-			return
-		end
-		local uid = user:match([["ID"%s*:%s*(%d+)]])
-		local sess = user:match([["SessionID"%s*:%s*"([^"]+)"]])
-		local name = user:match([["Username"%s*:%s*"([^"]+)"]])
-		if not uid or not sess or not name then
-			return
-		end
-		if name ~= tpt.get_name() then
-			return
-		end
-		return uid, sess, name
-	end
-	
 	-- * Finds bynd, the smallest idx in [first, last] for which beyond(idx)
 	--   is true. Assumes that for all idx in [first, bynd-1] beyond(idx) is
 	--   false and for all idx in [bynd, last] beyond(idx) is true. beyond(first-1)
@@ -5349,7 +5290,24 @@ require_preload__["tptmp.client.util"] = function()
 			sim.ambientAirTemp(set)
 			return set
 		else
-			return math.floor(sim.ambientAirTemp() * 0x400)
+			return math.max(0x000000, math.min(0xFFFFFF, math.floor(sim.ambientAirTemp() * 0x400)))
+		end
+	end
+	
+	local function custom_gravity(x, y)
+		if x then
+			if x >= 0x800000 then x = x - 0x1000000 end
+			if y >= 0x800000 then y = y - 0x1000000 end
+			local setx, sety = x / 0x400, y / 0x400
+			sim.customGravity(setx, sety)
+			return setx, sety
+		else
+			local getx, gety = sim.customGravity()
+			getx = math.max(-0x800000, math.min(0x7FFFFF, math.floor(getx * 0x400)))
+			gety = math.max(-0x800000, math.min(0x7FFFFF, math.floor(gety * 0x400)))
+			if getx < 0 then getx = getx + 0x1000000 end
+			if gety < 0 then gety = gety + 0x1000000 end
+			return getx, gety
 		end
 	end
 	
@@ -5367,8 +5325,13 @@ require_preload__["tptmp.client.util"] = function()
 		end))
 	end
 	
+	local function get_name()
+		local name = tpt.get_name()
+		return name ~= "" and name or nil
+	end
+	
 	return {
-		get_user = get_user,
+		get_name = get_name,
 		stamp_load = stamp_load,
 		stamp_save = stamp_save,
 		binary_search_implicit = binary_search_implicit,
@@ -5393,6 +5356,7 @@ require_preload__["tptmp.client.util"] = function()
 		escape_regex = escape_regex,
 		fnv1a32 = fnv1a32,
 		ambient_air_temp = ambient_air_temp,
+		custom_gravity = custom_gravity,
 		get_save_id = get_save_id,
 		version_less = common_util.version_less,
 		version_equal = common_util.version_equal,
@@ -5413,6 +5377,11 @@ require_preload__["tptmp.client.window"] = function()
 	local util    = require("tptmp.client.util")
 	local manager = require("tptmp.client.manager")
 	local sdl     = require("tptmp.client.sdl")
+	
+	local notif_important = colours.common.notif_important
+	local text_bg_high = { notif_important[1] / 2, notif_important[2] / 2, notif_important[3] / 2 }
+	local text_bg_high_floating = { notif_important[1] / 3, notif_important[2] / 3, notif_important[3] / 3 }
+	local text_bg = { 0, 0, 0 }
 	
 	local window_i = {}
 	local window_m = { __index = window_i }
@@ -5522,9 +5491,9 @@ require_preload__["tptmp.client.window"] = function()
 	}
 	function window_i:backlog_push_server(str)
 		local formatted = str
-			:gsub("\au([A-Za-z0-9-_]+)", function(cap) return format.nick(cap, self.nick_colour_seed_) end)
-			:gsub("\ar([A-Za-z0-9-_]+)", function(cap) return format.room(cap)                         end)
-			:gsub("\a([nejl])"         , function(cap) return server_colours[cap]                      end)
+			:gsub("\au([A-Za-z0-9-_#]+)", function(cap) return format.nick(cap, self.nick_colour_seed_) end)
+			:gsub("\ar([A-Za-z0-9-_#]+)", function(cap) return format.room(cap)                         end)
+			:gsub("\a([nejl])"          , function(cap) return server_colours[cap]                      end)
 		self:backlog_push_str(formatted, true)
 	end
 	
@@ -5854,33 +5823,69 @@ require_preload__["tptmp.client.window"] = function()
 			gfx.drawLine(self.pos_x_ + 14, self.pos_y_ + 1, self.pos_x_ + 14, self.pos_y_ + 13, unpack(border_colour))
 		end
 	
-		for i = 1, #self.backlog_text_ do
-			local fades_at = self.backlog_text_[i].pushed_at + config.floating_linger_time + config.floating_fade_time
-			if floating and fades_at > now then
-				local alpha = math.min(1, (fades_at - now) / config.floating_fade_time)
-				gfx.fillRect(self.pos_x_ - 1, self.pos_y_ + self.backlog_text_y_ + i * 12 - 15, self.backlog_text_[i].box_width, self.backlog_text_[i + 1] and 12 or 14, 0, 0, 0, alpha * self.alpha_)
-				if self.backlog_text_[i + 1] and self.backlog_text_[i + 1].box_width < self.backlog_text_[i].box_width then
-					gfx.fillRect(self.pos_x_ - 1 + self.backlog_text_[i + 1].box_width, self.pos_y_ + self.backlog_text_y_ + i * 12 - 3, self.backlog_text_[i].box_width - self.backlog_text_[i + 1].box_width, 2, 0, 0, 0, alpha * self.alpha_)
-				end
+		local prev_text, prev_fades_at, prev_alpha, prev_box_width, prev_highlight
+		for i = 1, #self.backlog_text_ + 1 do
+			local fades_at, alpha, box_width, highlight
+			if self.backlog_text_[i] then
+				fades_at = self.backlog_text_[i].pushed_at + config.floating_linger_time + config.floating_fade_time
+				alpha = math.max(0, math.min(1, (fades_at - now) / config.floating_fade_time))
+				box_width = self.backlog_text_[i].box_width
+				highlight = self.backlog_text_[i].highlight
 			end
-		end
-		for i = 1, #self.backlog_text_ do
-			local fades_at = self.backlog_text_[i].pushed_at + config.floating_linger_time + config.floating_fade_time
-			if not floating or fades_at > now then
+			if not prev_fades_at then
+				prev_fades_at, prev_alpha, prev_box_width, prev_highlight = fades_at, alpha, box_width, highlight
+			elseif not fades_at then
+				fades_at, alpha, box_width, highlight = prev_fades_at, prev_alpha, prev_box_width, prev_highlight
+			end
+	
+			local comm_box_width = math.max(box_width, prev_box_width)
+			local min_box_width = math.min(box_width, prev_box_width)
+			local comm_fades_at = math.max(fades_at, prev_fades_at)
+			local comm_alpha = math.max(alpha, prev_alpha)
+			local comm_highlight = highlight or prev_highlight
+			local diff_fades_at = prev_fades_at
+			local diff_alpha = prev_alpha
+			local diff_highlight = prev_highlight
+			if box_width > prev_box_width then
+				diff_fades_at = fades_at
+				diff_alpha = alpha
+				diff_highlight = highlight
+			end
+			if floating and diff_fades_at > now then
+				local rgb = diff_highlight and text_bg_high_floating or text_bg
+				gfx.fillRect(self.pos_x_ - 1 + min_box_width, self.pos_y_ + self.backlog_text_y_ + i * 12 - 15, comm_box_width - min_box_width, 2, rgb[1], rgb[2], rgb[3], diff_alpha * self.alpha_)
+			end
+			if floating and comm_fades_at > now then
+				local rgb = comm_highlight and text_bg_high_floating or text_bg
+				local alpha = 1
+				if not highlight and prev_alpha < comm_alpha then
+					alpha = prev_alpha
+				end
+				gfx.fillRect(self.pos_x_ - 1, self.pos_y_ + self.backlog_text_y_ + i * 12 - 15, min_box_width, 2, alpha * rgb[1], alpha * rgb[2], alpha * rgb[3], comm_alpha * self.alpha_)
+			end
+	
+			if prev_text then
 				local alpha = 1
 				if floating then
-					alpha = math.min(1, (fades_at - now) / config.floating_fade_time)
+					alpha = math.min(1, (prev_fades_at - now) / config.floating_fade_time)
 				end
-				if self.backlog_text_[i].highlight then
-					gfx.fillRect(self.pos_x_ + 1, self.pos_y_ + self.backlog_text_y_ + i * 12 - 14, self.width_ - 2, 12, 255, 50, 50, alpha * 64)
+				if floating and prev_fades_at > now then
+					local rgb = prev_highlight and text_bg_high_floating or text_bg
+					gfx.fillRect(self.pos_x_ - 1, self.pos_y_ + self.backlog_text_y_ + i * 12 - 25, prev_box_width, 10, rgb[1], rgb[2], rgb[3], alpha * self.alpha_)
 				end
-				gfx.drawText(self.pos_x_ + 4 + self.backlog_text_[i].padding, self.pos_y_ + self.backlog_text_y_ + i * 12 - 12, self.backlog_text_[i].text, 255, 255, 255, alpha * 255)
+				if not floating and prev_highlight then
+					gfx.fillRect(self.pos_x_ + 1, self.pos_y_ + self.backlog_text_y_ + i * 12 - 26, self.width_ - 2, 12, text_bg_high[1], text_bg_high[2], text_bg_high[3], alpha * self.alpha_)
+				end
+				if not floating or prev_fades_at > now then
+					gfx.drawText(self.pos_x_ + 4 + prev_text.padding, self.pos_y_ + self.backlog_text_y_ + i * 12 - 24, prev_text.text, 255, 255, 255, alpha * 255)
+				end
 			end
+			prev_text, prev_alpha, prev_fades_at, prev_box_width, prev_highlight = self.backlog_text_[i], alpha, fades_at, box_width, highlight
 		end
 	
 		if not floating then
 			if self.backlog_marker_y_ then
-				gfx.drawLine(self.pos_x_ + 1, self.pos_y_ + self.backlog_marker_y_, self.pos_x_ + self.width_ - 2, self.pos_y_ + self.backlog_marker_y_, 255, 50, 50)
+				gfx.drawLine(self.pos_x_ + 1, self.pos_y_ + self.backlog_marker_y_, self.pos_x_ + self.width_ - 2, self.pos_y_ + self.backlog_marker_y_, unpack(notif_important))
 			end
 	
 			gfx.drawLine(self.pos_x_ + 1, self.pos_y_ + self.height_ - 15, self.pos_x_ + self.width_ - 2, self.pos_y_ + self.height_ - 15, unpack(border_colour))
@@ -5962,7 +5967,7 @@ require_preload__["tptmp.client.window"] = function()
 	function window_i:handle_mousewheel(px, py, dir)
 		if util.inside_rect(self.pos_x_, self.pos_y_ + 15, self.width_, self.height_ - 30, util.mouse_pos()) then
 			self:backlog_wrap_(self.backlog_last_visible_msg_)
-			if dir > 0 then
+			while dir > 0 do
 				if self.backlog_last_visible_line_ > 1 then
 					self.backlog_last_visible_line_ = self.backlog_last_visible_line_ - 1
 					self.backlog_auto_scroll_ = false
@@ -5972,7 +5977,9 @@ require_preload__["tptmp.client.window"] = function()
 					self.backlog_last_visible_line_ = #self.backlog_last_visible_msg_.wrapped
 					self.backlog_auto_scroll_ = false
 				end
-			else
+				dir = dir - 1
+			end
+			while dir < 0 do
 				if self.backlog_last_visible_line_ < #self.backlog_last_visible_msg_.wrapped then
 					self.backlog_last_visible_line_ = self.backlog_last_visible_line_ + 1
 				elseif self.backlog_last_visible_msg_.next ~= self.backlog_last_ then
@@ -5983,6 +5990,7 @@ require_preload__["tptmp.client.window"] = function()
 				if self.backlog_last_visible_msg_.next == self.backlog_last_ and self.backlog_last_visible_line_ == #self.backlog_last_visible_msg_.wrapped then
 					self.backlog_auto_scroll_ = true
 				end
+				dir = dir + 1
 			end
 			self:backlog_update_()
 			return true
@@ -6768,7 +6776,7 @@ require_preload__["tptmp.common.config"] = function()
 		-- ***********************************************************************
 	
 		-- * Protocol version, between 0 and 254. 255 is reserved for future use.
-		version = 27,
+		version = 28,
 	
 		-- * Client-to-server message size limit, between 0 and 255, the latter
 		--   limit being imposted by the protocol.
