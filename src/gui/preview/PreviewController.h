@@ -1,9 +1,5 @@
-#ifndef PREVIEWCONTROLLER_H_
-#define PREVIEWCONTROLLER_H_
-#include "Config.h"
-
+#pragma once
 #include "client/ClientListener.h"
-
 #include <functional>
 
 class SaveInfo;
@@ -39,5 +35,3 @@ public:
 
 	virtual ~PreviewController();
 };
-
-#endif /* PREVIEWCONTROLLER_H_ */

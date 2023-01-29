@@ -1,9 +1,6 @@
-#ifndef TAGSMODEL_H_
-#define TAGSMODEL_H_
-#include "Config.h"
-
-#include <vector>
+#pragma once
 #include "common/String.h"
+#include <vector>
 
 class SaveInfo;
 
@@ -21,5 +18,3 @@ public:
 	SaveInfo * GetSave();
 	virtual ~TagsModel();
 };
-
-#endif /* TAGSMODEL_H_ */

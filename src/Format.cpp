@@ -1,5 +1,5 @@
 #include "Format.h"
-
+#include "graphics/Graphics.h"
 #include <ctime>
 #include <stdexcept>
 #include <iostream>
@@ -7,12 +7,7 @@
 #include <cstring>
 #include <zlib.h>
 #include <cstdio>
-
-#include "graphics/Graphics.h"
-
-#ifndef RENDERER
-# include "SDLCompat.h"
-#endif
+#include <cstdint>
 
 ByteString format::UnixtimeToDate(time_t unixtime, ByteString dateFormat)
 {

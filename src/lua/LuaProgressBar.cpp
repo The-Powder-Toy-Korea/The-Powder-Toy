@@ -1,10 +1,5 @@
-#include "Config.h"
-#ifdef LUACONSOLE
-
 #include "LuaProgressBar.h"
-
 #include "LuaScriptInterface.h"
-
 #include "gui/interface/ProgressBar.h"
 
 const char LuaProgressBar::className[] = "ProgressBar";
@@ -66,4 +61,3 @@ int LuaProgressBar::status(lua_State * l)
 LuaProgressBar::~LuaProgressBar()
 {
 }
-#endif

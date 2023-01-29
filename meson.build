@@ -37,6 +37,9 @@ host_arch = host_machine.cpu_family()
 host_platform = host_machine.system()
 # educated guesses follow, PRs welcome
 if c_compiler.get_id() in [ 'msvc' ]
+	if host_platform != 'windows'
+		error('this seems fishy')
+	endif
 	host_libc = 'msvc'
 elif c_compiler.get_id() in [ 'gcc' ] and host_platform == 'windows'
 	host_libc = 'mingw'
@@ -49,6 +52,11 @@ elif host_platform in [ 'android' ]
 	host_platform = 'android'
 	host_libc = 'bionic'
 else
+	if host_platform != 'linux'
+		# TODO: maybe use 'default' in place of 'linux', or use something other than host_platform where details such as desktop integration are concerned
+		warning('host platform is not linux but we will pretend that it is')
+		host_platform = 'linux'
+	endif
 	host_libc = 'gnu'
 endif
 
@@ -64,11 +72,7 @@ endif
 
 is_static = static_variant != 'none'
 is_debug = get_option('optimization') in [ '0', 'g' ]
-enforce_https = get_option('enforce_https')
-
-if not is_debug and not enforce_https
-	error('refusing to build a release binary with enforce_https=false')
-endif
+app_exe = get_option('app_exe')
 
 tpt_libs_static = 'none'
 if static_variant == 'prebuilt'
@@ -121,10 +125,6 @@ else
 		))
 	endif
 endif
-
-conf_data = configuration_data()
-conf_data.set('CURL_STATICLIB', false)
-conf_data.set('ZLIB_WINAPI', false)
 
 x86_sse_level_str = get_option('x86_sse')
 if x86_sse_level_str == 'auto'
@@ -179,9 +179,7 @@ if host_platform == 'android'
 endif
 curl_dep = enable_http ? dependency('libcurl', static: is_static) : []
 
-enable_gravfft = get_option('gravfft')
-fftw_dep = enable_gravfft ? dependency('fftw3f', static: is_static) : []
-
+fftw_dep = dependency('fftw3f', static: is_static)
 threads_dep = dependency('threads')
 zlib_dep = dependency('zlib', static: is_static)
 png_dep = dependency('libpng16', static: is_static)
@@ -278,13 +276,11 @@ endif
 
 if host_platform == 'windows'
 	args_ccomp_win = [ '-D_WIN32_WINNT=0x0501' ]
-	project_c_args   += args_ccomp_win
-	project_cpp_args += args_ccomp_win
 	windows_mod = import('windows')
 	if is_static
-		conf_data.set('CURL_STATICLIB', true)
+		args_ccomp_win += [ '-DCURL_STATICLIB' ]
 		if host_arch == 'x86_64'
-			conf_data.set('ZLIB_WINAPI', true)
+			args_ccomp_win += [ '-DZLIB_WINAPI' ]
 		endif
 	else
 		foreach input_output_condition : tpt_libs.get_variable('config_dlls')
@@ -302,6 +298,8 @@ if host_platform == 'windows'
 			endif
 		endforeach
 	endif
+	project_c_args   += args_ccomp_win
+	project_cpp_args += args_ccomp_win
 endif
 
 project_inc = include_directories([ 'src', 'resources' ])
@@ -314,43 +312,6 @@ elif host_platform == 'darwin'
 	ident_platform = host_arch == 'aarch64' ? 'MACOSARM' : 'MACOSX'
 else
 	ident_platform = 'UNKNOWN'
-endif
-
-app_exe = get_option('app_exe')
-app_id = get_option('app_id')
-
-conf_data.set('LIN', host_platform == 'linux')
-conf_data.set('AND', host_platform == 'android')
-conf_data.set('WIN', host_platform == 'windows')
-conf_data.set('MACOSX', host_platform == 'darwin')
-conf_data.set('X86', is_x86)
-conf_data.set('X86_SSE3', x86_sse_level >= 30)
-conf_data.set('X86_SSE2', x86_sse_level >= 20)
-conf_data.set('X86_SSE', x86_sse_level >= 10)
-conf_data.set('_64BIT', is_64bit)
-conf_data.set('BETA', get_option('beta'))
-conf_data.set('NO_INSTALL_CHECK', not get_option('install_check'))
-conf_data.set('IGNORE_UPDATES', get_option('ignore_updates'))
-conf_data.set('MOD_ID', get_option('mod_id'))
-conf_data.set('DEBUG', is_debug)
-conf_data.set('SNAPSHOT', get_option('snapshot'))
-conf_data.set('SNAPSHOT_ID', get_option('snapshot_id'))
-conf_data.set('SERVER', '"@0@"'.format(get_option('server')))
-conf_data.set('STATICSERVER', '"@0@"'.format(get_option('static_server')))
-conf_data.set('IDENT_PLATFORM', '"@0@"'.format(ident_platform))
-conf_data.set('IDENT', '"@0@-@1@-@2@"'.format(host_arch, host_platform, host_libc).to_upper())
-conf_data.set('ENFORCE_HTTPS', enforce_https)
-conf_data.set('APPNAME', get_option('app_name'))
-conf_data.set('APPCOMMENT', get_option('app_comment'))
-conf_data.set('APPEXE', app_exe)
-conf_data.set('APPID', app_id)
-conf_data.set('APPDATA', get_option('app_data'))
-conf_data.set('APPVENDOR', get_option('app_vendor'))
-
-if get_option('update_server') != ''
-	conf_data.set('UPDATESERVER', '"@0@"'.format(get_option('update_server')))
-else
-	conf_data.set('UPDATESERVER', false)
 endif
 
 data_files = []
@@ -378,7 +339,7 @@ if get_option('build_powder')
 		powder_sha = shared_library(
 			app_exe,
 			sources: powder_files,
-			include_directories: [ project_inc, powder_inc ],
+			include_directories: project_inc,
 			c_args: project_c_args,
 			cpp_args: project_cpp_args,
 			link_args: project_link_args,
@@ -389,7 +350,7 @@ if get_option('build_powder')
 		executable(
 			app_exe,
 			sources: powder_files,
-			include_directories: [ project_inc, powder_inc ],
+			include_directories: project_inc,
 			c_args: project_c_args,
 			cpp_args: project_cpp_args,
 			win_subsystem: is_debug ? 'console' : 'windows',
@@ -414,7 +375,7 @@ if get_option('build_render')
 	executable(
 		'render',
 		sources: render_files,
-		include_directories: [ project_inc, render_inc ],
+		include_directories: project_inc,
 		c_args: project_c_args,
 		cpp_args: project_cpp_args,
 		link_args: render_link_args,
@@ -434,7 +395,7 @@ if get_option('build_font')
 	executable(
 		'font',
 		sources: font_files,
-		include_directories: [ project_inc, font_inc ],
+		include_directories: project_inc,
 		c_args: project_c_args,
 		cpp_args: project_cpp_args,
 		link_args: project_link_args,

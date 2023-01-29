@@ -1,12 +1,11 @@
 #include "GetUserInfoRequest.h"
-
-#include "Config.h"
 #include "client/UserInfo.h"
+#include "Config.h"
 
 namespace http
 {
 	GetUserInfoRequest::GetUserInfoRequest(ByteString username) :
-		APIRequest(SCHEME SERVER "/User.json?Name=" + username)
+		APIRequest(ByteString::Build(SCHEME, SERVER, "/User.json?Name=", username))
 	{
 	}
 
@@ -18,9 +17,6 @@ namespace http
 	{
 		std::unique_ptr<UserInfo> user_info;
 		auto result = APIRequest::Finish();
-		// Note that at this point it's not safe to use any member of the
-		// GetUserInfoRequest object as Request::Finish signals RequestManager
-		// to delete it.
 		if (result.document)
 		{
 			auto &user = (*result.document)["User"];

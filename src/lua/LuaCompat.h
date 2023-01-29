@@ -1,6 +1,4 @@
-#ifndef LUAINC_H
-#define LUAINC_H
-#include "Config.h"
+#pragma once
 
 #ifdef __cplusplus
 extern "C"
@@ -31,6 +29,4 @@ int luaL_tostring(lua_State *L, int n);
 
 #ifdef __cplusplus
 }
-#endif
-
 #endif

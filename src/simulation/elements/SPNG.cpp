@@ -30,7 +30,7 @@ void Element::Element_SPNG()
 	Weight = 100;
 
 	HeatConduct = 251;
-	Description = "스폰지: 물을 흡수합니다. 이동하지 않습니다.";
+	Description = "스펀지: 물을 흡수합니다. 이동하지 않습니다.";
 
 	Properties = TYPE_SOLID;
 
@@ -59,7 +59,7 @@ static int update(UPDATE_FUNC_ARGS)
 				if (BOUNDS_CHECK && (rx || ry))
 				{
 					r = pmap[y+ry][x+rx];
-					switch TYP(r)
+					switch (TYP(r))
 					{
 					case PT_WATR:
 					case PT_DSTW:

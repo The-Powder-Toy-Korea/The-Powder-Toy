@@ -1,8 +1,6 @@
-#ifndef ELIPSEBRUSH_H_
-#define ELIPSEBRUSH_H_
-
-#include <cmath>
+#pragma once
 #include "Brush.h"
+#include <cmath>
 
 class EllipseBrush: public Brush
 {
@@ -65,5 +63,3 @@ public:
 		}
 	}
 };
-
-#endif /* ELIPSEBRUSH_H_ */

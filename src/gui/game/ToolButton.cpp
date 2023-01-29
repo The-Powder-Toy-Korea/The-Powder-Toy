@@ -1,11 +1,7 @@
 #include "ToolButton.h"
-
 #include "graphics/Graphics.h"
-
-#include "gui/interface/Keys.h"
-#include "gui/interface/Mouse.h"
-
 #include "Favorite.h"
+#include <SDL.h>
 
 ToolButton::ToolButton(ui::Point position, ui::Point size, String text, ByteString toolIdentifier, String toolTip):
 	ui::Button(position, size, text, toolTip),

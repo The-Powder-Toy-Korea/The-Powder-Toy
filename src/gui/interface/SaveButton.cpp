@@ -2,8 +2,6 @@
 
 #include "ContextMenu.h"
 #include "Format.h"
-#include "Keys.h"
-#include "Mouse.h"
 
 #include "client/Client.h"
 #include "client/ThumbnailRendererTask.h"
@@ -12,6 +10,9 @@
 
 #include "gui/dialogues/ErrorMessage.h"
 #include "graphics/Graphics.h"
+
+#include "SimulationConfig.h"
+#include <SDL.h>
 
 namespace ui {
 
@@ -118,11 +119,6 @@ SaveButton::~SaveButton()
 	delete file;
 }
 
-void SaveButton::OnResponse(std::unique_ptr<VideoBuffer> Thumbnail)
-{
-	thumbnail = std::move(Thumbnail);
-}
-
 void SaveButton::Tick(float dt)
 {
 	if (!thumbnail)
@@ -141,8 +137,8 @@ void SaveButton::Tick(float dt)
 				}
 				else if (save->GetID())
 				{
-					RequestSetup(save->GetID(), save->GetVersion(), thumbBoxSize.X, thumbBoxSize.Y);
-					RequestStart();
+					thumbnailRequest = std::make_unique<http::ThumbnailRequest>(save->GetID(), save->GetVersion(), thumbBoxSize.X, thumbBoxSize.Y);
+					thumbnailRequest->Start();
 					triedThumbnail = true;
 				}
 			}
@@ -154,7 +150,11 @@ void SaveButton::Tick(float dt)
 			}
 		}
 
-		RequestPoll();
+		if (thumbnailRequest && thumbnailRequest->CheckDone())
+		{
+			thumbnail = thumbnailRequest->Finish();
+			thumbnailRequest.reset();
+		}
 
 		if (thumbnailRenderer)
 		{

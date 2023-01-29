@@ -3,7 +3,7 @@
 #include "client/Client.h"
 #include "client/GameSave.h"
 #include "client/ThumbnailRendererTask.h"
-#include "common/Platform.h"
+#include "common/platform/Platform.h"
 #include "graphics/Graphics.h"
 #include "gui/Style.h"
 
@@ -14,6 +14,7 @@
 #include "gui/interface/Textbox.h"
 
 #include "save_local.png.h"
+#include "Config.h"
 
 LocalSaveActivity::LocalSaveActivity(SaveFile save, OnSaved onSaved_) :
 	WindowActivity(ui::Point(-1, -1), ui::Point(220, 200)),
@@ -83,7 +84,7 @@ void LocalSaveActivity::Save()
 	}
 	else if (filenameField->GetText().length())
 	{
-		ByteString finalFilename = ByteString(LOCAL_SAVE_DIR) + ByteString(PATH_SEP) + filenameField->GetText().ToUtf8() + ".cps";
+		ByteString finalFilename = ByteString::Build(LOCAL_SAVE_DIR, PATH_SEP_CHAR, filenameField->GetText().ToUtf8(), ".cps");
 		save.SetDisplayName(filenameField->GetText());
 		save.SetFileName(finalFilename);
 		if (Platform::FileExists(finalFilename))

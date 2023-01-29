@@ -1,6 +1,5 @@
 #pragma once
 //http://lua-users.org/wiki/SimplerCppBinding
-
 #include "LuaCompat.h"
 
 template <typename T> class Luna

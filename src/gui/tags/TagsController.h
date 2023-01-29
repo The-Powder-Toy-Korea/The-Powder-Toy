@@ -1,9 +1,5 @@
-#ifndef TAGSCONTROLLER_H_
-#define TAGSCONTROLLER_H_
-#include "Config.h"
-
+#pragma once
 #include "common/String.h"
-
 #include <functional>
 
 class SaveInfo;
@@ -24,5 +20,3 @@ public:
 	void Exit();
 	virtual ~TagsController();
 };
-
-#endif /* TAGSCONTROLLER_H_ */

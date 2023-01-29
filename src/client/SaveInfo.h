@@ -1,9 +1,6 @@
-#ifndef SAVE_H
-#define SAVE_H
-#include "Config.h"
-
-#include <list>
+#pragma once
 #include "common/String.h"
+#include <list>
 
 #ifdef GetUserName
 # undef GetUserName // dammit windows
@@ -75,5 +72,3 @@ public:
 	GameSave * GetGameSave();
 	void SetGameSave(GameSave * gameSave);
 };
-
-#endif // SAVE_H

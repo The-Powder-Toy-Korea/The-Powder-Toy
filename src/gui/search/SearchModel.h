@@ -1,16 +1,24 @@
-#ifndef SEARCHMODEL_H
-#define SEARCHMODEL_H
-#include "Config.h"
-
-#include <vector>
+#pragma once
 #include "common/String.h"
+#include "client/http/Request.h"
+#include "Config.h"
+#include <vector>
 #include <atomic>
+#include <memory>
 
 class SaveInfo;
 class SearchView;
 class SearchModel
 {
 private:
+	std::unique_ptr<http::Request> searchSaves;
+	void BeginSearchSaves(int start, int count, String query, ByteString sort, ByteString category);
+	std::vector<SaveInfo *> EndSearchSaves();
+
+	void BeginGetTags(int start, int count, String query);
+	std::vector<std::pair<ByteString, int>> EndGetTags();
+	std::unique_ptr<http::Request> getTags;
+
 	SaveInfo * loadedSave;
 	ByteString currentSort;
 	String lastQuery;
@@ -21,7 +29,6 @@ private:
 	std::vector<std::pair<ByteString, int> > tagList;
 	int currentPage;
 	int resultCount;
-	int thResultCount;
 	bool showOwn;
 	bool showFavourite;
 	bool showTags;
@@ -34,19 +41,10 @@ private:
 	void notifyShowFavouriteChanged();
 
 	//Variables and methods for background save request
-	bool saveListLoaded;
-	bool updateSaveListWorking;
-	std::atomic<bool> updateSaveListFinished;
-	void updateSaveListT();
-	std::vector<SaveInfo *> *updateSaveListResult;
-
-	bool updateTagListWorking;
-	std::atomic<bool> updateTagListFinished;
-	void updateTagListT();
-	std::vector<std::pair<ByteString, int>> *updateTagListResult;
+	bool saveListLoaded = false;
 public:
     SearchModel();
-    virtual ~SearchModel();
+    ~SearchModel();
 
     void SetShowTags(bool show);
     bool GetShowTags();
@@ -58,11 +56,11 @@ public:
 	int GetPageCount();
 	int GetPageNum() { return currentPage; }
 	String GetLastQuery() { return lastQuery; }
-	void SetSort(ByteString sort) { if(!updateSaveListWorking) { currentSort = sort; } notifySortChanged(); }
+	void SetSort(ByteString sort) { if(!searchSaves) { currentSort = sort; } notifySortChanged(); }
 	ByteString GetSort() { return currentSort; }
-	void SetShowOwn(bool show) { if(!updateSaveListWorking) { if(show!=showOwn) { showOwn = show; } } notifyShowOwnChanged();  }
+	void SetShowOwn(bool show) { if(!searchSaves) { if(show!=showOwn) { showOwn = show; } } notifyShowOwnChanged();  }
 	bool GetShowOwn() { return showOwn; }
-	void SetShowFavourite(bool show) { if(show!=showFavourite && !updateSaveListWorking) { showFavourite = show; } notifyShowFavouriteChanged();  }
+	void SetShowFavourite(bool show) { if(show!=showFavourite && !searchSaves) { showFavourite = show; } notifyShowFavouriteChanged();  }
 	bool GetShowFavourite() { return showFavourite; }
 	void SetLoadedSave(SaveInfo * save);
 	SaveInfo * GetLoadedSave();
@@ -74,5 +72,3 @@ public:
 	void DeselectSave(int saveID);
 	void Update();
 };
-
-#endif // SEARCHMODEL_H

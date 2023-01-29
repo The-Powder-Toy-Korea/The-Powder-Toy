@@ -1,5 +1,4 @@
 #pragma once
-
 #include "LuaCompat.h"
 
 class LuaSmartRef

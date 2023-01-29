@@ -1,10 +1,7 @@
-#ifndef APIREQUEST2_H
-#define APIREQUEST2_H
-
+#pragma once
 #include "Request.h"
 #include "common/String.h"
 #include <json/json.h>
-
 #include <memory>
 #include <map>
 
@@ -25,6 +22,3 @@ namespace http
 		Result Finish();
 	};
 }
-
-#endif // APIREQUEST2_H
-

@@ -1,11 +1,9 @@
-#ifndef RENDERER_H
-#define RENDERER_H
-#include "Config.h"
-
-#include <vector>
-
+#pragma once
 #include "Graphics.h"
 #include "gui/interface/Point.h"
+#include "SimulationConfig.h"
+#include <vector>
+#include <mutex>
 
 class RenderPreset;
 class Simulation;
@@ -32,6 +30,8 @@ struct gcache_item
 };
 typedef struct gcache_item gcache_item;
 
+int HeatToColour(float temp);
+
 class Renderer
 {
 public:
@@ -46,9 +46,9 @@ public:
 	unsigned int display_mode;
 	std::vector<RenderPreset> renderModePresets;
 	//
-	unsigned char fire_r[YRES/CELL][XRES/CELL];
-	unsigned char fire_g[YRES/CELL][XRES/CELL];
-	unsigned char fire_b[YRES/CELL][XRES/CELL];
+	unsigned char fire_r[YCELLS][XCELLS];
+	unsigned char fire_g[YCELLS][XCELLS];
+	unsigned char fire_b[YCELLS][XCELLS];
 	unsigned int fire_alpha[CELL*3][CELL*3];
 	//
 	bool gravityZonesEnabled;
@@ -171,5 +171,3 @@ public:
 private:
 	int gridSize;
 };
-
-#endif

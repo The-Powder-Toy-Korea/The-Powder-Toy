@@ -1,9 +1,5 @@
 #include "ImageRequest.h"
-
-#include "common/Singleton.h"
 #include "graphics/Graphics.h"
-#include "Config.h"
-
 #include <iostream>
 
 namespace http
@@ -23,10 +19,8 @@ namespace http
 	{
 		int width = Width;
 		int height = Height;
-		ByteString data = Request::Finish(nullptr);
-		// Note that at this point it's not safe to use any member of the
-		// ImageRequest object as Request::Finish signals RequestManager
-		// to delete it.
+		auto [ status, data ] = Request::Finish();
+		(void)status; // We don't use this for anything, not ideal >_>
 		std::unique_ptr<VideoBuffer> vb;
 		if (data.size())
 		{

@@ -1,23 +1,19 @@
 #include "GameSave.h"
-
+#include "bzip2/bz2wrap.h"
+#include "Format.h"
+#include "simulation/Simulation.h"
+#include "simulation/ElementClasses.h"
+#include "common/tpt-minmax.h"
+#include "common/tpt-compat.h"
+#include "bson/BSON.h"
+#include "graphics/Renderer.h"
+#include "Config.h"
 #include <iostream>
 #include <cmath>
 #include <climits>
 #include <memory>
 #include <set>
 #include <cmath>
-
-#include "bzip2/bz2wrap.h"
-#include "Config.h"
-#include "Format.h"
-
-#include "simulation/Simulation.h"
-#include "simulation/ElementClasses.h"
-
-#include "common/tpt-minmax.h"
-#include "common/tpt-compat.h"
-#include "bson/BSON.h"
-#include "graphics/Renderer.h"
 
 static void ConvertJsonToBson(bson *b, Json::Value j, int depth = 0);
 static void ConvertBsonToJson(bson_iterator *b, Json::Value *j, int depth = 0);
@@ -31,8 +27,9 @@ GameSave::GameSave(int width, int height)
 	setSize(width, height);
 }
 
-GameSave::GameSave(const std::vector<char> &data)
+GameSave::GameSave(const std::vector<char> &data, bool newWantAuthors)
 {
+	wantAuthors = newWantAuthors;
 	blockWidth = 0;
 	blockHeight = 0;
 
@@ -451,7 +448,7 @@ void GameSave::readOPS(const std::vector<char> &data)
 		throw ParseException(ParseException::InvalidDimensions, "Save too small");
 
 	//Too large/off screen
-	if (blockX+blockW > XRES/CELL || blockY+blockH > YRES/CELL)
+	if (blockX+blockW > XCELLS || blockY+blockH > YCELLS)
 		throw ParseException(ParseException::InvalidDimensions, "Save too large");
 
 	setSize(blockW, blockH);
@@ -675,27 +672,24 @@ void GameSave::readOPS(const std::vector<char> &data)
 							minor = bson_iterator_int(&subiter);
 					}
 				}
-#if defined(SNAPSHOT) || defined(BETA) || defined(DEBUG) || MOD_ID > 0
-				if (major > FUTURE_SAVE_VERSION || (major == FUTURE_SAVE_VERSION && minor > FUTURE_MINOR_VERSION))
-#else
-				if (major > SAVE_VERSION || (major == SAVE_VERSION && minor > MINOR_VERSION))
-#endif
+				auto majorToCheck = ALLOW_FAKE_NEWER_VERSION ? FUTURE_SAVE_VERSION : SAVE_VERSION;
+				auto minorToCheck = ALLOW_FAKE_NEWER_VERSION ? FUTURE_MINOR_VERSION : MINOR_VERSION;
+				if (major > majorToCheck || (major == majorToCheck && minor > minorToCheck))
 				{
 					String errorMessage = String::Build("Save from a newer version: Requires version ", major, ".", minor);
 					throw ParseException(ParseException::WrongVersion, errorMessage);
 				}
-#if defined(SNAPSHOT) || defined(BETA) || defined(DEBUG) || MOD_ID > 0
-				else if (major > SAVE_VERSION || (major == SAVE_VERSION && minor > MINOR_VERSION))
+				else if (ALLOW_FAKE_NEWER_VERSION && (major > SAVE_VERSION || (major == SAVE_VERSION && minor > MINOR_VERSION)))
+				{
 					fakeNewerVersion = true;
-#endif
+				}
 			}
 			else
 			{
 				fprintf(stderr, "Wrong type for %s\n", bson_iterator_key(&iter));
 			}
 		}
-#ifndef RENDERER
-		else if (!strcmp(bson_iterator_key(&iter), "authors"))
+		else if (wantAuthors && !strcmp(bson_iterator_key(&iter), "authors"))
 		{
 			if (bson_iterator_type(&iter) == BSON_OBJECT)
 			{
@@ -709,7 +703,6 @@ void GameSave::readOPS(const std::vector<char> &data)
 				fprintf(stderr, "Wrong type for %s\n", bson_iterator_key(&iter));
 			}
 		}
-#endif
 	}
 
 	//Read wall and fan data
@@ -1241,6 +1234,8 @@ void GameSave::readOPS(const std::vector<char> &data)
 	}
 }
 
+#define MTOS_EXPAND(str) #str
+#define MTOS(str) MTOS_EXPAND(str)
 void GameSave::readPSv(const std::vector<char> &dataVec)
 {
 	Renderer::PopulateTables();
@@ -1300,16 +1295,16 @@ void GameSave::readPSv(const std::vector<char> &dataVec)
 
 	bw = saveData[6];
 	bh = saveData[7];
-	if (bx0+bw > XRES/CELL)
-		bx0 = XRES/CELL - bw;
-	if (by0+bh > YRES/CELL)
-		by0 = YRES/CELL - bh;
+	if (bx0+bw > XCELLS)
+		bx0 = XCELLS - bw;
+	if (by0+bh > YCELLS)
+		by0 = YCELLS - bh;
 	if (bx0 < 0)
 		bx0 = 0;
 	if (by0 < 0)
 		by0 = 0;
 
-	if (saveData[5]!=CELL || bx0+bw>XRES/CELL || by0+bh>YRES/CELL)
+	if (saveData[5]!=CELL || bx0+bw>XCELLS || by0+bh>YCELLS)
 		throw ParseException(ParseException::InvalidDimensions, "Save too large");
 	int size = (unsigned)saveData[8];
 	size |= ((unsigned)saveData[9])<<8;
@@ -1331,9 +1326,10 @@ void GameSave::readPSv(const std::vector<char> &dataVec)
 	const auto *data = reinterpret_cast<unsigned char *>(&bsonData[0]);
 	dataLength = bsonData.size();
 
-#ifdef DEBUG
-	std::cout << "Parsing " << dataLength << " bytes of data, version " << ver << std::endl;
-#endif
+	if constexpr (DEBUG)
+	{
+		std::cout << "Parsing " << dataLength << " bytes of data, version " << ver << std::endl;
+	}
 
 	if (dataLength < bw*bh)
 		throw ParseException(ParseException::Corrupt, "Save data corrupt (missing data)");
@@ -1895,12 +1891,8 @@ void GameSave::readPSv(const std::vector<char> &dataVec)
 		signs.push_back(tempSigns[i]);
 	}
 }
-
-// restrict the minimum version this save can be opened with
-#define RESTRICTVERSION(major, minor) if ((major) > minimumMajorVersion || (((major) == minimumMajorVersion && (minor) > minimumMinorVersion))) {\
-	minimumMajorVersion = major;\
-	minimumMinorVersion = minor;\
-}
+#undef MTOS
+#undef MTOS_EXPAND
 
 std::pair<bool, std::vector<char>> GameSave::serialiseOPS() const
 {
@@ -1910,6 +1902,14 @@ std::pair<bool, std::vector<char>> GameSave::serialiseOPS() const
 	// when building, this number may be increased depending on what elements are used
 	// or what properties are detected
 	int minimumMajorVersion = 90, minimumMinorVersion = 2;
+	auto RESTRICTVERSION = [&minimumMajorVersion, &minimumMinorVersion](int major, int minor) {
+		// restrict the minimum version this save can be opened with
+		if (major > minimumMajorVersion || ((major == minimumMajorVersion && minor > minimumMinorVersion)))
+		{
+			minimumMajorVersion = major;
+			minimumMinorVersion = minor;
+		}
+	};
 
 	//Get coords in blocks
 	blockX = 0;//orig_x0/CELL;
@@ -2052,7 +2052,7 @@ std::pair<bool, std::vector<char>> GameSave::serialiseOPS() const
 	unsigned int partsDataLen = 0;
 	std::vector<unsigned> partsSaveIndex(NPART);
 	unsigned int partsCount = 0;
-	std::fill(&partsSaveIndex[0], &partsSaveIndex[NPART], 0);
+	std::fill(&partsSaveIndex[0], &partsSaveIndex[0] + NPART, 0);
 	for (y=0;y<fullH;y++)
 	{
 		for (x=0;x<fullW;x++)
@@ -2382,12 +2382,8 @@ std::pair<bool, std::vector<char>> GameSave::serialiseOPS() const
 		}
 	}
 
-	bool fakeFromNewerVersion = false;
-#if defined(SNAPSHOT) || defined(BETA) || defined(DEBUG) || MOD_ID > 0
 	// Mark save as incompatible with latest release
-	if (minimumMajorVersion > SAVE_VERSION || (minimumMajorVersion == SAVE_VERSION && minimumMinorVersion > MINOR_VERSION))
-		fakeFromNewerVersion = true;
-#endif
+	bool fakeFromNewerVersion = ALLOW_FAKE_NEWER_VERSION && (minimumMajorVersion > SAVE_VERSION || (minimumMajorVersion == SAVE_VERSION && minimumMinorVersion > MINOR_VERSION));
 
 	bson b;
 	b.data = NULL;
@@ -2403,9 +2399,8 @@ std::pair<bool, std::vector<char>> GameSave::serialiseOPS() const
 	bson_append_int(&b, "buildNum", BUILD_NUM);
 	bson_append_int(&b, "snapshotId", SNAPSHOT_ID);
 	bson_append_int(&b, "modId", MOD_ID);
-	bson_append_string(&b, "releaseType", IDENT_RELTYPE);
+	bson_append_string(&b, "releaseType", ByteString(1, IDENT_RELTYPE).c_str());
 	bson_append_string(&b, "platform", IDENT_PLATFORM);
-	bson_append_string(&b, "builtType", IDENT_BUILD);
 	bson_append_string(&b, "ident", IDENT);
 	bson_append_finish_object(&b);
 	if (gravityMode == 3)
@@ -2541,9 +2536,10 @@ std::pair<bool, std::vector<char>> GameSave::serialiseOPS() const
 	}
 	auto compressedSize = int(outputData.size());
 
-#ifdef DEBUG
-	printf("compressed data: %d\n", compressedSize);
-#endif
+	if constexpr (DEBUG)
+	{
+		printf("compressed data: %d\n", compressedSize);
+	}
 	outputData.resize(compressedSize + 12);
 
 	auto header = (unsigned char *)&outputData[compressedSize];

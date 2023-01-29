@@ -1,7 +1,4 @@
-#ifndef OPTIONSMODEL_H_
-#define OPTIONSMODEL_H_
-#include "Config.h"
-
+#pragma once
 #include <vector>
 
 class GameModel;
@@ -64,5 +61,3 @@ public:
 	void SetMomentumScroll(bool momentumScroll);
 	virtual ~OptionsModel();
 };
-
-#endif /* OPTIONSMODEL_H_ */

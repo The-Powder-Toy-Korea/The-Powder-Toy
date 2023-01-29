@@ -1,28 +1,16 @@
-#include "Config.h"
-#ifdef LUACONSOLE
-
-#include "client/http/Request.h" // includes curl.h, needs to come first to silence a warning on windows
-
-#include <iomanip>
-#include <vector>
-#include <algorithm>
-#include <locale>
-
 #include "Format.h"
 #include "LuaScriptHelper.h"
 #include "LuaScriptInterface.h"
 #include "LuaSmartRef.h"
-#include "PowderToy.h"
-
-#include "client/Client.h"
-#include "common/Platform.h"
+#include "PowderToySDL.h"
+#include "prefs/GlobalPrefs.h"
+#include "common/platform/Platform.h"
 #include "graphics/Graphics.h"
 #include "graphics/Renderer.h"
 #include "simulation/ElementCommon.h"
-#include "simulation/Gravity.h"
+#include "simulation/gravity/Gravity.h"
 #include "simulation/Simulation.h"
 #include "simulation/SimulationData.h"
-
 #include "gui/dialogues/ConfirmPrompt.h"
 #include "gui/dialogues/ErrorMessage.h"
 #include "gui/dialogues/InformationMessage.h"
@@ -30,7 +18,11 @@
 #include "gui/game/GameController.h"
 #include "gui/game/GameModel.h"
 #include "gui/interface/Engine.h"
-#include "gui/interface/Keys.h"
+#include "client/http/Request.h"
+#include <iomanip>
+#include <vector>
+#include <algorithm>
+#include <locale>
 
 std::map<ByteString, StructProperty> legacyPropNames;
 std::map<ByteString, StructProperty> legacyTransitionNames;
@@ -261,7 +253,7 @@ int luacon_elementwrite(lua_State* l)
 
 	luacon_model->BuildMenus();
 	luacon_sim->init_can_move();
-	std::fill(&luacon_ren->graphicscache[0], &luacon_ren->graphicscache[PT_NUM], gcache_item());
+	std::fill(&luacon_ren->graphicscache[0], &luacon_ren->graphicscache[0] + PT_NUM, gcache_item());
 
 	return 0;
 }
@@ -278,6 +270,7 @@ void luacon_hook(lua_State * l, lua_Debug * ar)
 
 String luacon_geterror()
 {
+	auto *luacon_ci = static_cast<LuaScriptInterface *>(commandInterface);
 	luaL_tostring(luacon_ci->l, -1);
 	String err = tpt_lua_optString(luacon_ci->l, -1, "failed to execute");
 	lua_pop(luacon_ci->l, 1);
@@ -396,6 +389,7 @@ int luatpt_togglewater(lua_State* l)
 
 int luatpt_setconsole(lua_State* l)
 {
+	auto *luacon_ci = static_cast<LuaScriptInterface *>(commandInterface);
 	int acount = lua_gettop(l);
 	if (acount == 0)
 	{
@@ -411,6 +405,7 @@ int luatpt_setconsole(lua_State* l)
 
 int luatpt_log(lua_State* l)
 {
+	auto *luacon_ci = static_cast<LuaScriptInterface *>(commandInterface);
 	int args = lua_gettop(l);
 	String text;
 	bool hasText = false;
@@ -447,22 +442,22 @@ int luatpt_set_pressure(lua_State* l)
 	float value;
 	x1 = abs(luaL_optint(l, 1, 0));
 	y1 = abs(luaL_optint(l, 2, 0));
-	width = abs(luaL_optint(l, 3, XRES/CELL));
-	height = abs(luaL_optint(l, 4, YRES/CELL));
+	width = abs(luaL_optint(l, 3, XCELLS));
+	height = abs(luaL_optint(l, 4, YCELLS));
 	value = luaL_optnumber(l, 5, 0.0f);
 	if(value > MAX_PRESSURE)
 		value = MAX_PRESSURE;
 	else if(value < MIN_PRESSURE)
 		value = MIN_PRESSURE;
 
-	if(x1 > (XRES/CELL)-1)
-		x1 = (XRES/CELL)-1;
-	if(y1 > (YRES/CELL)-1)
-		y1 = (YRES/CELL)-1;
-	if(x1+width > (XRES/CELL)-1)
-		width = (XRES/CELL)-x1;
-	if(y1+height > (YRES/CELL)-1)
-		height = (YRES/CELL)-y1;
+	if(x1 > XCELLS-1)
+		x1 = XCELLS-1;
+	if(y1 > YCELLS-1)
+		y1 = YCELLS-1;
+	if(x1+width > XCELLS-1)
+		width = XCELLS-x1;
+	if(y1+height > YCELLS-1)
+		height = YCELLS-y1;
 	for (nx = x1; nx<x1+width; nx++)
 		for (ny = y1; ny<y1+height; ny++)
 		{
@@ -478,26 +473,26 @@ int luatpt_set_gravity(lua_State* l)
 	float value;
 	x1 = abs(luaL_optint(l, 1, 0));
 	y1 = abs(luaL_optint(l, 2, 0));
-	width = abs(luaL_optint(l, 3, XRES/CELL));
-	height = abs(luaL_optint(l, 4, YRES/CELL));
+	width = abs(luaL_optint(l, 3, XCELLS));
+	height = abs(luaL_optint(l, 4, YCELLS));
 	value = luaL_optnumber(l, 5, 0.0f);
 	if(value > MAX_PRESSURE)
 		value = MAX_PRESSURE;
 	else if(value < MIN_PRESSURE)
 		value = MIN_PRESSURE;
 
-	if(x1 > (XRES/CELL)-1)
-		x1 = (XRES/CELL)-1;
-	if(y1 > (YRES/CELL)-1)
-		y1 = (YRES/CELL)-1;
-	if(x1+width > (XRES/CELL)-1)
-		width = (XRES/CELL)-x1;
-	if(y1+height > (YRES/CELL)-1)
-		height = (YRES/CELL)-y1;
+	if(x1 > XCELLS-1)
+		x1 = XCELLS-1;
+	if(y1 > YCELLS-1)
+		y1 = YCELLS-1;
+	if(x1+width > XCELLS-1)
+		width = XCELLS-x1;
+	if(y1+height > YCELLS-1)
+		height = YCELLS-y1;
 	for (nx = x1; nx<x1+width; nx++)
 		for (ny = y1; ny<y1+height; ny++)
 		{
-			luacon_sim->gravmap[ny*(XRES/CELL)+nx] = value;
+			luacon_sim->gravmap[ny*XCELLS+nx] = value;
 		}
 	return 0;
 }
@@ -508,22 +503,22 @@ int luatpt_reset_gravity_field(lua_State* l)
 	int x1, y1, width, height;
 	x1 = abs(luaL_optint(l, 1, 0));
 	y1 = abs(luaL_optint(l, 2, 0));
-	width = abs(luaL_optint(l, 3, XRES/CELL));
-	height = abs(luaL_optint(l, 4, YRES/CELL));
-	if(x1 > (XRES/CELL)-1)
-		x1 = (XRES/CELL)-1;
-	if(y1 > (YRES/CELL)-1)
-		y1 = (YRES/CELL)-1;
-	if(x1+width > (XRES/CELL)-1)
-		width = (XRES/CELL)-x1;
-	if(y1+height > (YRES/CELL)-1)
-		height = (YRES/CELL)-y1;
+	width = abs(luaL_optint(l, 3, XCELLS));
+	height = abs(luaL_optint(l, 4, YCELLS));
+	if(x1 > XCELLS-1)
+		x1 = XCELLS-1;
+	if(y1 > YCELLS-1)
+		y1 = YCELLS-1;
+	if(x1+width > XCELLS-1)
+		width = XCELLS-x1;
+	if(y1+height > YCELLS-1)
+		height = YCELLS-y1;
 	for (nx = x1; nx<x1+width; nx++)
 		for (ny = y1; ny<y1+height; ny++)
 		{
-			luacon_sim->gravx[ny*(XRES/CELL)+nx] = 0;
-			luacon_sim->gravy[ny*(XRES/CELL)+nx] = 0;
-			luacon_sim->gravp[ny*(XRES/CELL)+nx] = 0;
+			luacon_sim->gravx[ny*XCELLS+nx] = 0;
+			luacon_sim->gravy[ny*XCELLS+nx] = 0;
+			luacon_sim->gravp[ny*XCELLS+nx] = 0;
 		}
 	return 0;
 }
@@ -534,16 +529,16 @@ int luatpt_reset_velocity(lua_State* l)
 	int x1, y1, width, height;
 	x1 = abs(luaL_optint(l, 1, 0));
 	y1 = abs(luaL_optint(l, 2, 0));
-	width = abs(luaL_optint(l, 3, XRES/CELL));
-	height = abs(luaL_optint(l, 4, YRES/CELL));
-	if(x1 > (XRES/CELL)-1)
-		x1 = (XRES/CELL)-1;
-	if(y1 > (YRES/CELL)-1)
-		y1 = (YRES/CELL)-1;
-	if(x1+width > (XRES/CELL)-1)
-		width = (XRES/CELL)-x1;
-	if(y1+height > (YRES/CELL)-1)
-		height = (YRES/CELL)-y1;
+	width = abs(luaL_optint(l, 3, XCELLS));
+	height = abs(luaL_optint(l, 4, YCELLS));
+	if(x1 > XCELLS-1)
+		x1 = XCELLS-1;
+	if(y1 > YCELLS-1)
+		y1 = YCELLS-1;
+	if(x1+width > XCELLS-1)
+		width = XCELLS-x1;
+	if(y1+height > YCELLS-1)
+		height = YCELLS-y1;
 	for (nx = x1; nx<x1+width; nx++)
 		for (ny = y1; ny<y1+height; ny++)
 		{
@@ -561,6 +556,7 @@ int luatpt_reset_spark(lua_State* l)
 
 int luatpt_set_property(lua_State* l)
 {
+	auto *luacon_ci = static_cast<LuaScriptInterface *>(commandInterface);
 	int r, i, x, y, w, h, t = 0, nx, ny, partsel = 0;
 	float f = 0;
 	int acount = lua_gettop(l);
@@ -698,7 +694,7 @@ int luatpt_get_wallmap(lua_State* l)
 	int x1 = abs(luaL_optint(l, 1, 0));
 	int y1 = abs(luaL_optint(l, 2, 0));
 
-	if(x1 > (XRES/CELL) || y1 > (YRES/CELL))
+	if(x1 > XCELLS || y1 > YCELLS)
 		return luaL_error(l, "Out of range");
 
 	lua_pushinteger(l, luacon_sim->bmap[y1][x1]);
@@ -731,10 +727,10 @@ int luatpt_set_wallmap(lua_State* l)
 	}
 	if (x < 0              ) x = 0              ;
 	if (y < 0              ) y = 0              ;
-	if (x > XRES / CELL    ) x = XRES / CELL    ;
-	if (y > YRES / CELL    ) y = YRES / CELL    ;
-	if (w > XRES / CELL - x) w = XRES / CELL - x;
-	if (h > YRES / CELL - y) h = YRES / CELL - y;
+	if (x > XCELLS    ) x = XCELLS    ;
+	if (y > YCELLS    ) y = YCELLS    ;
+	if (w > XCELLS - x) w = XCELLS - x;
+	if (h > YCELLS - y) h = YCELLS - y;
 	for (int yy = y; yy < y + h; ++yy)
 	{
 		for (int xx = x; xx < x + w; ++xx)
@@ -759,20 +755,20 @@ int luatpt_set_elecmap(lua_State* l)
 
 	x1 = abs(luaL_optint(l, 1, 0));
 	y1 = abs(luaL_optint(l, 2, 0));
-	width = abs(luaL_optint(l, 3, XRES/CELL));
-	height = abs(luaL_optint(l, 4, YRES/CELL));
+	width = abs(luaL_optint(l, 3, XCELLS));
+	height = abs(luaL_optint(l, 4, YCELLS));
 	value = luaL_optint(l, acount, 0);
 
 	if(acount==5)	//Draw rect
 	{
-		if(x1 > (XRES/CELL))
-			x1 = (XRES/CELL);
-		if(y1 > (YRES/CELL))
-			y1 = (YRES/CELL);
-		if(x1+width > (XRES/CELL))
-			width = (XRES/CELL)-x1;
-		if(y1+height > (YRES/CELL))
-			height = (YRES/CELL)-y1;
+		if(x1 > XCELLS)
+			x1 = XCELLS;
+		if(y1 > YCELLS)
+			y1 = YCELLS;
+		if(x1+width > XCELLS)
+			width = XCELLS-x1;
+		if(y1+height > YCELLS)
+			height = YCELLS-y1;
 		for (nx = x1; nx<x1+width; nx++)
 			for (ny = y1; ny<y1+height; ny++)
 			{
@@ -781,10 +777,10 @@ int luatpt_set_elecmap(lua_State* l)
 	}
 	else	//Set point
 	{
-		if(x1 > (XRES/CELL))
-			x1 = (XRES/CELL);
-		if(y1 > (YRES/CELL))
-			y1 = (YRES/CELL);
+		if(x1 > XCELLS)
+			x1 = XCELLS;
+		if(y1 > YCELLS)
+			y1 = YCELLS;
 		luacon_sim->emap[y1][x1] = value;
 	}
 	return 0;
@@ -795,7 +791,7 @@ int luatpt_get_elecmap(lua_State* l)
 	int x1 = abs(luaL_optint(l, 1, 0));
 	int y1 = abs(luaL_optint(l, 2, 0));
 
-	if(x1 > (XRES/CELL) || y1 > (YRES/CELL))
+	if(x1 > XCELLS || y1 > YCELLS)
 		return luaL_error(l, "Out of range");
 
 	lua_pushinteger(l, luacon_sim->emap[y1][x1]);
@@ -804,6 +800,7 @@ int luatpt_get_elecmap(lua_State* l)
 
 int luatpt_get_property(lua_State* l)
 {
+	auto *luacon_ci = static_cast<LuaScriptInterface *>(commandInterface);
 	ByteString prop = tpt_lua_optByteString(l, 1, "");
 	int i = luaL_optint(l, 2, 0); //x coord or particle index, depending on arguments
 	int y = luaL_optint(l, 3, -1);
@@ -1278,12 +1275,11 @@ int luatpt_getscript(lua_State* l)
 	int runScript = luaL_optint(l, 3, 0);
 	int confirmPrompt = luaL_optint(l, 4, 1);
 
-	ByteString url = ByteString::Build(SCHEME "starcatcher.us/scripts/main.lua?get=", scriptID);
+	ByteString url = ByteString::Build(SCHEME, "starcatcher.us/scripts/main.lua?get=", scriptID);
 	if (confirmPrompt && !ConfirmPrompt::Blocking("Do you want to install script?", url.FromUtf8(), "Install"))
 		return 0;
 
-	int ret;
-	ByteString scriptData = http::Request::Simple(url, &ret);
+	auto [ ret, scriptData ] = http::Request::Simple(url);
 	if (!scriptData.size())
 	{
 		return luaL_error(l, "Server did not return data");
@@ -1320,9 +1316,20 @@ int luatpt_setwindowsize(lua_State* l)
 	int kiosk = luaL_optint(l,2,0);
 	// TODO: handle this the same way as it's handled in PowderToySDL.cpp
 	//   > maybe bind the maximum allowed scale to screen size somehow
-	if (scale < 1 || scale > 10) scale = 1;
-	if (kiosk!=1) kiosk = 0;
-	Client::Ref().SetPref("Scale", scale);
+	if (scale < 1 || scale > 10)
+	{
+		scale = 1;
+	}
+	if (kiosk!=1)
+	{
+		kiosk = 0;
+	}
+	{
+		auto &prefs = GlobalPrefs::Ref();
+		Prefs::DeferWrite dw(prefs);
+		prefs.Set("Scale", scale);
+		prefs.Set("Fullscreen", bool(kiosk));
+	}
 	ui::Engine::Ref().SetScale(scale);
 	ui::Engine::Ref().SetFullscreen(kiosk);
 	return 0;
@@ -1365,5 +1372,3 @@ int luatpt_perfectCircle(lua_State* l)
 	luacon_model->SetPerfectCircle(lua_toboolean(l, 1));
 	return 0;
 }
-
-#endif

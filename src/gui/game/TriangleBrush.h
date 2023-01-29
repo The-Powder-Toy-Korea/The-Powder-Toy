@@ -5,11 +5,9 @@
  *      Author: Savely Skresanov
  */
 
-#ifndef TRIANGLEBRUSH_H_
-#define TRIANGLEBRUSH_H_
-
-#include <cmath>
+#pragma once
 #include "Brush.h"
+#include <cmath>
 
 class TriangleBrush: public Brush
 {
@@ -41,5 +39,3 @@ public:
 		}
 	}
 };
-
-#endif /* TRIANGLEBRUSH_H_ */

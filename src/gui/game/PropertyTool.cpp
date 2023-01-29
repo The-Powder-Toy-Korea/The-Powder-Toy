@@ -1,6 +1,6 @@
 #include "Tool.h"
 
-#include "client/Client.h"
+#include "prefs/GlobalPrefs.h"
 #include "Menu.h"
 #include "Format.h"
 
@@ -12,7 +12,6 @@
 #include "gui/interface/Label.h"
 #include "gui/interface/Textbox.h"
 #include "gui/interface/DropDown.h"
-#include "gui/interface/Keys.h"
 #include "gui/dialogues/ErrorMessage.h"
 
 #include "simulation/GOLString.h"
@@ -22,7 +21,9 @@
 
 #include "graphics/Graphics.h"
 
+#include "Config.h"
 #include <iostream>
+#include <SDL.h>
 
 class PropertyWindow: public ui::Window
 {
@@ -75,12 +76,14 @@ sim(sim_)
 	{
 		property->AddOption(std::pair<String, int>(properties[i].Name.FromAscii(), i));
 	}
-	property->SetOption(Client::Ref().GetPrefInteger("Prop.Type", 0));
+
+	auto &prefs = GlobalPrefs::Ref();
+	property->SetOption(prefs.Get("Prop.Type", 0));
 
 	textField = new ui::Textbox(ui::Point(8, 46), ui::Point(Size.X-16, 16), "", "값");
 	textField->Appearance.HorizontalAlign = ui::Appearance::AlignLeft;
 	textField->Appearance.VerticalAlign = ui::Appearance::AlignMiddle;
-	textField->SetText(Client::Ref().GetPrefString("Prop.Value", ""));
+	textField->SetText(prefs.Get("Prop.Value", String("")));
 	AddComponent(textField);
 	FocusComponent(textField);
 	SetProperty(false);
@@ -162,11 +165,10 @@ void PropertyWindow::SetProperty(bool warn)
 							new ErrorMessage("속성을 설정할 수 없음", "물질 유형이 잘못되었습니다.");
 						return;
 					}
-
-#ifdef DEBUG
-					std::cout << "Got int value " << v << std::endl;
-#endif
-
+					if constexpr (DEBUG)
+					{
+						std::cout << "Got int value " << v << std::endl;
+					}
 					tool->propValue.Integer = v;
 					break;
 				}
@@ -187,9 +189,10 @@ void PropertyWindow::SetProperty(bool warn)
 					{
 						v = value.ToNumber<unsigned int>();
 					}
-#ifdef DEBUG
-					std::cout << "Got uint value " << v << std::endl;
-#endif
+					if constexpr (DEBUG)
+					{
+						std::cout << "Got uint value " << v << std::endl;
+					}
 					tool->propValue.UInteger = v;
 					break;
 				}
@@ -216,8 +219,12 @@ void PropertyWindow::SetProperty(bool warn)
 				new ErrorMessage("속성을 설정할 수 없음", "잘못된 값이 입력되었습니다.");
 			return;
 		}
-		Client::Ref().SetPref("Prop.Type", property->GetOption().second);
-		Client::Ref().SetPrefUnicode("Prop.Value", textField->GetText());
+		{
+			auto &prefs = GlobalPrefs::Ref();
+			Prefs::DeferWrite dw(prefs);
+			prefs.Set("Prop.Type", property->GetOption().second);
+			prefs.Set("Prop.Value", textField->GetText());
+		}
 	}
 }
 

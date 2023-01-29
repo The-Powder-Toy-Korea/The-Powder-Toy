@@ -1,8 +1,4 @@
-#include "Config.h"
-#ifdef LUACONSOLE
-
 #include "LuaWindow.h"
-
 #include "LuaScriptInterface.h"
 #include "LuaButton.h"
 #include "LuaLabel.h"
@@ -10,10 +6,8 @@
 #include "LuaCheckbox.h"
 #include "LuaSlider.h"
 #include "LuaProgressBar.h"
-
 #include "gui/interface/Window.h"
 #include "gui/interface/Engine.h"
-
 #include "graphics/Graphics.h"
 
 const char LuaWindow::className[] = "Window";
@@ -511,4 +505,3 @@ LuaWindow::~LuaWindow()
 	window->CloseActiveWindow();
 	delete window;
 }
-#endif

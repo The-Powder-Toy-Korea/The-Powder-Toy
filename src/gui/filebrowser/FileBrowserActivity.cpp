@@ -1,10 +1,8 @@
 #include "FileBrowserActivity.h"
 
-#include <algorithm>
-
 #include "client/GameSave.h"
 #include "client/SaveFile.h"
-#include "common/Platform.h"
+#include "common/platform/Platform.h"
 #include "graphics/Graphics.h"
 #include "gui/Style.h"
 #include "tasks/Task.h"
@@ -17,6 +15,9 @@
 #include "gui/interface/SaveButton.h"
 #include "gui/interface/ScrollPanel.h"
 #include "gui/interface/Textbox.h"
+
+#include "Config.h"
+#include <algorithm>
 
 //Currently, reading is done on another thread, we can't render outside the main thread due to some bullshit with OpenGL
 class LoadFilesTask: public Task
@@ -46,7 +47,7 @@ class LoadFilesTask: public Task
 			SaveFile * saveFile = new SaveFile(directory + *iter, true);
 			saveFiles.push_back(saveFile);
 
-			ByteString filename = (*iter).SplitFromEndBy(PATH_SEP).After();
+			ByteString filename = (*iter).SplitFromEndBy(PATH_SEP_CHAR).After();
 			filename = filename.SplitFromEndBy('.').Before();
 			saveFile->SetDisplayName(filename.FromUtf8());
 		}
@@ -149,7 +150,7 @@ void FileBrowserActivity::RenameSave(SaveFile * file)
 	ByteString newName = TextPrompt::Blocking("이름 바꾸기", "세이브 이름 바꾸기", file->GetDisplayName(), "", 0).ToUtf8();
 	if (newName.length())
 	{
-		newName = directory + PATH_SEP + newName + ".cps";
+		newName = ByteString::Build(directory, PATH_SEP_CHAR, newName, ".cps");
 		int ret = rename(file->GetName().c_str(), newName.c_str());
 		if (ret)
 			ErrorMessage::Blocking("오류", "세이브의 이름을 바꿀 수 없습니다.");

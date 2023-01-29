@@ -1,25 +1,15 @@
 #include "TPTScriptInterface.h"
-
-#include <deque>
-#ifdef MACOSX
-#include <strings.h>
-#endif
-#include <cstdlib>
-#include <cmath>
-
-#include "Config.h"
 #include "Format.h"
-
 #include "simulation/Simulation.h"
 #include "simulation/Air.h"
 #include "simulation/ElementClasses.h"
-
 #include "gui/game/GameController.h"
 #include "gui/game/GameModel.h"
-
 #include "gui/interface/Engine.h"
-
 #include "common/tpt-compat.h"
+#include <deque>
+#include <cstdlib>
+#include <cmath>
 
 TPTScriptInterface::TPTScriptInterface(GameController * c, GameModel * m): CommandInterface(c, m)
 {
@@ -314,7 +304,7 @@ AnyType TPTScriptInterface::tptS_set(std::deque<String> * words)
 			if (newValue < 0 || newValue >= PT_NUM)
 			{
 				// TODO: add element CAKE to invalidate this
-				if (!strcasecmp(((StringType)value).Value().ToUtf8().c_str(),"cake"))
+				if (((StringType)value).Value().ToUpper() == "CAKE")
 					throw GeneralException("Cake is a lie, not an element");
 				throw GeneralException("Invalid element");
 			}
@@ -567,16 +557,16 @@ AnyType TPTScriptInterface::tptS_reset(std::deque<String> * words)
 
 	if (resetStr == "pressure")
 	{
-		for (int nx = 0; nx < XRES/CELL; nx++)
-			for (int ny = 0; ny < YRES/CELL; ny++)
+		for (int nx = 0; nx < XCELLS; nx++)
+			for (int ny = 0; ny < YCELLS; ny++)
 			{
 				sim->air->pv[ny][nx] = 0;
 			}
 	}
 	else if (resetStr == "velocity")
 	{
-		for (int nx = 0; nx < XRES/CELL; nx++)
-			for (int ny = 0; ny < YRES/CELL; ny++)
+		for (int nx = 0; nx < XCELLS; nx++)
+			for (int ny = 0; ny < YCELLS; ny++)
 			{
 				sim->air->vx[ny][nx] = 0;
 				sim->air->vy[ny][nx] = 0;
@@ -610,7 +600,3 @@ AnyType TPTScriptInterface::tptS_quit(std::deque<String> * words)
 
 	return NumberType(0);
 }
-
-TPTScriptInterface::~TPTScriptInterface() {
-}
-

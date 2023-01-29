@@ -1,11 +1,6 @@
-#include "Config.h"
-#ifdef LUACONSOLE
-
 #include "LuaComponent.h"
-
 #include "LuaScriptInterface.h"
 #include "LuaWindow.h"
-
 #include "gui/interface/Component.h"
 #include "gui/interface/Window.h"
 
@@ -94,4 +89,3 @@ LuaComponent::~LuaComponent()
 		delete component;
 	}
 }
-#endif

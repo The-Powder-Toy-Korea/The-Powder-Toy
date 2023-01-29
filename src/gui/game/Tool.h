@@ -1,7 +1,4 @@
-#ifndef TOOL_H_
-#define TOOL_H_
-#include "Config.h"
-
+#pragma once
 #include "common/String.h"
 #include "gui/interface/Point.h"
 #include "simulation/StructProperty.h"
@@ -193,5 +190,3 @@ public:
 	void DrawRect(Simulation * sim, Brush * brush, ui::Point position1, ui::Point position2) override { }
 	void DrawFill(Simulation * sim, Brush * brush, ui::Point position) override { }
 };
-
-#endif /* TOOL_H_ */

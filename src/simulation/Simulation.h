@@ -1,13 +1,4 @@
-#ifndef SIMULATION_H
-#define SIMULATION_H
-#include "Config.h"
-
-#include <cstring>
-#include <cstddef>
-#include <vector>
-#include <array>
-#include <memory>
-
+#pragma once
 #include "Particle.h"
 #include "Stickman.h"
 #include "WallType.h"
@@ -16,10 +7,16 @@
 #include "BuiltinGOL.h"
 #include "MenuSection.h"
 #include "CoordStack.h"
-
+#include "gravity/GravityPtr.h"
 #include "Element.h"
+#include "SimulationConfig.h"
+#include <cstring>
+#include <cstddef>
+#include <vector>
+#include <array>
+#include <memory>
 
-#define CHANNELS ((int)(MAX_TEMP-73)/100+2)
+constexpr int CHANNELS = int(MAX_TEMP - 73) / 100 + 2;
 
 class Snapshot;
 class SimTool;
@@ -38,7 +35,7 @@ class Simulation
 {
 public:
 
-	Gravity * grav;
+	GravityPtr grav;
 	Air * air;
 
 	std::vector<sign> signs;
@@ -54,7 +51,7 @@ public:
 	int replaceModeFlags;
 
 	char can_move[PT_NUM][PT_NUM];
-	int debug_currentParticle;
+	int debug_nextToUpdate;
 	int debug_mostRecentlyUpdated = -1; // -1 when between full update loops
 	int parts_lastActiveIndex;
 	int pfree;
@@ -84,20 +81,20 @@ public:
 	int GSPEED;
 	unsigned int gol[YRES][XRES][5];
 	//Air sim
-	float (*vx)[XRES/CELL];
-	float (*vy)[XRES/CELL];
-	float (*pv)[XRES/CELL];
-	float (*hv)[XRES/CELL];
+	float (*vx)[XCELLS];
+	float (*vy)[XCELLS];
+	float (*pv)[XCELLS];
+	float (*hv)[XCELLS];
 	//Gravity sim
-	float *gravx;//gravx[(YRES/CELL) * (XRES/CELL)];
-	float *gravy;//gravy[(YRES/CELL) * (XRES/CELL)];
-	float *gravp;//gravp[(YRES/CELL) * (XRES/CELL)];
-	float *gravmap;//gravmap[(YRES/CELL) * (XRES/CELL)];
+	float *gravx;//gravx[YCELLS * XCELLS];
+	float *gravy;//gravy[YCELLS * XCELLS];
+	float *gravp;//gravp[YCELLS * XCELLS];
+	float *gravmap;//gravmap[YCELLS * XCELLS];
 	//Walls
-	unsigned char bmap[YRES/CELL][XRES/CELL];
-	unsigned char emap[YRES/CELL][XRES/CELL];
-	float fvx[YRES/CELL][XRES/CELL];
-	float fvy[YRES/CELL][XRES/CELL];
+	unsigned char bmap[YCELLS][XCELLS];
+	unsigned char emap[YCELLS][XCELLS];
+	float fvx[YCELLS][XCELLS];
+	float fvy[YCELLS][XCELLS];
 	//Particles
 	Particle parts[NPART];
 	int pmap[YRES][XRES];
@@ -163,8 +160,7 @@ public:
 	int is_wire_off(int x, int y);
 	void set_emap(int x, int y);
 	int parts_avg(int ci, int ni, int t);
-	void create_arc(int sx, int sy, int dx, int dy, int midpoints, int variance, int type, int flags);
-	void UpdateParticles(int start, int end); // range inclusive on both ends
+	void UpdateParticles(int start, int end); // Dispatches an update to the range [start, end).
 	void SimulateGoL();
 	void RecalcFreeParticles(bool do_life_dec);
 	void CheckStacking();
@@ -251,5 +247,3 @@ public:
 private:
 	CoordStack& getCoordStackSingleton();
 };
-
-#endif /* SIMULATION_H */

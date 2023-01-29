@@ -1,12 +1,10 @@
-#ifndef GAMEVIEW_H
-#define GAMEVIEW_H
-
-#include <ctime>
-#include <vector>
-#include <deque>
+#pragma once
 #include "common/String.h"
 #include "gui/interface/Window.h"
 #include "simulation/Sample.h"
+#include <ctime>
+#include <vector>
+#include <deque>
 
 enum DrawMode
 {
@@ -221,5 +219,3 @@ public:
 
 	class OptionListener;
 };
-
-#endif // GAMEVIEW_H

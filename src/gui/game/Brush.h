@@ -1,7 +1,4 @@
-#ifndef BRUSH_H_
-#define BRUSH_H_
-#include "Config.h"
-
+#pragma once
 #include "gui/interface/Point.h"
 
 class Renderer;
@@ -40,5 +37,3 @@ public:
 	unsigned char * GetOutline();
 };
 
-
-#endif /* BRUSH_H_ */

@@ -1,11 +1,8 @@
-#ifndef TPT_RAND_
-#define TPT_RAND_
-#include "Config.h"
-
+#pragma once
+#include "ExplicitSingleton.h"
 #include <stdint.h>
-#include "Singleton.h"
 
-class RNG : public Singleton<RNG>
+class RNGType
 {
 private:
 	uint64_t s[2];
@@ -17,10 +14,13 @@ public:
 	bool chance(int nominator, unsigned int denominator);
 	float uniform01();
 
-	RNG();
+	RNGType();
 	void seed(unsigned int sd);
 };
 
-extern RNG random_gen;
+// Needed because we also have random_gen, and that would take the singleton role if RNGType had an ExplicitSingleton base.
+class RNG : public RNGType, public ExplicitSingleton<RNG>
+{
+};
 
-#endif /* TPT_RAND_ */
+extern RNGType random_gen;

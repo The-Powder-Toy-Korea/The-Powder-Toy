@@ -1,10 +1,9 @@
 #pragma once
-
-#include <stack>
 #include "common/String.h"
-#include "common/Singleton.h"
+#include "common/ExplicitSingleton.h"
 #include "graphics/Pixel.h"
 #include "gui/interface/Point.h"
+#include <stack>
 
 class Graphics;
 namespace ui
@@ -16,7 +15,7 @@ namespace ui
 	 * Controls the User Interface.
 	 * Send user inputs to the Engine and the appropriate controls and components will interact.
 	 */
-	class Engine: public Singleton<Engine>
+	class Engine: public ExplicitSingleton<Engine>
 	{
 	public:
 		Engine();

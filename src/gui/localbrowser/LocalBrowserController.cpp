@@ -62,7 +62,6 @@ void LocalBrowserController::removeSelectedC()
 		}
 		void after() override
 		{
-			Client::Ref().updateStamps();
 			c->RefreshSavesList();
 		}
 	};
@@ -72,11 +71,6 @@ void LocalBrowserController::removeSelectedC()
 }
 
 void LocalBrowserController::RescanStamps()
-{
-	new ConfirmPrompt("다시 검사", "스탬프 디렉터리를 다시 검사하면 새로 추가된 스탬프를 찾거나 stamps.def 파일이 훼손되었을 때 이를 복구할 수 있습니다. 하지만 현재 정렬된 스탬프가 어지럽혀질 수도 있습니다.", { [this] { rescanStampsC(); } });
-}
-
-void LocalBrowserController::rescanStampsC()
 {
 	browserModel->RescanStamps();
 	browserModel->UpdateSavesList(browserModel->GetPageNum());

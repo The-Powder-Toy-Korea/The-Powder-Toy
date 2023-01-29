@@ -1,14 +1,10 @@
-#ifndef GAMEMODEL_H
-#define GAMEMODEL_H
-#include "Config.h"
-
-#include <vector>
-#include <deque>
-#include <memory>
-
+#pragma once
 #include "gui/interface/Colour.h"
 #include "client/User.h"
 #include "gui/interface/Point.h"
+#include <vector>
+#include <deque>
+#include <memory>
 
 class Menu;
 class Tool;
@@ -248,6 +244,8 @@ public:
 
 	ByteString SelectNextIdentifier;
 	int SelectNextTool;
-};
 
-#endif // GAMEMODEL_H
+	void UpdateUpTo(int upTo);
+	void BeforeSim();
+	void AfterSim();
+};

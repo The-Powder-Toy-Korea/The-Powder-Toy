@@ -7,8 +7,4 @@ client_files += files(
 	'ThumbnailRequest.cpp',
 )
 
-if enable_http
-	client_files += files(
-		'RequestManager.cpp',
-	)
-endif
+subdir('requestmanager')

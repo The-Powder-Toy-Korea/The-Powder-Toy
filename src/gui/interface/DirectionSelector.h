@@ -1,12 +1,8 @@
-#ifndef DIRECTIONSELECTOR_H_
-#define DIRECTIONSELECTOR_H_
-
+#pragma once
 #include "Component.h"
 #include "Colour.h"
 #include "graphics/Graphics.h"
-
 #include <iostream>
-
 #include <cmath>
 #include <vector>
 #include <functional>
@@ -93,4 +89,3 @@ public:
 };
 
 } /* namespace ui */
-#endif /* DIRECTIONSELECTOR_H_ */

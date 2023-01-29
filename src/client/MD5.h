@@ -1,6 +1,4 @@
-#ifndef MD5_H
-#define MD5_H
-#include "Config.h"
+#pragma once
 
 struct md5_context
 {
@@ -15,5 +13,3 @@ void md5_final(unsigned char digest[16], struct md5_context *context);
 void md5_transform(unsigned buf[4], const unsigned char in[64]);
 
 void md5_ascii(char *result, unsigned char const *buf, unsigned len);
-
-#endif

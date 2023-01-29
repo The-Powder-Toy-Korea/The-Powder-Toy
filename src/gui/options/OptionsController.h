@@ -1,7 +1,4 @@
-#ifndef OPTIONSCONTROLLER_H_
-#define OPTIONSCONTROLLER_H_
-#include "Config.h"
-
+#pragma once
 #include <functional>
 
 class GameModel;
@@ -44,5 +41,3 @@ public:
 	OptionsView * GetView();
 	virtual ~OptionsController();
 };
-
-#endif /* OPTIONSCONTROLLER_H_ */

@@ -1,11 +1,7 @@
-#ifndef COMMANDINTERFACE_H_
-#define COMMANDINTERFACE_H_
-#include "Config.h"
-
+#pragma once
 #include "common/String.h"
-#include "lua/LuaEvents.h"
+#include "gui/game/GameControllerEvents.h"
 
-class Event;
 class GameModel;
 class GameController;
 class Tool;
@@ -16,17 +12,19 @@ protected:
 	String lastError;
 	GameModel * m;
 	GameController * c;
+	CommandInterface(GameController * c, GameModel * m);
+
 public:
 	enum LogType { LogError, LogWarning, LogNotice };
 	enum FormatType { FormatInt, FormatString, FormatChar, FormatFloat, FormatElement };
-	CommandInterface(GameController * c, GameModel * m);
 	int GetPropertyOffset(ByteString key, FormatType & format);
 	void Log(LogType type, String message);
 	//void AttachGameModel(GameModel * m);
 
 	virtual void OnTick() { }
+	virtual void Init() { }
 
-	virtual bool HandleEvent(LuaEvents::EventTypes eventType, Event * event) { return true; }
+	virtual bool HandleEvent(const GameControllerEvent &event) { return true; }
 
 	virtual int Command(String command);
 	virtual String FormatCommand(String command);
@@ -36,6 +34,8 @@ public:
 	}
 	String GetLastError();
 	virtual ~CommandInterface();
+
+	static CommandInterface *Create(GameController * c, GameModel * m);
 };
 
-#endif /* COMMANDINTERFACE_H_ */
+extern CommandInterface *commandInterface;

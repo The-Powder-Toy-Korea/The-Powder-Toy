@@ -1,8 +1,6 @@
 #pragma once
-#include "Config.h"
-
 #include "LuaCompat.h"
-#include "SDLCompat.h"
+#include <SDL.h>
 
 #define SETCONST(L, NAME)\
 	lua_pushinteger(L, NAME);\

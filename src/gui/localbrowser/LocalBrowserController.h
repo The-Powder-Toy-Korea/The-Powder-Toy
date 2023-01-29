@@ -1,9 +1,5 @@
-#ifndef STAMPSCONTROLLER_H_
-#define STAMPSCONTROLLER_H_
-#include "Config.h"
-
+#pragma once
 #include "common/String.h"
-
 #include <functional>
 
 class SaveFile;
@@ -23,7 +19,6 @@ public:
 	void ClearSelection();
 	void Selected(ByteString stampID, bool selected);
 	void RescanStamps();
-	void rescanStampsC();
 	void RefreshSavesList();
 	void OpenSave(SaveFile * stamp);
 	bool GetMoveToFront();
@@ -34,5 +29,3 @@ public:
 	void Exit();
 	virtual ~LocalBrowserController();
 };
-
-#endif /* STAMPSCONTROLLER_H_ */

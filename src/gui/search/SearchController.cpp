@@ -5,7 +5,7 @@
 #include "SearchView.h"
 
 #include "client/Client.h"
-#include "common/Platform.h"
+#include "common/platform/Platform.h"
 #include "common/tpt-minmax.h"
 #include "graphics/Graphics.h"
 #include "tasks/Task.h"
@@ -14,6 +14,7 @@
 #include "gui/dialogues/ConfirmPrompt.h"
 #include "gui/preview/PreviewController.h"
 #include "gui/preview/PreviewView.h"
+#include "SimulationConfig.h"
 
 SearchController::SearchController(std::function<void ()> onDone_):
 	activePreview(NULL),

@@ -1,63 +1,31 @@
 #include "Client.h"
-
-#include "client/http/Request.h" // includes curl.h, needs to come first to silence a warning on windows
-
+#include "prefs/GlobalPrefs.h"
+#include "client/http/Request.h"
+#include "ClientListener.h"
+#include "Format.h"
+#include "MD5.h"
+#include "client/GameSave.h"
+#include "client/SaveFile.h"
+#include "client/SaveInfo.h"
+#include "client/UserInfo.h"
+#include "common/platform/Platform.h"
+#include "common/String.h"
+#include "graphics/Graphics.h"
+#include "prefs/Prefs.h"
+#include "lua/CommandInterface.h"
+#include "gui/preview/Comment.h"
+#include "Config.h"
 #include <cstring>
 #include <cstdlib>
 #include <vector>
 #include <map>
 #include <iostream>
 #include <iomanip>
-#include <ctime>
 #include <cstdio>
 #include <fstream>
-
-#ifdef MACOSX
-# include "common/macosx.h"
-#endif
-
-#ifdef LIN
-# include "icon_cps.png.h"
-# include "icon_exe.png.h"
-# include "save.xml.h"
-# include "powder.desktop.h"
-#endif
-
-#ifdef WIN
-# ifndef NOMINMAX
-#  define NOMINMAX
-# endif
-# include <shlobj.h>
-# include <objidl.h>
-# include <shlwapi.h>
-# include <windows.h>
-# include <direct.h>
-# include "resource.h"
-#else
-# include <sys/stat.h>
-# include <unistd.h>
-#endif
-
-#include "ClientListener.h"
-#include "Config.h"
-#include "Format.h"
-#include "MD5.h"
-#include "Update.h"
-
-#include "client/GameSave.h"
-#include "client/SaveFile.h"
-#include "client/SaveInfo.h"
-#include "client/UserInfo.h"
-#include "common/Platform.h"
-#include "common/String.h"
-#include "graphics/Graphics.h"
-
-#ifdef LUACONSOLE
-# include "lua/LuaScriptInterface.h"
-#endif
-
-#include "client/http/RequestManager.h"
-#include "gui/preview/Comment.h"
+#include <chrono>
+#include <algorithm>
+#include <set>
 
 Client::Client():
 	messageOfTheDay("Fetching the message of the day..."),
@@ -67,74 +35,60 @@ Client::Client():
 	updateAvailable(false),
 	authUser(0, "")
 {
-	//Read config
-	std::ifstream configFile;
-	configFile.open("powder.pref", std::ios::binary);
-	if (configFile)
+	auto &prefs = GlobalPrefs::Ref();
+	authUser.UserID = prefs.Get("User.ID", 0);
+	authUser.Username = prefs.Get("User.Username", ByteString(""));
+	authUser.SessionID = prefs.Get("User.SessionID", ByteString(""));
+	authUser.SessionKey = prefs.Get("User.SessionKey", ByteString(""));
+	auto elevation = prefs.Get("User.Elevation", ByteString(""));
+	authUser.UserElevation = User::ElevationNone;
+	if (elevation == "Admin")
 	{
-		try
-		{
-			preferences.clear();
-			configFile >> preferences;
-			int ID = preferences["User"]["ID"].asInt();
-			ByteString Username = preferences["User"]["Username"].asString();
-			ByteString SessionID = preferences["User"]["SessionID"].asString();
-			ByteString SessionKey = preferences["User"]["SessionKey"].asString();
-			ByteString Elevation = preferences["User"]["Elevation"].asString();
-
-			authUser.UserID = ID;
-			authUser.Username = Username;
-			authUser.SessionID = SessionID;
-			authUser.SessionKey = SessionKey;
-			if (Elevation == "Admin")
-				authUser.UserElevation = User::ElevationAdmin;
-			else if (Elevation == "Mod")
-				authUser.UserElevation = User::ElevationModerator;
-			else
-				authUser.UserElevation = User::ElevationNone;
-		}
-		catch (std::exception &e)
-		{
-
-		}
-		configFile.close();
-		firstRun = false;
+		authUser.UserElevation = User::ElevationAdmin;
 	}
-	else
-		firstRun = true;
+	if (elevation == "Mod")
+	{
+		authUser.UserElevation = User::ElevationModerator;
+	}
+	firstRun = !prefs.BackedByFile();
 }
 
-void Client::Initialise(ByteString proxy, ByteString cafile, ByteString capath, bool disableNetwork)
+void Client::MigrateStampsDef()
 {
-#if !defined(FONTEDITOR) && !defined(RENDERER)
-	if (GetPrefBool("version.update", false))
+	std::vector<char> data;
+	if (!Platform::ReadFile(data, ByteString::Build(STAMPS_DIR, PATH_SEP_CHAR, "stamps.def")))
 	{
-		SetPref("version.update", false);
-		update_finish();
+		return;
 	}
-#endif
-
-#ifndef NOHTTP
-	if (!disableNetwork)
-		http::RequestManager::Ref().Initialise(proxy, cafile, capath);
-#endif
-
-	//Read stamps library
-	std::ifstream stampsLib;
-	stampsLib.open(STAMPS_DIR PATH_SEP "stamps.def", std::ios::binary);
-	while (!stampsLib.eof())
+	for (auto i = 0; i < int(data.size()); i += 10)
 	{
-		char data[11];
-		memset(data, 0, 11);
-		stampsLib.read(data, 10);
-		if(!data[0])
-			break;
-		stampIDs.push_back(data);
+		stampIDs.push_back(ByteString(&data[0] + i, &data[0] + i + 10));
 	}
-	stampsLib.close();
+}
+
+void Client::Initialize()
+{
+	auto &prefs = GlobalPrefs::Ref();
+	if (prefs.Get("version.update", false))
+	{
+		prefs.Set("version.update", false);
+		Platform::UpdateFinish();
+	}
+
+	stamps = std::make_unique<Prefs>(ByteString::Build(STAMPS_DIR, PATH_SEP_CHAR, "stamps.json"));
+	stampIDs = stamps->Get("MostRecentlyUsedFirst", std::vector<ByteString>{});
+	{
+		Prefs::DeferWrite dw(*stamps);
+		if (!stamps->BackedByFile())
+		{
+			MigrateStampsDef();
+			WriteStamps();
+		}
+		RescanStamps();
+	}
 
 	//Begin version check
-	versionCheckRequest = new http::Request(SCHEME SERVER "/Startup.json");
+	versionCheckRequest = std::make_unique<http::Request>(ByteString::Build(SCHEME, SERVER, "/Startup.json"));
 
 	if (authUser.UserID)
 	{
@@ -142,16 +96,17 @@ void Client::Initialise(ByteString proxy, ByteString cafile, ByteString capath, 
 	}
 	versionCheckRequest->Start();
 
-#ifdef UPDATESERVER
-	// use an alternate update server
-	alternateVersionCheckRequest = new http::Request(SCHEME UPDATESERVER "/Startup.json");
-	usingAltUpdateServer = true;
-	if (authUser.UserID)
+	if constexpr (USE_UPDATESERVER)
 	{
-		alternateVersionCheckRequest->AuthHeaders(authUser.Username, "");
+		// use an alternate update server
+		alternateVersionCheckRequest = std::make_unique<http::Request>(ByteString::Build(SCHEME, UPDATESERVER, "/Startup.json"));
+		usingAltUpdateServer = true;
+		if (authUser.UserID)
+		{
+			alternateVersionCheckRequest->AuthHeaders(authUser.Username, "");
+		}
+		alternateVersionCheckRequest->Start();
 	}
-	alternateVersionCheckRequest->Start();
-#endif
 }
 
 bool Client::IsFirstRun()
@@ -243,29 +198,20 @@ RequestStatus Client::ParseServerReturn(ByteString &result, int status, bool jso
 
 void Client::Tick()
 {
-	if (versionCheckRequest)
-	{
-		if (CheckUpdate(versionCheckRequest, true))
-			versionCheckRequest = nullptr;
-	}
-	if (alternateVersionCheckRequest)
-	{
-		if (CheckUpdate(alternateVersionCheckRequest, false))
-			alternateVersionCheckRequest = nullptr;
-	}
+	CheckUpdate(versionCheckRequest, true);
+	CheckUpdate(alternateVersionCheckRequest, false);
 }
 
-bool Client::CheckUpdate(http::Request *updateRequest, bool checkSession)
+void Client::CheckUpdate(std::unique_ptr<http::Request> &updateRequest, bool checkSession)
 {
 	//Check status on version check request
-	if (updateRequest->CheckDone())
+	if (updateRequest && updateRequest->CheckDone())
 	{
-		int status;
-		ByteString data = updateRequest->Finish(&status);
+		auto [ status, data ] = updateRequest->Finish();
 
 		if (checkSession && status == 618)
 		{
-			AddServerNotification({ "Failed to load SSL certificates", SCHEME "powdertoy.co.uk/FAQ.html" });
+			AddServerNotification({ "Failed to load SSL certificates", ByteString(SCHEME) + "powdertoy.co.uk/FAQ.html" });
 		}
 
 		if (status != 200)
@@ -312,55 +258,58 @@ bool Client::CheckUpdate(http::Request *updateRequest, bool checkSession)
 					this->messageOfTheDay = ByteString(objDocument["MessageOfTheDay"].asString()).FromUtf8();
 					notifyMessageOfTheDay();
 
-#ifndef IGNORE_UPDATES
-					//Check for updates
-					Json::Value versions = objDocument["Updates"];
-#ifndef SNAPSHOT
-					Json::Value stableVersion = versions["Stable"];
-					int stableMajor = stableVersion["Major"].asInt();
-					int stableMinor = stableVersion["Minor"].asInt();
-					int stableBuild = stableVersion["Build"].asInt();
-					ByteString stableFile = stableVersion["File"].asString();
-					String stableChangelog = ByteString(stableVersion["Changelog"].asString()).FromUtf8();
-					if (stableBuild > BUILD_NUM)
+					if constexpr (!IGNORE_UPDATES)
 					{
-						updateAvailable = true;
-						updateInfo = UpdateInfo(stableMajor, stableMinor, stableBuild, stableFile, stableChangelog, UpdateInfo::Stable);
-					}
-#endif
-
-					if (!updateAvailable)
-					{
-						Json::Value betaVersion = versions["Beta"];
-						int betaMajor = betaVersion["Major"].asInt();
-						int betaMinor = betaVersion["Minor"].asInt();
-						int betaBuild = betaVersion["Build"].asInt();
-						ByteString betaFile = betaVersion["File"].asString();
-						String betaChangelog = ByteString(betaVersion["Changelog"].asString()).FromUtf8();
-						if (betaBuild > BUILD_NUM)
+						//Check for updates
+						Json::Value versions = objDocument["Updates"];
+						if constexpr (!SNAPSHOT)
 						{
-							updateAvailable = true;
-							updateInfo = UpdateInfo(betaMajor, betaMinor, betaBuild, betaFile, betaChangelog, UpdateInfo::Beta);
+							Json::Value stableVersion = versions["Stable"];
+							int stableMajor = stableVersion["Major"].asInt();
+							int stableMinor = stableVersion["Minor"].asInt();
+							int stableBuild = stableVersion["Build"].asInt();
+							ByteString stableFile = stableVersion["File"].asString();
+							String stableChangelog = ByteString(stableVersion["Changelog"].asString()).FromUtf8();
+							if (stableBuild > BUILD_NUM)
+							{
+								updateAvailable = true;
+								updateInfo = UpdateInfo(stableMajor, stableMinor, stableBuild, stableFile, stableChangelog, UpdateInfo::Stable);
+							}
+						}
+
+						if (!updateAvailable)
+						{
+							Json::Value betaVersion = versions["Beta"];
+							int betaMajor = betaVersion["Major"].asInt();
+							int betaMinor = betaVersion["Minor"].asInt();
+							int betaBuild = betaVersion["Build"].asInt();
+							ByteString betaFile = betaVersion["File"].asString();
+							String betaChangelog = ByteString(betaVersion["Changelog"].asString()).FromUtf8();
+							if (betaBuild > BUILD_NUM)
+							{
+								updateAvailable = true;
+								updateInfo = UpdateInfo(betaMajor, betaMinor, betaBuild, betaFile, betaChangelog, UpdateInfo::Beta);
+							}
+						}
+
+						if constexpr (SNAPSHOT || MOD)
+						{
+							Json::Value snapshotVersion = versions["Snapshot"];
+							int snapshotSnapshot = snapshotVersion["Snapshot"].asInt();
+							ByteString snapshotFile = snapshotVersion["File"].asString();
+							String snapshotChangelog = ByteString(snapshotVersion["Changelog"].asString()).FromUtf8();
+							if (snapshotSnapshot > SNAPSHOT_ID)
+							{
+								updateAvailable = true;
+								updateInfo = UpdateInfo(snapshotSnapshot, snapshotFile, snapshotChangelog, UpdateInfo::Snapshot);
+							}
+						}
+
+						if(updateAvailable)
+						{
+							notifyUpdateAvailable();
 						}
 					}
-
-#if defined(SNAPSHOT) || MOD_ID > 0
-					Json::Value snapshotVersion = versions["Snapshot"];
-					int snapshotSnapshot = snapshotVersion["Snapshot"].asInt();
-					ByteString snapshotFile = snapshotVersion["File"].asString();
-					String snapshotChangelog = ByteString(snapshotVersion["Changelog"].asString()).FromUtf8();
-					if (snapshotSnapshot > SNAPSHOT_ID)
-					{
-						updateAvailable = true;
-						updateInfo = UpdateInfo(snapshotSnapshot, snapshotFile, snapshotChangelog, UpdateInfo::Snapshot);
-					}
-#endif
-
-					if(updateAvailable)
-					{
-						notifyUpdateAvailable();
-					}
-#endif
 				}
 			}
 			catch (std::exception & e)
@@ -368,9 +317,8 @@ bool Client::CheckUpdate(http::Request *updateRequest, bool checkSession)
 				//Do nothing
 			}
 		}
-		return true;
+		updateRequest.reset();
 	}
-	return false;
 }
 
 UpdateInfo Client::GetUpdateInfo()
@@ -427,64 +375,38 @@ void Client::RemoveListener(ClientListener * listener)
 	}
 }
 
-void Client::WritePrefs()
-{
-	std::ofstream configFile;
-	configFile.open("powder.pref", std::ios::trunc);
-
-	if (configFile)
-	{
-		if (authUser.UserID)
-		{
-			preferences["User"]["ID"] = authUser.UserID;
-			preferences["User"]["SessionID"] = authUser.SessionID;
-			preferences["User"]["SessionKey"] = authUser.SessionKey;
-			preferences["User"]["Username"] = authUser.Username;
-			if (authUser.UserElevation == User::ElevationAdmin)
-				preferences["User"]["Elevation"] = "Admin";
-			else if (authUser.UserElevation == User::ElevationModerator)
-				preferences["User"]["Elevation"] = "Mod";
-			else
-				preferences["User"]["Elevation"] = "None";
-		}
-		else
-		{
-			preferences["User"] = Json::nullValue;
-		}
-		configFile << preferences;
-
-		configFile.close();
-	}
-}
-
-void Client::Shutdown()
-{
-	if (versionCheckRequest)
-	{
-		versionCheckRequest->Cancel();
-	}
-	if (alternateVersionCheckRequest)
-	{
-		alternateVersionCheckRequest->Cancel();
-	}
-
-#ifndef NOHTTP
-	http::RequestManager::Ref().Shutdown();
-#endif
-
-	//Save config
-	WritePrefs();
-}
-
 Client::~Client()
 {
 }
 
-
 void Client::SetAuthUser(User user)
 {
 	authUser = user;
-	WritePrefs();
+	{
+		auto &prefs = GlobalPrefs::Ref();
+		Prefs::DeferWrite dw(prefs);
+		if (authUser.UserID)
+		{
+			prefs.Set("User.ID", authUser.UserID);
+			prefs.Set("User.SessionID", authUser.SessionID);
+			prefs.Set("User.SessionKey", authUser.SessionKey);
+			prefs.Set("User.Username", authUser.Username);
+			ByteString elevation = "None";
+			if (authUser.UserElevation == User::ElevationAdmin)
+			{
+				elevation = "Admin";
+			}
+			if (authUser.UserElevation == User::ElevationModerator)
+			{
+				elevation = "Mod";
+			}
+			prefs.Set("User.Elevation", elevation);
+		}
+		else
+		{
+			prefs.Clear("User");
+		}
+	}
 	notifyAuthUserChanged();
 }
 
@@ -517,15 +439,13 @@ RequestStatus Client::UploadSave(SaveInfo & save)
 			lastError = "Cannot serialize game save";
 			return RequestFailure;
 		}
-#if defined(SNAPSHOT) || defined(BETA) || defined(DEBUG) || MOD_ID > 0
-		else if (fromNewerVersion && save.GetPublished())
+		else if (ALLOW_FAKE_NEWER_VERSION && fromNewerVersion && save.GetPublished())
 		{
 			lastError = "Cannot publish save, incompatible with latest release version.";
 			return RequestFailure;
 		}
-#endif
 
-		data = http::Request::SimpleAuth(SCHEME SERVER "/Save.api", &dataStatus, userID, authUser.SessionID, {
+		std::tie(dataStatus, data) = http::Request::SimpleAuth(ByteString::Build(SCHEME, SERVER, "/Save.api"), userID, authUser.SessionID, {
 			{ "Name", save.GetName().ToUtf8() },
 			{ "Description", save.GetDescription().ToUtf8() },
 			{ "Data:save.bin", ByteString(gameData.begin(), gameData.end()) },
@@ -556,21 +476,28 @@ RequestStatus Client::UploadSave(SaveInfo & save)
 
 void Client::MoveStampToFront(ByteString stampID)
 {
-	for (std::list<ByteString>::iterator iterator = stampIDs.begin(), end = stampIDs.end(); iterator != end; ++iterator)
+	auto it = std::find(stampIDs.begin(), stampIDs.end(), stampID);
+	auto changed = false;
+	if (it == stampIDs.end())
 	{
-		if((*iterator) == stampID)
-		{
-			stampIDs.erase(iterator);
-			break;
-		}
+		stampIDs.push_back(stampID);
+		it = stampIDs.end() - 1;
+		changed = true;
 	}
-	stampIDs.push_front(stampID);
-	updateStamps();
+	else if (it != stampIDs.begin())
+	{
+		changed = true;
+	}
+	if (changed)
+	{
+		std::rotate(stampIDs.begin(), it, it + 1);
+		WriteStamps();
+	}
 }
 
 SaveFile * Client::GetStamp(ByteString stampID)
 {
-	ByteString stampFile = ByteString(STAMPS_DIR PATH_SEP + stampID + ".stm");
+	ByteString stampFile = ByteString(ByteString::Build(STAMPS_DIR, PATH_SEP_CHAR, stampID, ".stm"));
 	SaveFile *saveFile = LoadSaveFile(stampFile);
 	if (!saveFile)
 		saveFile = LoadSaveFile(stampID);
@@ -581,32 +508,37 @@ SaveFile * Client::GetStamp(ByteString stampID)
 
 void Client::DeleteStamp(ByteString stampID)
 {
-	for (std::list<ByteString>::iterator iterator = stampIDs.begin(), end = stampIDs.end(); iterator != end; ++iterator)
+	auto it = std::remove(stampIDs.begin(), stampIDs.end(), stampID);
+	if (it != stampIDs.end())
 	{
-		if ((*iterator) == stampID)
-		{
-			ByteString stampFilename = ByteString::Build(STAMPS_DIR, PATH_SEP, stampID, ".stm");
-			remove(stampFilename.c_str());
-			stampIDs.erase(iterator);
-			break;
-		}
+		stampIDs.erase(it, stampIDs.end());
+		WriteStamps();
 	}
-
-	updateStamps();
 }
 
 ByteString Client::AddStamp(GameSave * saveData)
 {
-	unsigned t=(unsigned)time(NULL);
-	if (lastStampTime!=t)
+	auto now = (uint64_t)time(NULL);
+	if (lastStampTime != now)
 	{
-		lastStampTime=t;
-		lastStampName=0;
+		lastStampTime = now;
+		lastStampName = 0;
 	}
 	else
-		lastStampName++;
-	ByteString saveID = ByteString::Build(Format::Hex(Format::Width(lastStampTime, 8)), Format::Hex(Format::Width(lastStampName, 2)));
-	ByteString filename = STAMPS_DIR PATH_SEP + saveID + ".stm";
+	{
+		lastStampName += 1;
+	}
+	ByteString saveID, filename;
+	while (true)
+	{
+		saveID = ByteString::Build(Format::Hex(Format::Width(lastStampTime, 8)), Format::Hex(Format::Width(lastStampName, 2)));
+		filename = ByteString::Build(STAMPS_DIR, PATH_SEP_CHAR, saveID, ".stm");
+		if (!Platform::FileExists(filename))
+		{
+			break;
+		}
+		lastStampName += 1;
+	}
 
 	Platform::MakeDirectory(STAMPS_DIR);
 
@@ -614,7 +546,7 @@ ByteString Client::AddStamp(GameSave * saveData)
 	stampInfo["type"] = "stamp";
 	stampInfo["username"] = authUser.Username;
 	stampInfo["name"] = filename;
-	stampInfo["date"] = (Json::Value::UInt64)time(NULL);
+	stampInfo["date"] = Json::Value::UInt64(now);
 	if (authors.size() != 0)
 	{
 		// This is a stamp, always append full authorship info (even if same user)
@@ -628,66 +560,61 @@ ByteString Client::AddStamp(GameSave * saveData)
 		return "";
 
 	Platform::WriteFile(gameData, filename);
-
-	stampIDs.push_front(saveID);
-
-	updateStamps();
-
+	MoveStampToFront(saveID);
 	return saveID;
-}
-
-void Client::updateStamps()
-{
-	Platform::MakeDirectory(STAMPS_DIR);
-
-	std::ofstream stampsStream;
-	stampsStream.open(ByteString(STAMPS_DIR PATH_SEP "stamps.def").c_str(), std::ios::binary);
-	for (std::list<ByteString>::const_iterator iterator = stampIDs.begin(), end = stampIDs.end(); iterator != end; ++iterator)
-	{
-		stampsStream.write((*iterator).c_str(), 10);
-	}
-	stampsStream.write("\0", 1);
-	stampsStream.close();
-	return;
 }
 
 void Client::RescanStamps()
 {
-	stampIDs.clear();
-	for (auto &stamp : Platform::DirectorySearch("stamps", "", { ".stm" }))
+	ByteString extension = ".stm";
+	std::set<ByteString> stampFilesSet;
+	for (auto &stampID : Platform::DirectorySearch("stamps", "", { extension }))
 	{
-		if (stamp.size() == 14)
+		stampFilesSet.insert(stampID.substr(0, stampID.size() - extension.size()));
+	}
+	std::vector<ByteString> newStampIDs;
+	auto changed = false;
+	for (auto &stampID : stampIDs)
+	{
+		if (stampFilesSet.find(stampID) == stampFilesSet.end())
 		{
-			stampIDs.push_front(stamp.Substr(0, 10));
+			changed = true;
+		}
+		else
+		{
+			newStampIDs.push_back(stampID);
 		}
 	}
-	stampIDs.sort(std::greater<ByteString>());
-	updateStamps();
+	auto oldCount = newStampIDs.size();
+	auto stampIDsSet = std::set<ByteString>(stampIDs.begin(), stampIDs.end());
+	for (auto &stampID : stampFilesSet)
+	{
+		if (stampIDsSet.find(stampID) == stampIDsSet.end())
+		{
+			newStampIDs.push_back(stampID);
+			changed = true;
+		}
+	}
+	if (changed)
+	{
+		// Move newly discovered stamps to front.
+		std::rotate(newStampIDs.begin(), newStampIDs.begin() + oldCount, newStampIDs.end());
+		stampIDs = newStampIDs;
+		WriteStamps();
+	}
 }
 
-int Client::GetStampsCount()
+void Client::WriteStamps()
 {
-	return stampIDs.size();
+	if (stampIDs.size())
+	{
+		stamps->Set("MostRecentlyUsedFirst", stampIDs);
+	}
 }
 
-std::vector<ByteString> Client::GetStamps(int start, int count)
+const std::vector<ByteString> &Client::GetStamps() const
 {
-	int size = (int)stampIDs.size();
-	if (start+count > size)
-	{
-		if(start > size)
-			return std::vector<ByteString>();
-		count = size-start;
-	}
-
-	std::vector<ByteString> stampRange;
-	int index = 0;
-	for (std::list<ByteString>::const_iterator iterator = stampIDs.begin(), end = stampIDs.end(); iterator != end; ++iterator, ++index)
-	{
-		if(index>=start && index < start+count)
-			stampRange.push_back(*iterator);
-	}
-	return stampRange;
+	return stampIDs;
 }
 
 RequestStatus Client::ExecVote(int saveID, int direction)
@@ -700,7 +627,7 @@ RequestStatus Client::ExecVote(int saveID, int direction)
 	{
 		ByteString saveIDText = ByteString::Build(saveID);
 		ByteString userIDText = ByteString::Build(authUser.UserID);
-		data = http::Request::SimpleAuth(SCHEME SERVER "/Vote.api", &dataStatus, userIDText, authUser.SessionID, {
+		std::tie(dataStatus, data) = http::Request::SimpleAuth(ByteString::Build(SCHEME, SERVER, "/Vote.api"), userIDText, authUser.SessionID, {
 			{ "ID", saveIDText },
 			{ "Action", direction ? (direction == 1 ? "Up" : "Down") : "Reset" },
 			{ "Key", authUser.SessionKey }
@@ -718,15 +645,13 @@ RequestStatus Client::ExecVote(int saveID, int direction)
 std::vector<char> Client::GetSaveData(int saveID, int saveDate)
 {
 	lastError = "";
-	int dataStatus;
-	ByteString data;
 	ByteString urlStr;
 	if (saveDate)
 		urlStr = ByteString::Build(STATICSCHEME, STATICSERVER, "/", saveID, "_", saveDate, ".cps");
 	else
 		urlStr = ByteString::Build(STATICSCHEME, STATICSERVER, "/", saveID, ".cps");
 
-	data = http::Request::Simple(urlStr, &dataStatus);
+	auto [ dataStatus, data ] = http::Request::Simple(urlStr);
 
 	// will always return failure
 	ParseServerReturn(data, dataStatus, false);
@@ -746,9 +671,7 @@ LoginStatus Client::Login(ByteString username, ByteString password, User & user)
 	user.SessionID = "";
 	user.SessionKey = "";
 
-	ByteString data;
-	int dataStatus;
-	data = http::Request::Simple("https://" SERVER "/Login.json", &dataStatus, {
+	auto [ dataStatus, data ] = http::Request::Simple(ByteString::Build("https://", SERVER, "/Login.json"), {
 		{ "name", username },
 		{ "pass", password },
 	});
@@ -809,7 +732,7 @@ RequestStatus Client::DeleteSave(int saveID)
 	if(authUser.UserID)
 	{
 		ByteString userID = ByteString::Build(authUser.UserID);
-		data = http::Request::SimpleAuth(url, &dataStatus, userID, authUser.SessionID);
+		std::tie(dataStatus, data) = http::Request::SimpleAuth(url, userID, authUser.SessionID);
 	}
 	else
 	{
@@ -829,7 +752,7 @@ RequestStatus Client::AddComment(int saveID, String comment)
 	if(authUser.UserID)
 	{
 		ByteString userID = ByteString::Build(authUser.UserID);
-		data = http::Request::SimpleAuth(url, &dataStatus, userID, authUser.SessionID, {
+		std::tie(dataStatus, data) = http::Request::SimpleAuth(url, userID, authUser.SessionID, {
 			{ "Comment", comment.ToUtf8() },
 			{ "Key", authUser.SessionKey }
 		});
@@ -855,7 +778,7 @@ RequestStatus Client::FavouriteSave(int saveID, bool favourite)
 	if(authUser.UserID)
 	{
 		ByteString userID = ByteString::Build(authUser.UserID);
-		data = http::Request::SimpleAuth(urlStream.Build(), &dataStatus, userID, authUser.SessionID);
+		std::tie(dataStatus, data) = http::Request::SimpleAuth(urlStream.Build(), userID, authUser.SessionID);
 	}
 	else
 	{
@@ -875,7 +798,7 @@ RequestStatus Client::ReportSave(int saveID, String message)
 	if(authUser.UserID)
 	{
 		ByteString userID = ByteString::Build(authUser.UserID);
-		data = http::Request::SimpleAuth(url, &dataStatus, userID, authUser.SessionID, {
+		std::tie(dataStatus, data) = http::Request::SimpleAuth(url, userID, authUser.SessionID, {
 			{ "Reason", message.ToUtf8() },
 		});
 	}
@@ -897,7 +820,7 @@ RequestStatus Client::UnpublishSave(int saveID)
 	if(authUser.UserID)
 	{
 		ByteString userID = ByteString::Build(authUser.UserID);
-		data = http::Request::SimpleAuth(url, &dataStatus, userID, authUser.SessionID);
+		std::tie(dataStatus, data) = http::Request::SimpleAuth(url, userID, authUser.SessionID);
 	}
 	else
 	{
@@ -917,7 +840,7 @@ RequestStatus Client::PublishSave(int saveID)
 	if (authUser.UserID)
 	{
 		ByteString userID = ByteString::Build(authUser.UserID);
-		data = http::Request::SimpleAuth(url, &dataStatus, userID, authUser.SessionID, {
+		std::tie(dataStatus, data) = http::Request::SimpleAuth(url, userID, authUser.SessionID, {
 			{ "ActionPublish", "bagels" },
 		});
 	}
@@ -944,12 +867,11 @@ SaveInfo * Client::GetSave(int saveID, int saveDate)
 	if(authUser.UserID)
 	{
 		ByteString userID = ByteString::Build(authUser.UserID);
-		
-		data = http::Request::SimpleAuth(urlStream.Build(), &dataStatus, userID, authUser.SessionID);
+		std::tie(dataStatus, data) = http::Request::SimpleAuth(urlStream.Build(), userID, authUser.SessionID);
 	}
 	else
 	{
-		data = http::Request::Simple(urlStream.Build(), &dataStatus);
+		std::tie(dataStatus, data) = http::Request::Simple(urlStream.Build());
 	}
 	if(dataStatus == 200 && data.size())
 	{
@@ -1036,127 +958,9 @@ SaveFile * Client::LoadSaveFile(ByteString filename)
 		{
 			file->SetLoadingError(err.FromUtf8());
 		}
-#ifdef LUACONSOLE
-		luacon_ci->SetLastError(err.FromUtf8());
-#endif
+		commandInterface->SetLastError(err.FromUtf8());
 	}
 	return file;
-}
-
-std::vector<std::pair<ByteString, int> > * Client::GetTags(int start, int count, String query, int & resultCount)
-{
-	lastError = "";
-	resultCount = 0;
-	std::vector<std::pair<ByteString, int> > * tagArray = new std::vector<std::pair<ByteString, int> >();
-	ByteStringBuilder urlStream;
-	ByteString data;
-	int dataStatus;
-	urlStream << SCHEME << SERVER << "/Browse/Tags.json?Start=" << start << "&Count=" << count;
-	if(query.length())
-	{
-		urlStream << "&Search_Query=";
-		if(query.length())
-			urlStream << format::URLEncode(query.ToUtf8());
-	}
-
-	data = http::Request::Simple(urlStream.Build(), &dataStatus);
-	if(dataStatus == 200 && data.size())
-	{
-		try
-		{
-			std::istringstream dataStream(data);
-			Json::Value objDocument;
-			dataStream >> objDocument;
-
-			resultCount = objDocument["TagTotal"].asInt();
-			Json::Value tagsArray = objDocument["Tags"];
-			for (Json::UInt j = 0; j < tagsArray.size(); j++)
-			{
-				int tagCount = tagsArray[j]["Count"].asInt();
-				ByteString tag = tagsArray[j]["Tag"].asString();
-				tagArray->push_back(std::pair<ByteString, int>(tag, tagCount));
-			}
-		}
-		catch (std::exception & e)
-		{
-			lastError = "Could not read response: " + ByteString(e.what()).FromUtf8();
-		}
-	}
-	else
-	{
-		lastError = http::StatusText(dataStatus);
-	}
-	return tagArray;
-}
-
-std::vector<SaveInfo*> * Client::SearchSaves(int start, int count, String query, ByteString sort, ByteString category, int & resultCount)
-{
-	lastError = "";
-	resultCount = 0;
-	std::vector<SaveInfo*> * saveArray = new std::vector<SaveInfo*>();
-	ByteStringBuilder urlStream;
-	ByteString data;
-	int dataStatus;
-	urlStream << SCHEME << SERVER << "/Browse.json?Start=" << start << "&Count=" << count;
-	if(query.length() || sort.length())
-	{
-		urlStream << "&Search_Query=";
-		if(query.length())
-			urlStream << format::URLEncode(query.ToUtf8());
-		if(sort == "date")
-		{
-			if(query.length())
-				urlStream << format::URLEncode(" ");
-			urlStream << format::URLEncode("sort:") << format::URLEncode(sort);
-		}
-	}
-	if(category.length())
-	{
-		urlStream << "&Category=" << format::URLEncode(category);
-	}
-	if(authUser.UserID)
-	{
-		ByteString userID = ByteString::Build(authUser.UserID);
-		data = http::Request::SimpleAuth(urlStream.Build(), &dataStatus, userID, authUser.SessionID);
-	}
-	else
-	{
-		data = http::Request::Simple(urlStream.Build(), &dataStatus);
-	}
-	ParseServerReturn(data, dataStatus, true);
-	if (dataStatus == 200 && data.size())
-	{
-		try
-		{
-			std::istringstream dataStream(data);
-			Json::Value objDocument;
-			dataStream >> objDocument;
-
-			resultCount = objDocument["Count"].asInt();
-			Json::Value savesArray = objDocument["Saves"];
-			for (Json::UInt j = 0; j < savesArray.size(); j++)
-			{
-				int tempID = savesArray[j]["ID"].asInt();
-				int tempCreatedDate = savesArray[j]["Created"].asInt();
-				int tempUpdatedDate = savesArray[j]["Updated"].asInt();
-				int tempScoreUp = savesArray[j]["ScoreUp"].asInt();
-				int tempScoreDown = savesArray[j]["ScoreDown"].asInt();
-				ByteString tempUsername = savesArray[j]["Username"].asString();
-				String tempName = ByteString(savesArray[j]["Name"].asString()).FromUtf8();
-				int tempVersion = savesArray[j]["Version"].asInt();
-				bool tempPublished = savesArray[j]["Published"].asBool();
-				SaveInfo * tempSaveInfo = new SaveInfo(tempID, tempCreatedDate, tempUpdatedDate, tempScoreUp, tempScoreDown, tempUsername, tempName);
-				tempSaveInfo->Version = tempVersion;
-				tempSaveInfo->SetPublished(tempPublished);
-				saveArray->push_back(tempSaveInfo);
-			}
-		}
-		catch (std::exception &e)
-		{
-			lastError = "Could not read response: " + ByteString(e.what()).FromUtf8();
-		}
-	}
-	return saveArray;
 }
 
 std::list<ByteString> * Client::RemoveTag(int saveID, ByteString tag)
@@ -1169,7 +973,7 @@ std::list<ByteString> * Client::RemoveTag(int saveID, ByteString tag)
 	if(authUser.UserID)
 	{
 		ByteString userID = ByteString::Build(authUser.UserID);
-		data = http::Request::SimpleAuth(url, &dataStatus, userID, authUser.SessionID);
+		std::tie(dataStatus, data) = http::Request::SimpleAuth(url, userID, authUser.SessionID);
 	}
 	else
 	{
@@ -1208,7 +1012,7 @@ std::list<ByteString> * Client::AddTag(int saveID, ByteString tag)
 	if(authUser.UserID)
 	{
 		ByteString userID = ByteString::Build(authUser.UserID);
-		data = http::Request::SimpleAuth(url, &dataStatus, userID, authUser.SessionID);
+		std::tie(dataStatus, data) = http::Request::SimpleAuth(url, userID, authUser.SessionID);
 	}
 	else
 	{
@@ -1303,392 +1107,163 @@ void Client::SaveAuthorInfo(Json::Value *saveInto)
 	}
 }
 
-// powder.pref preference getting / setting functions
-
-// Recursively go down the json to get the setting we want
-Json::Value Client::GetPref(Json::Value root, ByteString prop, Json::Value defaultValue)
+bool AddCustomGol(String ruleString, String nameString, unsigned int highColor, unsigned int lowColor)
 {
-	try
+	auto &prefs = GlobalPrefs::Ref();
+	auto customGOLTypes = prefs.Get("CustomGOL.Types", std::vector<ByteString>{});
+	std::vector<ByteString> newCustomGOLTypes;
+	bool nameTaken = false;
+	for (auto gol : customGOLTypes)
 	{
-		if(ByteString::Split split = prop.SplitBy('.'))
-			return GetPref(root[split.Before()], split.After(), defaultValue);
-		else
-			return root.get(prop, defaultValue);
-	}
-	catch (std::exception & e)
-	{
-		return defaultValue;
-	}
-}
-
-ByteString Client::GetPrefByteString(ByteString prop, ByteString defaultValue)
-{
-	try
-	{
-		return GetPref(preferences, prop, defaultValue).asString();
-	}
-	catch (std::exception & e)
-	{
-		return defaultValue;
-	}
-}
-
-String Client::GetPrefString(ByteString prop, String defaultValue)
-{
-	try
-	{
-		return ByteString(GetPref(preferences, prop, defaultValue.ToUtf8()).asString()).FromUtf8(false);
-	}
-	catch (std::exception & e)
-	{
-		return defaultValue;
-	}
-}
-
-double Client::GetPrefNumber(ByteString prop, double defaultValue)
-{
-	try
-	{
-		return GetPref(preferences, prop, defaultValue).asDouble();
-	}
-	catch (std::exception & e)
-	{
-		return defaultValue;
-	}
-}
-
-int Client::GetPrefInteger(ByteString prop, int defaultValue)
-{
-	try
-	{
-		return GetPref(preferences, prop, defaultValue).asInt();
-	}
-	catch (std::exception & e)
-	{
-		return defaultValue;
-	}
-}
-
-unsigned int Client::GetPrefUInteger(ByteString prop, unsigned int defaultValue)
-{
-	try
-	{
-		return GetPref(preferences, prop, defaultValue).asUInt();
-	}
-	catch (std::exception & e)
-	{
-		return defaultValue;
-	}
-}
-
-bool Client::GetPrefBool(ByteString prop, bool defaultValue)
-{
-	try
-	{
-		return GetPref(preferences, prop, defaultValue).asBool();
-	}
-	catch (std::exception & e)
-	{
-		return defaultValue;
-	}
-}
-
-std::vector<ByteString> Client::GetPrefByteStringArray(ByteString prop)
-{
-	try
-	{
-		std::vector<ByteString> ret;
-		Json::Value arr = GetPref(preferences, prop);
-		for (int i = 0; i < (int)arr.size(); i++)
-			ret.push_back(arr[i].asString());
-		return ret;
-	}
-	catch (std::exception & e)
-	{
-
-	}
-	return std::vector<ByteString>();
-}
-
-std::vector<String> Client::GetPrefStringArray(ByteString prop)
-{
-	try
-	{
-		std::vector<String> ret;
-		Json::Value arr = GetPref(preferences, prop);
-		for (int i = 0; i < (int)arr.size(); i++)
-			ret.push_back(ByteString(arr[i].asString()).FromUtf8(false));
-		return ret;
-	}
-	catch (std::exception & e)
-	{
-
-	}
-	return std::vector<String>();
-}
-
-std::vector<double> Client::GetPrefNumberArray(ByteString prop)
-{
-	try
-	{
-		std::vector<double> ret;
-		Json::Value arr = GetPref(preferences, prop);
-		for (int i = 0; i < (int)arr.size(); i++)
-			ret.push_back(arr[i].asDouble());
-		return ret;
-	}
-	catch (std::exception & e)
-	{
-
-	}
-	return std::vector<double>();
-}
-
-std::vector<int> Client::GetPrefIntegerArray(ByteString prop)
-{
-	try
-	{
-		std::vector<int> ret;
-		Json::Value arr = GetPref(preferences, prop);
-		for (int i = 0; i < (int)arr.size(); i++)
-			ret.push_back(arr[i].asInt());
-		return ret;
-	}
-	catch (std::exception & e)
-	{
-
-	}
-	return std::vector<int>();
-}
-
-std::vector<unsigned int> Client::GetPrefUIntegerArray(ByteString prop)
-{
-	try
-	{
-		std::vector<unsigned int> ret;
-		Json::Value arr = GetPref(preferences, prop);
-		for (int i = 0; i < (int)arr.size(); i++)
-			ret.push_back(arr[i].asUInt());
-		return ret;
-	}
-	catch (std::exception & e)
-	{
-
-	}
-	return std::vector<unsigned int>();
-}
-
-std::vector<bool> Client::GetPrefBoolArray(ByteString prop)
-{
-	try
-	{
-		std::vector<bool> ret;
-		Json::Value arr = GetPref(preferences, prop);
-		for (int i = 0; i < (int)arr.size(); i++)
-			ret.push_back(arr[i].asBool());
-		return ret;
-	}
-	catch (std::exception & e)
-	{
-
-	}
-	return std::vector<bool>();
-}
-
-// Helper preference setting function.
-// To actually save any changes to preferences, we need to directly do preferences[property] = thing
-// any other way will set the value of a copy of preferences, not the original
-// This function will recursively go through and create an object with the property we wanted set,
-// and return it to SetPref to do the actual setting
-Json::Value Client::SetPrefHelper(Json::Value root, ByteString prop, Json::Value value)
-{
-	if(ByteString::Split split = prop.SplitBy('.'))
-	{
-		Json::Value toSet = GetPref(root, split.Before());
-		toSet = SetPrefHelper(toSet, split.After(), value);
-		root[split.Before()] = toSet;
-	}
-	else
-		root[prop] = value;
-	return root;
-}
-
-void Client::SetPref(ByteString prop, Json::Value value)
-{
-	try
-	{
-		if(ByteString::Split split = prop.SplitBy('.'))
-			preferences[split.Before()] = SetPrefHelper(preferences[split.Before()], split.After(), value);
-		else
-			preferences[prop] = value;
-		WritePrefs();
-	}
-	catch (std::exception & e)
-	{
-
-	}
-}
-
-void Client::SetPref(ByteString prop, std::vector<Json::Value> value)
-{
-	try
-	{
-		Json::Value arr;
-		for (int i = 0; i < (int)value.size(); i++)
+		auto parts = gol.FromUtf8().PartitionBy(' ');
+		if (parts.size())
 		{
-			arr.append(value[i]);
-		}
-		SetPref(prop, arr);
-	}
-	catch (std::exception & e)
-	{
-
-	}
-}
-
-void Client::SetPrefUnicode(ByteString prop, String value)
-{
-	SetPref(prop, value.ToUtf8());
-}
-
-bool Client::DoInstallation()
-{
-	bool ok = true;
-#if defined(WIN)
-	auto deleteKey = [](ByteString path) {
-		RegDeleteKeyW(HKEY_CURRENT_USER, Platform::WinWiden(path).c_str());
-	};
-	auto createKey = [](ByteString path, ByteString value, ByteString extraKey = {}, ByteString extraValue = {}) {
-		auto ok = true;
-		auto wPath = Platform::WinWiden(path);
-		auto wValue = Platform::WinWiden(value);
-		auto wExtraKey = Platform::WinWiden(extraKey);
-		auto wExtraValue = Platform::WinWiden(extraValue);
-		HKEY k;
-		ok = ok && RegCreateKeyExW(HKEY_CURRENT_USER, wPath.c_str(), 0, 0, REG_OPTION_NON_VOLATILE, KEY_ALL_ACCESS, NULL, &k, NULL) == ERROR_SUCCESS;
-		ok = ok && RegSetValueExW(k, NULL, 0, REG_SZ, reinterpret_cast<const BYTE *>(wValue.c_str()), (wValue.size() + 1) * 2) == ERROR_SUCCESS;
-		if (wExtraKey.size())
-		{
-			ok = ok && RegSetValueExW(k, wExtraKey.c_str(), 0, REG_SZ, reinterpret_cast<const BYTE *>(wExtraValue.c_str()), (wExtraValue.size() + 1) * 2) == ERROR_SUCCESS;
-		}
-		RegCloseKey(k);
-		return ok;
-	};
-
-	CoInitializeEx(NULL, COINIT_MULTITHREADED);
-	auto exe = Platform::ExecutableName();
-#ifndef IDI_DOC_ICON
-	// make this fail so I don't remove #include "resource.h" again and get away with it
-# error where muh IDI_DOC_ICON D:
-#endif
-	auto icon = exe + ",-" MTOS(IDI_DOC_ICON);
-	auto path = Platform::GetCwd();
-	auto open = ByteString::Build("\"", exe, "\" ddir \"", path, "\" \"file://%1\"");
-	auto ptsave = ByteString::Build("\"", exe, "\" ddir \"", path, "\" \"%1\"");
-	deleteKey("Software\\Classes\\ptsave");
-	deleteKey("Software\\Classes\\.cps");
-	deleteKey("Software\\Classes\\.stm");
-	deleteKey("Software\\Classes\\PowderToySave");
-	ok = ok && createKey("Software\\Classes\\ptsave", "Powder Toy Save", "URL Protocol", "");
-	ok = ok && createKey("Software\\Classes\\ptsave\\DefaultIcon", icon);
-	ok = ok && createKey("Software\\Classes\\ptsave\\shell\\open\\command", ptsave);
-	ok = ok && createKey("Software\\Classes\\.cps", "PowderToySave");
-	ok = ok && createKey("Software\\Classes\\.stm", "PowderToySave");
-	ok = ok && createKey("Software\\Classes\\PowderToySave", "Powder Toy Save");
-	ok = ok && createKey("Software\\Classes\\PowderToySave\\DefaultIcon", icon);
-	ok = ok && createKey("Software\\Classes\\PowderToySave\\shell\\open\\command", open);
-	IShellLinkW *shellLink = NULL;
-	IPersistFile *shellLinkPersist = NULL;
-	wchar_t programsPath[MAX_PATH];
-	ok = ok && SHGetFolderPathW(NULL, CSIDL_PROGRAMS, NULL, SHGFP_TYPE_CURRENT, programsPath) == S_OK;
-	ok = ok && CoCreateInstance(CLSID_ShellLink, NULL, CLSCTX_INPROC_SERVER, IID_IShellLinkW, (LPVOID *)&shellLink) == S_OK;
-	ok = ok && shellLink->SetPath(Platform::WinWiden(exe).c_str()) == S_OK;
-	ok = ok && shellLink->SetWorkingDirectory(Platform::WinWiden(path).c_str()) == S_OK;
-	ok = ok && shellLink->SetDescription(Platform::WinWiden(APPNAME).c_str()) == S_OK;
-	ok = ok && shellLink->QueryInterface(IID_IPersistFile, (LPVOID *)&shellLinkPersist) == S_OK;
-	ok = ok && shellLinkPersist->Save(Platform::WinWiden(Platform::WinNarrow(programsPath) + "\\" APPNAME ".lnk").c_str(), TRUE) == S_OK;
-	if (shellLinkPersist)
-	{
-		shellLinkPersist->Release();
-	}
-	if (shellLink)
-	{
-		shellLink->Release();
-	}
-	CoUninitialize();
-#elif defined(LIN)
-	auto desktopEscapeString = [](ByteString str) {
-		ByteString escaped;
-		for (auto ch : str)
-		{
-			auto from = " " "\n" "\t" "\r" "\\";
-			auto to   = "s"  "n"  "t"  "r" "\\";
-			if (auto off = strchr(from, ch))
+			if (parts[0] == nameString)
 			{
-				escaped.append(1, '\\');
-				escaped.append(1, to[off - from]);
+				nameTaken = true;
+			}
+		}
+		newCustomGOLTypes.push_back(gol);
+	}
+	if (nameTaken)
+		return false;
+
+	StringBuilder sb;
+	sb << nameString << " " << ruleString << " " << highColor << " " << lowColor;
+	newCustomGOLTypes.push_back(sb.Build().ToUtf8());
+	prefs.Set("CustomGOL.Types", newCustomGOLTypes);
+	return true;
+}
+
+String Client::DoMigration(ByteString fromDir, ByteString toDir)
+{
+	if (fromDir.at(fromDir.length() - 1) != '/')
+		fromDir = fromDir + '/';
+	if (toDir.at(toDir.length() - 1) != '/')
+		toDir = toDir + '/';
+
+	std::ofstream logFile(fromDir + "/migrationlog.txt", std::ios::out);
+	logFile << "Running migration of data from " << fromDir + " to " << toDir << std::endl;
+
+	// Get lists of files to migrate
+	auto stamps = Platform::DirectorySearch(fromDir + "stamps", "", { ".stm" });
+	auto saves = Platform::DirectorySearch(fromDir + "Saves", "", { ".cps", ".stm" });
+	auto scripts = Platform::DirectorySearch(fromDir + "scripts", "", { ".lua", ".txt" });
+	auto downloadedScripts = Platform::DirectorySearch(fromDir + "scripts/downloaded", "", { ".lua" });
+	bool hasScriptinfo = Platform::FileExists(toDir + "scripts/downloaded/scriptinfo");
+	auto screenshots = Platform::DirectorySearch(fromDir, "screenshot", { ".png" });
+	bool hasAutorun = Platform::FileExists(fromDir + "autorun.lua");
+	bool hasPref = Platform::FileExists(fromDir + "powder.pref");
+
+	if (stamps.empty() && saves.empty() && scripts.empty() && downloadedScripts.empty() && screenshots.empty() && !hasAutorun && !hasPref)
+	{
+		logFile << "Nothing to migrate.";
+		return "Nothing to migrate. This button is used to migrate data from pre-96.0 TPT installations to the shared directory";
+	}
+
+	StringBuilder result;
+	std::stack<ByteString> dirsToDelete;
+
+	// Migrate a list of files
+	auto migrateList = [&](std::vector<ByteString> list, ByteString directory, String niceName) {
+		result << '\n' << niceName << ": ";
+		if (!list.empty() && !directory.empty())
+			Platform::MakeDirectory(toDir + directory);
+		int migratedCount = 0, failedCount = 0;
+		for (auto &item : list)
+		{
+			std::string from = fromDir + directory + "/" + item;
+			std::string to = toDir + directory + "/" + item;
+			if (!Platform::FileExists(to))
+			{
+				if (rename(from.c_str(), to.c_str()))
+				{
+					failedCount++;
+					logFile << "failed to move " << from << " to " << to << std::endl;
+				}
+				else
+				{
+					migratedCount++;
+					logFile << "moved " << from << " to " << to << std::endl;
+				}
 			}
 			else
 			{
-				escaped.append(1, ch);
+				logFile << "skipping " << from << "(already exists)" << std::endl;
 			}
 		}
-		return escaped;
-	};
-	auto desktopEscapeExec = [](ByteString str) {
-		ByteString escaped;
-		for (auto ch : str)
-		{
-			if (strchr(" \t\n\"\'\\><~|&;$*?#()`", ch))
-			{
-				escaped.append(1, '\\');
-			}
-			escaped.append(1, ch);
-		}
-		return escaped;
+
+		dirsToDelete.push(directory);
+		result << "\bt" << migratedCount << " migratated\x0E, \br" << failedCount << " failed\x0E";
+		int duplicates = list.size() - migratedCount - failedCount;
+		if (duplicates)
+			result << ", " << list.size() - migratedCount - failedCount << " skipped (duplicate)";
 	};
 
-	if (ok)
+	// Migrate a single file
+	auto migrateFile = [&fromDir, &toDir, &result, &logFile](ByteString filename) {
+		ByteString from = fromDir + filename;
+		ByteString to = toDir + filename;
+		if (!Platform::FileExists(to))
+		{
+			if (rename(from.c_str(), to.c_str()))
+			{
+				logFile << "failed to move " << from << " to " << to << std::endl;
+				result << "\n\br" << filename.FromUtf8() << " migration failed\x0E";
+			}
+			else
+			{
+				logFile << "moved " << from << " to " << to << std::endl;
+				result << '\n' << filename.FromUtf8() << " migrated";
+			}
+		}
+		else
+		{
+			logFile << "skipping " << from << "(already exists)" << std::endl;
+			result << '\n' << filename.FromUtf8() << " skipped (already exists)";
+		}
+
+		if (!Platform::RemoveFile(fromDir + filename)) {
+			logFile << "failed to delete " << filename << std::endl;
+		}
+	};
+
+	// Do actual migration
+	Platform::RemoveFile(fromDir + "stamps/stamps.def");
+	Platform::RemoveFile(fromDir + "stamps/stamps.json");
+	migrateList(stamps, "stamps", "Stamps");
+	migrateList(saves, "Saves", "Saves");
+	if (!scripts.empty())
+		migrateList(scripts, "scripts", "Scripts");
+	if (!hasScriptinfo && !downloadedScripts.empty())
 	{
-		ByteString desktopData(powder_desktop, powder_desktop + powder_desktop_size);
-		auto exe = Platform::ExecutableName();
-		auto path = exe.SplitFromEndBy('/').Before();
-		desktopData = desktopData.Substitute("Exec=" APPEXE, "Exec=" + desktopEscapeString(desktopEscapeExec(exe)));
-		desktopData += ByteString::Build("Path=", desktopEscapeString(path), "\n");
-		ByteString file = APPVENDOR "-" APPID ".desktop";
-		ok = ok && Platform::WriteFile(std::vector<char>(desktopData.begin(), desktopData.end()), file);
-		ok = ok && !system(ByteString::Build("xdg-desktop-menu install ", file).c_str());
-		ok = ok && !system(ByteString::Build("xdg-mime default ", file, " application/vnd.powdertoy.save").c_str());
-		ok = ok && !system(ByteString::Build("xdg-mime default ", file, " x-scheme-handler/ptsave").c_str());
-		Platform::RemoveFile(file);
+		migrateList(downloadedScripts, "scripts/downloaded", "Downloaded scripts");
+		migrateFile("scripts/downloaded/scriptinfo");
 	}
-	if (ok)
+	if (!screenshots.empty())
+		migrateList(screenshots, "", "Screenshots");
+	if (hasAutorun)
+		migrateFile("autorun.lua");
+	if (hasPref)
+		migrateFile("powder.pref");
+
+	// Delete leftover directories
+	while (!dirsToDelete.empty())
 	{
-		ByteString file = APPVENDOR "-save.xml";
-		ok = ok && Platform::WriteFile(std::vector<char>(save_xml, save_xml + save_xml_size), file);
-		ok = ok && !system(ByteString::Build("xdg-mime install ", file).c_str());
-		Platform::RemoveFile(file);
+		ByteString toDelete = dirsToDelete.top();
+		if (!Platform::DeleteDirectory(fromDir + toDelete)) {
+			logFile << "failed to delete " << toDelete << std::endl;
+		}
+		dirsToDelete.pop();
 	}
-	if (ok)
-	{
-		ByteString file = APPVENDOR "-cps.png";
-		ok = ok && Platform::WriteFile(std::vector<char>(icon_cps_png, icon_cps_png + icon_cps_png_size), file);
-		ok = ok && !system(ByteString::Build("xdg-icon-resource install --noupdate --context mimetypes --size 64 ", file, " application-vnd.powdertoy.save").c_str());
-		Platform::RemoveFile(file);
-	}
-	if (ok)
-	{
-		ByteString file = APPVENDOR "-exe.png";
-		ok = ok && Platform::WriteFile(std::vector<char>(icon_exe_png, icon_exe_png + icon_exe_png_size), file);
-		ok = ok && !system(ByteString::Build("xdg-icon-resource install --noupdate --size 64 ", file, " " APPVENDOR "-" APPEXE).c_str());
-		Platform::RemoveFile(file);
-	}
-	if (ok)
-	{
-		ok = ok && !system("xdg-icon-resource forceupdate");
-	}
-#else
-	ok = false;
-#endif
-	return ok;
+
+	// chdir into the new directory
+	Platform::ChangeDir(toDir);
+
+	RescanStamps();
+
+	logFile << std::endl << std::endl << "Migration complete. Results: " << result.Build().ToUtf8();
+	logFile.close();
+
+	return result.Build();
 }

@@ -1,20 +1,13 @@
-#ifndef GAMECONTROLLER_H
-#define GAMECONTROLLER_H
-#include "Config.h"
-
+#pragma once
+#include "client/ClientListener.h"
+#include "gui/interface/Point.h"
+#include "gui/interface/Colour.h"
+#include "simulation/Sign.h"
+#include "simulation/Particle.h"
+#include "Misc.h"
 #include <vector>
 #include <utility>
 #include <memory>
-
-#include "client/ClientListener.h"
-
-#include "gui/interface/Point.h"
-#include "gui/interface/Colour.h"
-
-#include "simulation/Sign.h"
-#include "simulation/Particle.h"
-
-#include "Misc.h"
 
 class DebugInfo;
 class SaveFile;
@@ -51,7 +44,6 @@ private:
 	TagsController * tagsWindow;
 	LocalBrowserController * localBrowser;
 	OptionsController * options;
-	CommandInterface * commandInterface;
 	std::vector<DebugInfo*> debugInfo;
 	std::unique_ptr<Snapshot> beforeRestore;
 	unsigned int debugFlags;
@@ -164,6 +156,7 @@ public:
 	void TransformSave(matrix2d transform);
 	bool MouseInZoom(ui::Point position);
 	ui::Point PointTranslate(ui::Point point);
+	ui::Point PointTranslateNoClamp(ui::Point point);
 	ui::Point NormaliseBlockCoord(ui::Point point);
 	String ElementResolve(int type, int ctype);
 	String BasicParticleInfo(Particle const &sample_part);
@@ -194,5 +187,3 @@ public:
 
 	void RemoveCustomGOLType(const ByteString &identifier);
 };
-
-#endif // GAMECONTROLLER_H

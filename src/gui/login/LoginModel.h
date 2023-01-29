@@ -1,10 +1,7 @@
-#ifndef LOGINMODEL_H_
-#define LOGINMODEL_H_
-#include "Config.h"
-
-#include <vector>
+#pragma once
 #include "common/String.h"
 #include "client/User.h"
+#include <vector>
 
 class LoginView;
 class LoginModel
@@ -23,5 +20,3 @@ public:
 	User GetUser();
 	virtual ~LoginModel();
 };
-
-#endif /* LOGINMODEL_H_ */

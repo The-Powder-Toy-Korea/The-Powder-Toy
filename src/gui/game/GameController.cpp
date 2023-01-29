@@ -1,7 +1,6 @@
 #include "GameController.h"
 
 #include "Brush.h"
-#include "Config.h"
 #include "Controller.h"
 #include "Format.h"
 #include "GameModel.h"
@@ -13,16 +12,13 @@
 #include "RenderPreset.h"
 #include "Tool.h"
 
-#ifdef LUACONSOLE
-# include "lua/LuaScriptInterface.h"
-# include "lua/LuaEvents.h"
-#else
-# include "lua/TPTScriptInterface.h"
-#endif
+#include "GameControllerEvents.h"
+#include "lua/CommandInterface.h"
 
+#include "prefs/GlobalPrefs.h"
 #include "client/Client.h"
 #include "client/GameSave.h"
-#include "common/Platform.h"
+#include "common/platform/Platform.h"
 #include "debug/DebugInfo.h"
 #include "debug/DebugLines.h"
 #include "debug/DebugParts.h"
@@ -38,8 +34,6 @@
 #include "gui/dialogues/ErrorMessage.h"
 #include "gui/dialogues/InformationMessage.h"
 #include "gui/dialogues/ConfirmPrompt.h"
-#include "gui/interface/Keys.h"
-#include "gui/interface/Mouse.h"
 #include "gui/interface/Engine.h"
 
 #include "gui/colourpicker/ColourPickerActivity.h"
@@ -67,6 +61,9 @@
 #include "gui/tags/TagsController.h"
 #include "gui/tags/TagsView.h"
 
+#include "Config.h"
+#include <SDL.h>
+
 #ifdef GetUserName
 # undef GetUserName // dammit windows
 #endif
@@ -92,13 +89,9 @@ GameController::GameController():
 	gameView->AttachController(this);
 	gameModel->AddObserver(gameView);
 
-	gameView->SetDebugHUD(Client::Ref().GetPrefBool("Renderer.DebugMode", false));
+	gameView->SetDebugHUD(GlobalPrefs::Ref().Get("Renderer.DebugMode", false));
 
-#ifdef LUACONSOLE
-	commandInterface = new LuaScriptInterface(this, gameModel);
-#else
-	commandInterface = new TPTScriptInterface(this, gameModel);
-#endif
+	CommandInterface::Create(this, gameModel);
 
 	Client::Ref().AddListener(this);
 
@@ -259,22 +252,23 @@ void GameController::PlaceSave(ui::Point position)
 
 void GameController::Install()
 {
-#if defined(MACOSX)
-	new InformationMessage("설치가 필요하지 않음", "macOS에서는 " APPNAME "를 설치하지 않아도 됩니다.", false);
-#elif defined(WIN) || defined(LIN)
-	new ConfirmPrompt(APPNAME " 설치", "이 컴퓨터에 " APPNAME "를 설치하시겠습니까?\n설치를 하면 세이브 파일을 웹 사이트에서 바로 열 수 있습니다.", { [] {
-		if (Client::Ref().DoInstallation())
-		{
-			new InformationMessage("완료", "설치가 완료되었습니다.", false);
-		}
-		else
-		{
-			new ErrorMessage("설치할 수 없음", "오류로 인해 설치가 실패하였습니다.");
-		}
-	} });
-#else
-	new ErrorMessage("설치할 수 없음", "이 플랫폼에서는 " APPNAME "를 설치할 수 없습니다.");
-#endif
+	if constexpr (CAN_INSTALL)
+	{
+		new ConfirmPrompt(String(APPNAME) + " 설치", "이 컴퓨터에 " + String(APPNAME) + "를 설치하시겠습니까?\n설치하면 세이브 파일을 웹 사이트에서 바로 열 수 있습니다.", { [] {
+			if (Platform::Install())
+			{
+				new InformationMessage("완료", "설치가 완료되었습니다.", false);
+			}
+			else
+			{
+				new ErrorMessage("설치할 수 없음", "오류로 인해 설치가 실패하였습니다.");
+			}
+		} });
+	}
+	else
+	{
+		new InformationMessage("설치가 필요하지 않음", "이 플랫폼에서는 " + String(APPNAME) + "를 설치하지 않아도 됩니다.", false);
+	}
 }
 
 void GameController::AdjustGridSize(int direction)
@@ -368,6 +362,11 @@ ui::Point GameController::PointTranslate(ui::Point point)
 	if(point.X < 0)
 		point.X = 0;
 
+	return gameModel->AdjustZoomCoords(point);
+}
+
+ui::Point GameController::PointTranslateNoClamp(ui::Point point)
+{
 	return gameModel->AdjustZoomCoords(point);
 }
 
@@ -516,14 +515,12 @@ void GameController::CutRegion(ui::Point point1, ui::Point point2)
 
 bool GameController::MouseMove(int x, int y, int dx, int dy)
 {
-	MouseMoveEvent ev(x, y, dx, dy);
-	return commandInterface->HandleEvent(LuaEvents::mousemove, &ev);
+	return commandInterface->HandleEvent(MouseMoveEvent{ x, y, dx, dy });
 }
 
 bool GameController::MouseDown(int x, int y, unsigned button)
 {
-	MouseDownEvent ev(x, y, button);
-	bool ret = commandInterface->HandleEvent(LuaEvents::mousedown, &ev);
+	bool ret = commandInterface->HandleEvent(MouseDownEvent{ x, y, button });
 	if (ret && y<YRES && x<XRES && !gameView->GetPlacingSave() && !gameView->GetPlacingZoom())
 	{
 		ui::Point point = gameModel->AdjustZoomCoords(ui::Point(x, y));
@@ -546,8 +543,7 @@ bool GameController::MouseDown(int x, int y, unsigned button)
 
 bool GameController::MouseUp(int x, int y, unsigned button, MouseupReason reason)
 {
-	MouseUpEvent ev(x, y, button, reason);
-	bool ret = commandInterface->HandleEvent(LuaEvents::mouseup, &ev);
+	bool ret = commandInterface->HandleEvent(MouseUpEvent{ x, y, button, reason });
 	if (reason != mouseUpNormal)
 		return ret;
 	if (ret && foundSignID != -1 && y<YRES && x<XRES && !gameView->GetPlacingSave())
@@ -576,7 +572,7 @@ bool GameController::MouseUp(int x, int y, unsigned button, MouseupReason reason
 						}
 						break;
 					case sign::Type::Thread:
-						Platform::OpenURI(ByteString::Build(SCHEME "powdertoy.co.uk/Discussions/Thread/View.html?Thread=", str.Substr(3, si.first - 3).ToUtf8()));
+						Platform::OpenURI(ByteString::Build(SCHEME, "powdertoy.co.uk/Discussions/Thread/View.html?Thread=", str.Substr(3, si.first - 3).ToUtf8()));
 						break;
 					case sign::Type::Search:
 						OpenSearch(str.Substr(3, si.first - 3));
@@ -596,26 +592,22 @@ bool GameController::MouseUp(int x, int y, unsigned button, MouseupReason reason
 
 bool GameController::MouseWheel(int x, int y, int d)
 {
-	MouseWheelEvent ev(x, y, d);
-	return commandInterface->HandleEvent(LuaEvents::mousewheel, &ev);
+	return commandInterface->HandleEvent(MouseWheelEvent{ x, y, d });
 }
 
 bool GameController::TextInput(String text)
 {
-	TextInputEvent ev(text);
-	return commandInterface->HandleEvent(LuaEvents::textinput, &ev);
+	return commandInterface->HandleEvent(TextInputEvent{ text });
 }
 
 bool GameController::TextEditing(String text)
 {
-	TextEditingEvent ev(text);
-	return commandInterface->HandleEvent(LuaEvents::textediting, &ev);
+	return commandInterface->HandleEvent(TextEditingEvent{ text });
 }
 
 bool GameController::KeyPress(int key, int scan, bool repeat, bool shift, bool ctrl, bool alt)
 {
-	KeyEvent ev(key, scan, repeat, shift, ctrl, alt);
-	bool ret = commandInterface->HandleEvent(LuaEvents::keypress, &ev);
+	bool ret = commandInterface->HandleEvent(KeyPressEvent{ key, scan, repeat, shift, ctrl, alt });
 	if (repeat)
 		return ret;
 	if (ret)
@@ -694,8 +686,7 @@ bool GameController::KeyPress(int key, int scan, bool repeat, bool shift, bool c
 
 bool GameController::KeyRelease(int key, int scan, bool repeat, bool shift, bool ctrl, bool alt)
 {
-	KeyEvent ev(key, scan, repeat, shift, ctrl, alt);
-	bool ret = commandInterface->HandleEvent(LuaEvents::keyrelease, &ev);
+	bool ret = commandInterface->HandleEvent(KeyReleaseEvent{ key, scan, repeat, shift, ctrl, alt });
 	if (repeat)
 		return ret;
 	if (ret)
@@ -736,15 +727,14 @@ void GameController::Tick()
 {
 	if(firstTick)
 	{
-#ifdef LUACONSOLE
-		((LuaScriptInterface*)commandInterface)->Init();
-#endif
-#if !defined(MACOSX) && !defined(NO_INSTALL_CHECK)
-		if (Client::Ref().IsFirstRun())
+		commandInterface->Init();
+		if constexpr (INSTALL_CHECK)
 		{
-			Install();
+			if (Client::Ref().IsFirstRun())
+			{
+				Install();
+			}
 		}
-#endif
 		firstTick = false;
 	}
 	if (gameModel->SelectNextIdentifier.length())
@@ -765,14 +755,12 @@ void GameController::Blur()
 {
 	// Tell lua that mouse is up (even if it really isn't)
 	MouseUp(0, 0, 0, mouseUpBlur);
-	BlurEvent ev;
-	commandInterface->HandleEvent(LuaEvents::blur, &ev);
+	commandInterface->HandleEvent(BlurEvent{});
 }
 
 void GameController::Exit()
 {
-	CloseEvent ev;
-	commandInterface->HandleEvent(LuaEvents::close, &ev);
+	commandInterface->HandleEvent(CloseEvent{});
 	gameView->CloseActiveWindow();
 	HasDone = true;
 }
@@ -892,11 +880,13 @@ void GameController::Update()
 		gameView->SetSample(gameModel->GetSimulation()->GetSample(pos.X, pos.Y));
 
 	Simulation * sim = gameModel->GetSimulation();
-	sim->BeforeSim();
 	if (!sim->sys_pause || sim->framerender)
 	{
-		sim->UpdateParticles(0, NPART - 1);
-		sim->AfterSim();
+		gameModel->UpdateUpTo(NPART);
+	}
+	else
+	{
+		gameModel->BeforeSim();
 	}
 
 	//if either STKM or STK2 isn't out, reset it's selected element. Defaults to PT_DUST unless right selected is something else
@@ -1273,7 +1263,7 @@ void GameController::OpenSavePreview()
 
 void GameController::OpenLocalBrowse()
 {
-	new FileBrowserActivity(LOCAL_SAVE_DIR PATH_SEP, [this](std::unique_ptr<SaveFile> file) {
+	new FileBrowserActivity(ByteString::Build(LOCAL_SAVE_DIR, PATH_SEP_CHAR), [this](std::unique_ptr<SaveFile> file) {
 		HistorySnapshot();
 		LoadSaveFile(file.get());
 	});
@@ -1362,7 +1352,6 @@ void GameController::OpenOptions()
 {
 	options = new OptionsController(gameModel, [this] {
 		gameModel->UpdateQuickOptions();
-		Client::Ref().WritePrefs(); // * I don't think there's a reason for this but I'm too lazy to check. -- LBPHacker
 	});
 	ui::Engine::Ref().ShowWindow(options->GetView());
 
@@ -1603,33 +1592,52 @@ void GameController::NotifyUpdateAvailable(Client * sender)
 		{
 			UpdateInfo info = Client::Ref().GetUpdateInfo();
 			StringBuilder updateMessage;
-#ifndef MACOSX
-			updateMessage << "업데이터를 실행하시겠습니까? 업데이트하려면 변경 사항을 저장하세요.\n\n현재 버전:\n ";
-#else
-			updateMessage << "\"계속\"을 클릭하여 웹 사이트에서 최신 버전을 내려받습니다. \n\n현재 버전:\n ";
-#endif
+			if (Platform::CanUpdate())
+			{
+				updateMessage << "업데이터를 실행하시겠습니까? 업데이트하려면 변경 사항을 저장하세요.\n\n현재 버전:\n ";
+			}
+			else
+			{
+				updateMessage << "\"계속\"을 클릭하여 웹 사이트에서 최신 버전을 내려받습니다. \n\n현재 버전:\n ";
+			}
 
-#ifdef SNAPSHOT
-			updateMessage << "스냅숏 " << SNAPSHOT_ID;
-#elif MOD_ID > 0
-			updateMessage << "모드 버전 " << SNAPSHOT_ID;
-#elif defined(BETA)
-			updateMessage << SAVE_VERSION << "." << MINOR_VERSION << " 베타, 빌드 " << BUILD_NUM;
-#else
-			updateMessage << SAVE_VERSION << "." << MINOR_VERSION << " 안정화, 빌드 " << BUILD_NUM;
-#endif
+			if constexpr (SNAPSHOT)
+			{
+				updateMessage << "스냅숏 " << SNAPSHOT_ID;
+			}
+			else if constexpr (MOD)
+			{
+				updateMessage << "모드 버전 " << SNAPSHOT_ID;
+			}
+			else if constexpr (BETA)
+			{
+				updateMessage << SAVE_VERSION << "." << MINOR_VERSION << " 베타, 빌드 " << BUILD_NUM;
+			}
+			else
+			{
+				updateMessage << SAVE_VERSION << "." << MINOR_VERSION << " 안정화, 빌드 " << BUILD_NUM;
+			}
 
 			updateMessage << "\n새 버전:\n ";
 			if (info.Type == UpdateInfo::Beta)
+			{
 				updateMessage << info.Major << "." << info.Minor << " 베타, 빌드 " << info.Build;
+			}
 			else if (info.Type == UpdateInfo::Snapshot)
-#if MOD_ID > 0
-				updateMessage << "모드 버전 " << info.Time;
-#else
-				updateMessage << "스냅숏 " << info.Time;
-#endif
+			{
+				if constexpr (MOD)
+				{
+					updateMessage << "모드 버전 " << info.Time;
+				}
+				else
+				{
+					updateMessage << "스냅숏 " << info.Time;
+				}
+			}
 			else if(info.Type == UpdateInfo::Stable)
+			{
 				updateMessage << info.Major << "." << info.Minor << " 안정화, 빌드 " << info.Build;
+			}
 
 			if (info.Changelog.length())
 				updateMessage << "\n\n변경 사항:\n" << info.Changelog;
@@ -1641,11 +1649,14 @@ void GameController::NotifyUpdateAvailable(Client * sender)
 	switch(sender->GetUpdateInfo().Type)
 	{
 		case UpdateInfo::Snapshot:
-#if MOD_ID > 0
-			gameModel->AddNotification(new UpdateNotification(this, "새 모드 업데이트를 사용할 수 있습니다. 여기를 클릭하여 업데이트하세요."));
-#else
-			gameModel->AddNotification(new UpdateNotification(this, "새 스냅숏을 사용할 수 있습니다. 여기를 클릭하여 업데이트하세요."));
-#endif
+			if constexpr (MOD)
+			{
+				gameModel->AddNotification(new UpdateNotification(this, "새 모드 업데이트를 사용할 수 있습니다. 여기를 클릭하여 업데이트하세요."));
+			}
+			else
+			{
+				gameModel->AddNotification(new UpdateNotification(this, "새 스냅숏을 사용할 수 있습니다. 여기를 클릭하여 업데이트하세요."));
+			}
 			break;
 		case UpdateInfo::Stable:
 			gameModel->AddNotification(new UpdateNotification(this, "새 버전을 사용할 수 있습니다. 여기를 클릭하여 업데이트하세요."));
@@ -1663,19 +1674,24 @@ void GameController::RemoveNotification(Notification * notification)
 
 void GameController::RunUpdater()
 {
-#ifndef MACOSX
-	Exit();
-	new UpdateActivity();
-#else
-
-#ifdef UPDATESERVER
-	ByteString file = ByteString::Build(SCHEME, UPDATESERVER, Client::Ref().GetUpdateInfo().File);
-#else
-	ByteString file = ByteString::Build(SCHEME, SERVER, Client::Ref().GetUpdateInfo().File);
-#endif
-
-	Platform::OpenURI(file);
-#endif // MACOSX
+	if (Platform::CanUpdate())
+	{
+		Exit();
+		new UpdateActivity();
+	}
+	else
+	{
+		ByteString file;
+		if constexpr (USE_UPDATESERVER)
+		{
+			file = ByteString::Build(SCHEME, UPDATESERVER, Client::Ref().GetUpdateInfo().File);
+		}
+		else
+		{
+			file = ByteString::Build(SCHEME, SERVER, Client::Ref().GetUpdateInfo().File);
+		}
+		Platform::OpenURI(file);
+	}
 }
 
 bool GameController::GetMouseClickRequired()

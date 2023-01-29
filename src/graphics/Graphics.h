@@ -1,7 +1,4 @@
-#ifndef GRAPHICS_H
-#define GRAPHICS_H
-#include "Config.h"
-
+#pragma once
 #include "common/String.h"
 #include "common/tpt-inline.h"
 #include "Pixel.h"
@@ -71,10 +68,10 @@ public:
 
 class Graphics
 {
-	int clipx1 = 0;
-	int clipy1 = 0;
-	int clipx2 = WINDOWW;
-	int clipy2 = WINDOWH;
+	int clipx1;
+	int clipy1;
+	int clipx2;
+	int clipy2;
 
 public:
 	pixel *vid;
@@ -138,5 +135,3 @@ public:
 };
 
 bool PngDataToPixels(std::vector<pixel> &imageData, int &imgw, int &imgh, const char *pngData, size_t pngDataSize, bool addBackground);
-
-#endif

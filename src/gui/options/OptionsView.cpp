@@ -1,19 +1,13 @@
 #include "OptionsView.h"
-
-#include <cstdio>
-#include <cstring>
-#include <cmath>
-#include "SDLCompat.h"
 #include "Format.h"
-
 #include "OptionsController.h"
 #include "OptionsModel.h"
-
-#include "common/Platform.h"
+#include "common/platform/Platform.h"
 #include "graphics/Graphics.h"
+#include "graphics/Renderer.h"
 #include "gui/Style.h"
 #include "simulation/ElementDefs.h"
-
+#include "client/Client.h"
 #include "gui/dialogues/ConfirmPrompt.h"
 #include "gui/dialogues/InformationMessage.h"
 #include "gui/interface/Button.h"
@@ -23,6 +17,10 @@
 #include "gui/interface/Label.h"
 #include "gui/interface/Textbox.h"
 #include "gui/interface/DirectionSelector.h"
+#include <cstdio>
+#include <cstring>
+#include <cmath>
+#include <SDL.h>
 
 OptionsView::OptionsView():
 	ui::Window(ui::Point(-1, -1), ui::Point(320, 340))
@@ -419,7 +417,7 @@ OptionsView::OptionsView():
 		ByteString to = Platform::sharedCwd;
 		new ConfirmPrompt("디렉터리를 이동할까요?", "이것은\n\bt" + from.FromUtf8() + "\bw\n에 있는 모든 스탬프, 세이브, 스크립트를 디렉터리\n\bt" + to.FromUtf8() + "\bw로 이동합니다.\n\n" +
 			 "이미 존재하는 파일은 덮어쓰이지 않을 것입니다.", { [=] () {
-				 String ret = Platform::DoMigration(from, to);
+				 String ret = Client::Ref().DoMigration(from, to);
 				new InformationMessage("이동됨", ret, false);
 			 } });
 	} });
@@ -438,7 +436,6 @@ void OptionsView::UpdateAmbientAirTempPreview(float airTemp, bool isValid)
 {
 	if (isValid)
 	{
-		int HeatToColour(float temp);
 		int c = HeatToColour(airTemp);
 		ambientAirTempPreview->Appearance.BackgroundInactive = ui::Colour(PIXR(c), PIXG(c), PIXB(c));
 		ambientAirTempPreview->SetText("");

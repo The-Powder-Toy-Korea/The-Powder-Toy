@@ -1,7 +1,5 @@
-#ifndef SAVERENDERER_H_
-#define SAVERENDERER_H_
-#include "Config.h"
-#include "common/Singleton.h"
+#pragma once
+#include "common/ExplicitSingleton.h"
 #include <mutex>
 
 class GameSave;
@@ -10,7 +8,7 @@ class Graphics;
 class Simulation;
 class Renderer;
 
-class SaveRenderer: public Singleton<SaveRenderer> {
+class SaveRenderer: public ExplicitSingleton<SaveRenderer> {
 	Graphics * g;
 	Simulation * sim;
 	Renderer * ren;
@@ -22,5 +20,3 @@ public:
 	void Flush(int begin, int end);
 	virtual ~SaveRenderer();
 };
-
-#endif /* SAVERENDERER_H_ */

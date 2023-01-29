@@ -1,10 +1,8 @@
-#ifndef PREVIEWVIEW_H_
-#define PREVIEWVIEW_H_
-
-#include <vector>
-#include <set>
+#pragma once
 #include "common/String.h"
 #include "gui/interface/Window.h"
+#include <vector>
+#include <set>
 
 namespace ui
 {
@@ -82,5 +80,3 @@ public:
 	void OnKeyPress(int key, int scan, bool repeat, bool shift, bool ctrl, bool alt) override;
 	virtual ~PreviewView();
 };
-
-#endif /* PREVIEWVIEW_H_ */

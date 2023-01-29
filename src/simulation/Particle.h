@@ -1,9 +1,6 @@
-#ifndef PARTICLE_H_
-#define PARTICLE_H_
-#include "Config.h"
-
-#include <vector>
+#pragma once
 #include "StructProperty.h"
+#include <vector>
 
 struct Particle
 {
@@ -22,5 +19,3 @@ struct Particle
 	static std::vector<StructProperty> const &GetProperties();
 	static std::vector<StructPropertyAlias> const &GetPropertyAliases();
 };
-
-#endif

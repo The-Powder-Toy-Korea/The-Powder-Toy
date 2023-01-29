@@ -1,9 +1,5 @@
-#ifndef SEARCHCONTROLLER_H
-#define SEARCHCONTROLLER_H
-#include "Config.h"
-
+#pragma once
 #include "common/String.h"
-
 #include <functional>
 
 class SaveInfo;
@@ -55,5 +51,3 @@ public:
 	void ReleaseLoadedSave();
 	SaveInfo * GetLoadedSave();
 };
-
-#endif // SEARCHCONTROLLER_H

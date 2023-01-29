@@ -1,13 +1,9 @@
-#ifndef TPTSCRIPTINTERFACE_H_
-#define TPTSCRIPTINTERFACE_H_
-#include "Config.h"
-
+#pragma once
 #include "CommandInterface.h"
 #include "TPTSTypes.h"
 #include <deque>
 
 class TPTScriptInterface: public CommandInterface {
-protected:
 	AnyType eval(std::deque<String> * words);
 	int parseNumber(String str);
 	AnyType tptS_set(std::deque<String> * words);
@@ -22,7 +18,4 @@ public:
 	TPTScriptInterface(GameController * c, GameModel * m);
 	int Command(String command) override;
 	String FormatCommand(String command) override;
-	virtual ~TPTScriptInterface();
 };
-
-#endif /* TPTSCRIPTINTERFACE_H_ */

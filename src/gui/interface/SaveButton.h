@@ -1,11 +1,8 @@
-#ifndef SAVEBUTTON_H_
-#define SAVEBUTTON_H_
-
+#pragma once
 #include "common/String.h"
 
 #include "Component.h"
 #include "client/http/ThumbnailRequest.h"
-#include "client/http/RequestMonitor.h"
 
 #include <memory>
 #include <functional>
@@ -16,7 +13,7 @@ class SaveInfo;
 class ThumbnailRendererTask;
 namespace ui
 {
-class SaveButton : public Component, public http::RequestMonitor<http::ThumbnailRequest>
+class SaveButton : public Component
 {
 	SaveFile * file;
 	SaveInfo * save;
@@ -34,6 +31,8 @@ class SaveButton : public Component, public http::RequestMonitor<http::Thumbnail
 	bool isMouseInsideHistory;
 	bool showVotes;
 	ThumbnailRendererTask *thumbnailRenderer;
+
+	std::unique_ptr<http::ThumbnailRequest> thumbnailRequest;
 
 	struct SaveButtonAction
 	{
@@ -62,8 +61,6 @@ public:
 	void Draw(const Point& screenPos) override;
 	void Tick(float dt) override;
 
-	void OnResponse(std::unique_ptr<VideoBuffer> thumbnail) override;
-
 	void SetSelected(bool selected_) { selected = selected_; }
 	bool GetSelected() { return selected; }
 	void SetSelectable(bool selectable_) { selectable = selectable_; }
@@ -82,5 +79,3 @@ protected:
 	bool isButtonDown, state, isMouseInside, selected, selectable;
 };
 }
-#endif /* BUTTON_H_ */
-

@@ -31,7 +31,7 @@ void Element::Element_BVBR()
 
 	DefaultProperties.temp = 273.15f;
 	HeatConduct = 164;
-	Description = "비브라늄 가루: VIBR가 압력에 의해 부서질 때 생성됩니다.";
+	Description = "비브라늄 가루: VIBR이 압력에 의해 부서질 때 생성됩니다.";
 
 	Properties = TYPE_PART|PROP_LIFE_DEC;
 

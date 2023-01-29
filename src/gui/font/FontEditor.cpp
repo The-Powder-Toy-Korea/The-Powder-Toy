@@ -1,21 +1,19 @@
+#include "FontEditor.h"
+#include "bzip2/bz2wrap.h"
+#include "gui/interface/Textbox.h"
+#include "gui/interface/Engine.h"
+#include "gui/interface/Point.h"
+#include "gui/interface/Button.h"
+#include "gui/interface/ScrollPanel.h"
+#include "graphics/Graphics.h"
+#include "SimulationConfig.h"
 #include <stdexcept>
 #include <fstream>
 #include <iterator>
 #include <iomanip>
 #include <iostream>
-
-#include "FontEditor.h"
-#include "bzip2/bz2wrap.h"
-
-#include "Config.h"
-#include "gui/interface/Textbox.h"
-#include "gui/interface/Engine.h"
-#include "gui/interface/Point.h"
-#include "gui/interface/Button.h"
-#include "gui/interface/Mouse.h"
-#include "gui/interface/Keys.h"
-#include "gui/interface/ScrollPanel.h"
-#include "graphics/Graphics.h"
+#include <cstdint>
+#include <SDL.h>
 
 extern unsigned char *font_data;
 extern unsigned int *font_ptrs;
@@ -250,7 +248,7 @@ public:
 	}
 };
 
-#define FONT_SCALE 16
+constexpr int FONT_SCALE = 16;
 FontEditor::FontEditor(ByteString _dataFile):
 	ui::Window(ui::Point(0, 0), ui::Point(WINDOWW, WINDOWH)),
 	dataFile(_dataFile),
