@@ -6,7 +6,7 @@ void Element::Element_CLNE()
 {
 	Identifier = "DEFAULT_PT_CLNE";
 	Name = "CLNE";
-	Colour = PIXPACK(0xFFD010);
+	Colour = 0xFFD010_rgb;
 	MenuVisible = 1;
 	MenuSection = SC_SPECIAL;
 	Enabled = 1;
@@ -32,6 +32,7 @@ void Element::Element_CLNE()
 	Description = "복제기: 접촉하는 물질을 복제합니다.";
 
 	Properties = TYPE_SOLID | PROP_NOCTYPEDRAW;
+	CarriesTypeIn = 1U << FIELD_CTYPE;
 
 	LowPressure = IPL;
 	LowPressureTransition = NT;
@@ -74,10 +75,10 @@ static int update(UPDATE_FUNC_ARGS)
 	}
 	else
 	{
-		if (parts[i].ctype==PT_LIFE) sim->create_part(-1, x + RNG::Ref().between(-1, 1), y + RNG::Ref().between(-1, 1), PT_LIFE, parts[i].tmp);
-		else if (parts[i].ctype!=PT_LIGH || RNG::Ref().chance(1, 30))
+		if (parts[i].ctype==PT_LIFE) sim->create_part(-1, x + sim->rng.between(-1, 1), y + sim->rng.between(-1, 1), PT_LIFE, parts[i].tmp);
+		else if (parts[i].ctype!=PT_LIGH || sim->rng.chance(1, 30))
 		{
-			int np = sim->create_part(-1, x + RNG::Ref().between(-1, 1), y + RNG::Ref().between(-1, 1), TYP(parts[i].ctype));
+			int np = sim->create_part(-1, x + sim->rng.between(-1, 1), y + sim->rng.between(-1, 1), TYP(parts[i].ctype));
 			if (np>=0)
 			{
 				if (parts[i].ctype==PT_LAVA && parts[i].tmp>0 && parts[i].tmp<PT_NUM && sim->elements[parts[i].tmp].HighTemperatureTransition==PT_LAVA)

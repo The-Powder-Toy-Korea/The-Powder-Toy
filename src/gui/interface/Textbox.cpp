@@ -200,9 +200,9 @@ void Textbox::pasteIntoSelection()
 	{
 		newText = newText.Substr(0, limit-backingText.length());
 	}
-	if (!multiline && Graphics::textwidth(backingText + newText) > regionWidth)
+	if (!multiline && Graphics::TextSize(backingText + newText).X - 1 > regionWidth)
 	{
-		int pLimit = regionWidth - Graphics::textwidth(backingText);
+		int pLimit = regionWidth - (Graphics::TextSize(backingText).X - 1);
 		int pWidth = 0;
 		auto it = newText.begin();
 		while (it != newText.end())
@@ -360,10 +360,11 @@ void Textbox::OnVKeyPress(int key, int scan, bool repeat, bool shift, bool ctrl,
 			StopTextEditing();
 			if (HasSelection())
 			{
-				if (getLowerSelectionBound() < 0 || getHigherSelectionBound() > (int)backingText.length())
+				int lowerBound = getLowerSelectionBound(), higherBound = getHigherSelectionBound();
+				if (lowerBound < 0 || higherBound > (int)backingText.length())
 					return;
-				backingText.Erase(getLowerSelectionBound(), getHigherSelectionBound());
-				cursor = getLowerSelectionBound();
+				backingText.Erase(lowerBound, higherBound - lowerBound);
+				cursor = lowerBound;
 				changed = true;
 			}
 			else if (backingText.length() && cursor < (int)backingText.length())
@@ -387,10 +388,11 @@ void Textbox::OnVKeyPress(int key, int scan, bool repeat, bool shift, bool ctrl,
 			StopTextEditing();
 			if (HasSelection())
 			{
-				if (getLowerSelectionBound() < 0 || getHigherSelectionBound() > (int)backingText.length())
+				int lowerBound = getLowerSelectionBound(), higherBound = getHigherSelectionBound();
+				if (lowerBound < 0 || higherBound > (int)backingText.length())
 					return;
-				backingText.erase(backingText.begin()+getLowerSelectionBound(), backingText.begin()+getHigherSelectionBound());
-				cursor = getLowerSelectionBound();
+				backingText.Erase(lowerBound, higherBound - lowerBound);
+				cursor = lowerBound;
 				changed = true;
 			}
 			else if (backingText.length() && cursor > 0)
@@ -486,7 +488,7 @@ void Textbox::InsertText(String text)
 			regionWidth -= 13;
 		regionWidth -= Appearance.Margin.Left;
 		regionWidth -= Appearance.Margin.Right;
-		if ((limit==String::npos || backingText.length() < limit) && (Graphics::textwidth(backingText + text) <= regionWidth || multiline))
+		if ((limit==String::npos || backingText.length() < limit) && (Graphics::TextSize(backingText + text).X - 1 <= regionWidth || multiline))
 		{
 			if (cursor == (int)backingText.length())
 			{
@@ -611,16 +613,21 @@ void Textbox::Draw(const Point& screenPos)
 	Graphics * g = GetGraphics();
 	if(IsFocused())
 	{
-		if(border) g->drawrect(screenPos.X, screenPos.Y, Size.X, Size.Y, 255, 255, 255, 255);
-		g->draw_line(screenPos.X+textPosition.X+cursorPositionX, screenPos.Y-2+textPosition.Y+cursorPositionY, screenPos.X+textPosition.X+cursorPositionX, screenPos.Y+9+textPosition.Y+cursorPositionY, 255, 255, 255, 255);
+		if(border)
+			g->DrawRect(RectSized(screenPos, Size), 0xFFFFFF_rgb);
+		g->DrawLine(
+			screenPos + textPosition + Vec2{ cursorPositionX, cursorPositionY-2 },
+			screenPos + textPosition + Vec2{ cursorPositionX, cursorPositionY+9 },
+			0xFFFFFF_rgb);
 	}
 	else
 	{
 		if(!text.length())
 		{
-			g->drawtext(screenPos.X+textPosition.X, screenPos.Y+textPosition.Y, placeHolder, textColour.Red, textColour.Green, textColour.Blue, 170);
+			g->BlendText(screenPos + textPosition, placeHolder, textColour.NoAlpha().WithAlpha(170));
 		}
-		if(border) g->drawrect(screenPos.X, screenPos.Y, Size.X, Size.Y, 160, 160, 160, 255);
+		if(border)
+			g->DrawRect(RectSized(screenPos, Size), 0xA0A0A0_rgb);
 	}
 	if(Appearance.icon)
 		g->draw_icon(screenPos.X+iconPosition.X, screenPos.Y+iconPosition.Y, Appearance.icon);

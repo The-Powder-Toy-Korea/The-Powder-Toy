@@ -8,7 +8,7 @@ void Element::Element_LAVA()
 {
 	Identifier = "DEFAULT_PT_LAVA";
 	Name = "LAVA";
-	Colour = PIXPACK(0xE05010);
+	Colour = 0xE05010_rgb;
 	MenuVisible = 1;
 	MenuSection = SC_LIQUID;
 	Enabled = 1;
@@ -36,6 +36,7 @@ void Element::Element_LAVA()
 	Description = "용암: 가연성 물질을 연소시킵니다. 금속 및 기타 물질들이 녹을 때 생성되고 저온에서 응고됩니다.";
 
 	Properties = TYPE_LIQUID|PROP_LIFE_DEC;
+	CarriesTypeIn = 1U << FIELD_CTYPE;
 
 	LowPressure = IPL;
 	LowPressureTransition = NT;
@@ -71,5 +72,5 @@ static int graphics(GRAPHICS_FUNC_ARGS)
 
 static void create(ELEMENT_CREATE_FUNC_ARGS)
 {
-	sim->parts[i].life = RNG::Ref().between(240, 359);
+	sim->parts[i].life = sim->rng.between(240, 359);
 }

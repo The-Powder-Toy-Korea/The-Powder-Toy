@@ -27,10 +27,10 @@ int main(int argc, char *argv[])
 		return 1;
 	}
 
-	GameSave * gameSave = NULL;
+	std::unique_ptr<GameSave> gameSave;
 	try
 	{
-		gameSave = new GameSave(fileData, false);
+		gameSave = std::make_unique<GameSave>(fileData, false);
 	}
 	catch (ParseException &e)
 	{
@@ -39,13 +39,12 @@ int main(int argc, char *argv[])
 			throw e;
 	}
 
-	auto rng = std::make_unique<RNG>();
 	Simulation * sim = new Simulation();
-	Renderer * ren = new Renderer(new Graphics(), sim);
+	Renderer * ren = new Renderer(sim);
 
 	if (gameSave)
 	{
-		sim->Load(gameSave, true);
+		sim->Load(gameSave.get(), true);
 
 		//Render save
 		ren->decorations_enable = true;
@@ -57,19 +56,19 @@ int main(int argc, char *argv[])
 			frame--;
 			ren->render_parts();
 			ren->render_fire();
-			ren->clearScreen(1.0f);
+			ren->clearScreen();
 		}
 	}
 	else
 	{
-		int w = Graphics::textwidth("Save file invalid")+16, x = (XRES-w)/2, y = (YRES-24)/2;
-		ren->drawrect(x, y, w, 24, 192, 192, 192, 255);
-		ren->drawtext(x+8, y+8, "Save file invalid", 192, 192, 240, 255);
+		int w = Graphics::TextSize("Save file invalid").X + 15, x = (XRES-w)/2, y = (YRES-24)/2;
+		ren->DrawRect(RectSized(Vec2{ x, y }, Vec2{ w, 24 }), 0xC0C0C0_rgb);
+		ren->BlendText({ x+8, y+8 }, "Save file invalid", 0xC0C0F0_rgb .WithAlpha(255));
 	}
 
 	ren->RenderBegin();
 	ren->RenderEnd();
 
-	VideoBuffer screenBuffer = ren->DumpFrame();
-	screenBuffer.WritePNG(outputFilename);
+	if (auto data = ren->DumpFrame().ToPNG())
+		Platform::WriteFile(*data, outputFilename);
 }

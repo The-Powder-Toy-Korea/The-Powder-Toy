@@ -7,7 +7,7 @@ void Element::Element_VRSS()
 {
 	Identifier = "DEFAULT_PT_VRSS";
 	Name = "VRSS";
-	Colour = PIXPACK(0xD408CD);
+	Colour = 0xD408CD_rgb;
 	MenuVisible = 0;
 	MenuSection = SC_SOLIDS;
 	Enabled = 1;
@@ -34,6 +34,7 @@ void Element::Element_VRSS()
 	Description = "고체 바이러스: 닿는 모든 물질을 자기 자신으로 바꿉니다.";
 
 	Properties = TYPE_SOLID|PROP_DEADLY;
+	CarriesTypeIn = 1U << FIELD_TMP2;
 
 	LowPressure = IPL;
 	LowPressureTransition = NT;

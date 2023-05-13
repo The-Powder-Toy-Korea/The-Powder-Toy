@@ -9,7 +9,7 @@ void Element::Element_STOR()
 {
 	Identifier = "DEFAULT_PT_STOR";
 	Name = "STOR";
-	Colour = PIXPACK(0x50DFDF);
+	Colour = 0x50DFDF_rgb;
 	MenuVisible = 1;
 	MenuSection = SC_POWERED;
 	Enabled = 1;
@@ -35,6 +35,7 @@ void Element::Element_STOR()
 	Description = "저장소: 단일 입자를 저장하며, PSCN을 이용하여 입자를 배출시킬 수 있습니다. PIPE로 입자를 전송할 수 있습니다.";
 
 	Properties = TYPE_SOLID | PROP_NOCTYPEDRAW;
+	CarriesTypeIn = (1U << FIELD_CTYPE) | (1U << FIELD_TMP);
 
 	LowPressure = IPL;
 	LowPressureTransition = NT;

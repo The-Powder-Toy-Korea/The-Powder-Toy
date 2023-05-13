@@ -34,7 +34,7 @@
 --  The link at top downloads a file that contains ONLY version,full link,and prints the rest(changelog). See my link for example
 
 local icons = {
-	["manager"] = "\xEE\x81\xAB",
+	["manager"] = "\xEE\x81\xAF",
 	["cancel"] = "\xEE\x9C\x91",
 	["filter"] = "\xEE\x9C\x9C",
 	["search"] = "\xEE\x9C\xA1",

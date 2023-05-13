@@ -8,7 +8,7 @@ void Element::Element_CRAY()
 {
 	Identifier = "DEFAULT_PT_CRAY";
 	Name = "CRAY";
-	Colour = PIXPACK(0xBBFF00);
+	Colour = 0xBBFF00_rgb;
 	MenuVisible = 1;
 	MenuSection = SC_ELEC;
 	Enabled = 1;
@@ -34,6 +34,7 @@ void Element::Element_CRAY()
 	Description = "C-Type 광선 방출기: ctype으로 지정된 물질로 물질로 이루어진 광선을 발사합니다. tmp로 범위를 지정할 수 있습니다.";
 
 	Properties = TYPE_SOLID;
+	CarriesTypeIn = 1U << FIELD_CTYPE;
 
 	LowPressure = IPL;
 	LowPressureTransition = NT;

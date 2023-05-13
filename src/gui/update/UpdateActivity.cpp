@@ -130,7 +130,7 @@ void UpdateActivity::NotifyError(Task * sender)
 	}
 	else
 	{
-		sb << "The Powder Toy 공식 홈페이지에서 게임을 내려받아 보세요.\n";
+		sb << "The Powder Toy 공식 홈페이지에서 게임을 내려받으십시오.\n";
 	}
 	sb << "Error: " << sender->GetError();
 	new ConfirmPrompt("자동 업데이트에 실패함", sb.Build(), { [this] {

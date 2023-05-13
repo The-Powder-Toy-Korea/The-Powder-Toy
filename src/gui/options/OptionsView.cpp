@@ -17,6 +17,7 @@
 #include "gui/interface/Label.h"
 #include "gui/interface/Textbox.h"
 #include "gui/interface/DirectionSelector.h"
+#include "PowderToySDL.h"
 #include <cstdio>
 #include <cstring>
 #include <cmath>
@@ -45,7 +46,7 @@ OptionsView::OptionsView():
 
 		void Draw(const ui::Point& screenPos) override
 		{
-			GetGraphics()->drawrect(screenPos.X, screenPos.Y, Size.X, Size.Y, 255, 255, 255, 180);
+			GetGraphics()->BlendRect(RectSized(screenPos, Size), 0xFFFFFF_rgb .WithAlpha(180));
 		}		
 	};
 	
@@ -157,8 +158,8 @@ OptionsView::OptionsView():
 		{
 			Graphics * g = GetGraphics();
 
-			g->clearrect(Position.X-2, Position.Y-2, Size.X+3, Size.Y+3);
-			g->drawrect(Position.X, Position.Y, Size.X, Size.Y, 200, 200, 200, 255);
+			g->DrawFilledRect(RectSized(Position - Vec2{ 1, 1 }, Size + Vec2{ 2, 2 }), 0x000000_rgb);
+			g->DrawRect(RectSized(Position, Size), 0xC8C8C8_rgb);
 		}
 
 		ui::DirectionSelector * gravityDirection;
@@ -264,7 +265,7 @@ OptionsView::OptionsView():
 			scale->AddOption(std::pair<String, int>(String::Build(ix_scale), ix_scale));
 			ix_scale += 1;
 		}
-		while (ui::Engine::Ref().GetMaxWidth() >= ui::Engine::Ref().GetWidth() * ix_scale && ui::Engine::Ref().GetMaxHeight() >= ui::Engine::Ref().GetHeight() * ix_scale);
+		while (desktopWidth >= GetGraphics()->Size().X * ix_scale && desktopHeight >= GetGraphics()->Size().Y * ix_scale);
 		if (!current_scale_valid)
 			scale->AddOption(std::pair<String, int>("현재", current_scale));
 	}
@@ -280,7 +281,7 @@ OptionsView::OptionsView():
 	resizable = new ui::Checkbox(ui::Point(8, currentY), ui::Point(1, 16), "창 크기 조절", "");
 	autowidth(resizable);
 	resizable->SetActionCallback({ [this] { c->SetResizable(resizable->GetChecked()); } });
-	tempLabel = new ui::Label(ui::Point(resizable->Position.X+Graphics::textwidth(resizable->GetText())+20, currentY), ui::Point(1, 16), "\bg- 창 크기를 조절할 수 있도록 허용합니다.");
+	tempLabel = new ui::Label(ui::Point(resizable->Position.X+Graphics::TextSize(resizable->GetText()).X+19, currentY), ui::Point(1, 16), "\bg- 창 크기의 조절을 허용합니다.");
 	autowidth(tempLabel);
 	tempLabel->Appearance.HorizontalAlign = ui::Appearance::AlignLeft;
 	tempLabel->Appearance.VerticalAlign = ui::Appearance::AlignMiddle;
@@ -291,7 +292,7 @@ OptionsView::OptionsView():
 	fullscreen = new ui::Checkbox(ui::Point(8, currentY), ui::Point(1, 16), "전체 화면", "");
 	autowidth(fullscreen);
 	fullscreen->SetActionCallback({ [this] { c->SetFullscreen(fullscreen->GetChecked()); } });
-	tempLabel = new ui::Label(ui::Point(fullscreen->Position.X+Graphics::textwidth(fullscreen->GetText())+20, currentY), ui::Point(1, 16), "\bg- 전체 화면으로 플레이합니다.");
+	tempLabel = new ui::Label(ui::Point(fullscreen->Position.X+Graphics::TextSize(fullscreen->GetText()).X+19, currentY), ui::Point(1, 16), "\bg- 전체 화면으로 플레이합니다.");
 	autowidth(tempLabel);
 	tempLabel->Appearance.HorizontalAlign = ui::Appearance::AlignLeft;
 	tempLabel->Appearance.VerticalAlign = ui::Appearance::AlignMiddle;
@@ -302,7 +303,7 @@ OptionsView::OptionsView():
 	altFullscreen = new ui::Checkbox(ui::Point(23, currentY), ui::Point(1, 16), "해상도 변경", "");
 	autowidth(altFullscreen);
 	altFullscreen->SetActionCallback({ [this] { c->SetAltFullscreen(altFullscreen->GetChecked()); } });
-	tempLabel = new ui::Label(ui::Point(altFullscreen->Position.X+Graphics::textwidth(altFullscreen->GetText())+20, currentY), ui::Point(1, 16), "\bg- 최적화된 해상도로 조정합니다.");
+	tempLabel = new ui::Label(ui::Point(altFullscreen->Position.X+Graphics::TextSize(altFullscreen->GetText()).X+19, currentY), ui::Point(1, 16), "\bg- 최적화된 해상도로 조정합니다.");
 	autowidth(tempLabel);
 	tempLabel->Appearance.HorizontalAlign = ui::Appearance::AlignLeft;
 	tempLabel->Appearance.VerticalAlign = ui::Appearance::AlignMiddle;
@@ -313,7 +314,7 @@ OptionsView::OptionsView():
 	forceIntegerScaling = new ui::Checkbox(ui::Point(23, currentY), ui::Point(1, 16), "강제 정수 스케일링", "");
 	autowidth(forceIntegerScaling);
 	forceIntegerScaling->SetActionCallback({ [this] { c->SetForceIntegerScaling(forceIntegerScaling->GetChecked()); } });
-	tempLabel = new ui::Label(ui::Point(altFullscreen->Position.X+Graphics::textwidth(forceIntegerScaling->GetText())+20, currentY), ui::Point(1, 16), "\bg- 픽셀이 선명해지도록 조정합니다.");
+	tempLabel = new ui::Label(ui::Point(altFullscreen->Position.X+Graphics::TextSize(forceIntegerScaling->GetText()).X+19, currentY), ui::Point(1, 16), "\bg- 화면이 선명해지도록 조정합니다.");
 	autowidth(tempLabel);
 	tempLabel->Appearance.HorizontalAlign = ui::Appearance::AlignLeft;
 	tempLabel->Appearance.VerticalAlign = ui::Appearance::AlignMiddle;
@@ -324,7 +325,7 @@ OptionsView::OptionsView():
 	fastquit = new ui::Checkbox(ui::Point(8, currentY), ui::Point(1, 16), "빠른 종료", "");
 	autowidth(fastquit);
 	fastquit->SetActionCallback({ [this] { c->SetFastQuit(fastquit->GetChecked()); } });
-	tempLabel = new ui::Label(ui::Point(fastquit->Position.X+Graphics::textwidth(fastquit->GetText())+20, currentY), ui::Point(1, 16), "\bg- 닫기 단추를 누르면 바로 종료합니다.");
+	tempLabel = new ui::Label(ui::Point(fastquit->Position.X+Graphics::TextSize(fastquit->GetText()).X+19, currentY), ui::Point(1, 16), "\bg- 닫기 단추를 누르면 바로 종료합니다.");
 	autowidth(tempLabel);
 	tempLabel->Appearance.HorizontalAlign = ui::Appearance::AlignLeft;
 	tempLabel->Appearance.VerticalAlign = ui::Appearance::AlignMiddle;
@@ -335,7 +336,7 @@ OptionsView::OptionsView():
 	showAvatars = new ui::Checkbox(ui::Point(8, currentY), ui::Point(1, 16), "프로필 사진 표시", "");
 	autowidth(showAvatars);
 	showAvatars->SetActionCallback({ [this] { c->SetShowAvatars(showAvatars->GetChecked()); } });
-	tempLabel = new ui::Label(ui::Point(showAvatars->Position.X+Graphics::textwidth(showAvatars->GetText())+20, currentY), ui::Point(1, 16), "\bg- 댓글에서 프로필 사진을 표시합니다.");
+	tempLabel = new ui::Label(ui::Point(showAvatars->Position.X+Graphics::TextSize(showAvatars->GetText()).X+19, currentY), ui::Point(1, 16), "\bg- 댓글에서 프로필 사진을 표시합니다.");
 	autowidth(tempLabel);
 	tempLabel->Appearance.HorizontalAlign = ui::Appearance::AlignLeft;
 	tempLabel->Appearance.VerticalAlign = ui::Appearance::AlignMiddle;
@@ -346,7 +347,7 @@ OptionsView::OptionsView():
 	momentumScroll = new ui::Checkbox(ui::Point(8, currentY), ui::Point(1, 16), "부드러운 스크롤 활성화", "");
 	autowidth(momentumScroll);
 	momentumScroll->SetActionCallback({ [this] { c->SetMomentumScroll(momentumScroll->GetChecked()); } });
-	tempLabel = new ui::Label(ui::Point(momentumScroll->Position.X + Graphics::textwidth(momentumScroll->GetText()) + 20, currentY), ui::Point(1, 16), "\bg- 부드러운 스크롤을 활성화합니다.");
+	tempLabel = new ui::Label(ui::Point(momentumScroll->Position.X + Graphics::TextSize(momentumScroll->GetText()).X+19, currentY), ui::Point(1, 16), "\bg- 부드러운 스크롤을 활성화합니다.");
 	autowidth(tempLabel);
 	tempLabel->Appearance.HorizontalAlign = ui::Appearance::AlignLeft;
 	tempLabel->Appearance.VerticalAlign = ui::Appearance::AlignMiddle;
@@ -357,7 +358,7 @@ OptionsView::OptionsView():
 	mouseClickRequired = new ui::Checkbox(ui::Point(8, currentY), ui::Point(1, 16), "카테고리 고정", "");
 	autowidth(mouseClickRequired);
 	mouseClickRequired->SetActionCallback({ [this] { c->SetMouseClickrequired(mouseClickRequired->GetChecked()); } });
-	tempLabel = new ui::Label(ui::Point(mouseClickRequired->Position.X+Graphics::textwidth(mouseClickRequired->GetText())+20, currentY), ui::Point(1, 16), "\bg- 우측 물질 카테고리를 클릭으로 전환합니다.");
+	tempLabel = new ui::Label(ui::Point(mouseClickRequired->Position.X+Graphics::TextSize(mouseClickRequired->GetText()).X+19, currentY), ui::Point(1, 16), "\bg- 우측 물질 카테고리를 클릭으로 전환합니다.");
 	autowidth(tempLabel);
 	tempLabel->Appearance.HorizontalAlign = ui::Appearance::AlignLeft;
 	tempLabel->Appearance.VerticalAlign = ui::Appearance::AlignMiddle;
@@ -368,7 +369,7 @@ OptionsView::OptionsView():
 	includePressure = new ui::Checkbox(ui::Point(8, currentY), ui::Point(1, 16), "저장 시 압력 포함", "");
 	autowidth(includePressure);
 	includePressure->SetActionCallback({ [this] { c->SetIncludePressure(includePressure->GetChecked()); } });
-	tempLabel = new ui::Label(ui::Point(includePressure->Position.X+Graphics::textwidth(includePressure->GetText())+20, currentY), ui::Point(1, 16), "\bg- 복사하거나 저장할 때 압력을 포함합니다.");
+	tempLabel = new ui::Label(ui::Point(includePressure->Position.X+Graphics::TextSize(includePressure->GetText()).X+19, currentY), ui::Point(1, 16), "\bg- 복사하거나 저장할 때 압력을 포함합니다.");
 	autowidth(tempLabel);
 	tempLabel->Appearance.HorizontalAlign = ui::Appearance::AlignLeft;
 	tempLabel->Appearance.VerticalAlign = ui::Appearance::AlignMiddle;
@@ -379,7 +380,7 @@ OptionsView::OptionsView():
 	perfectCirclePressure = new ui::Checkbox(ui::Point(8, currentY), ui::Point(1, 16), "정확한 원 브러시", "");
 	autowidth(perfectCirclePressure);
 	perfectCirclePressure->SetActionCallback({ [this] { c->SetPerfectCircle(perfectCirclePressure->GetChecked()); } });
-	tempLabel = new ui::Label(ui::Point(perfectCirclePressure->Position.X+Graphics::textwidth(perfectCirclePressure->GetText())+20, currentY), ui::Point(1, 16), "\bg- 브러시의 원을 정확하게 조정합니다.");
+	tempLabel = new ui::Label(ui::Point(perfectCirclePressure->Position.X+Graphics::TextSize(perfectCirclePressure->GetText()).X+19, currentY), ui::Point(1, 16), "\bg- 브러시의 원을 정확하게 조정합니다.");
 	autowidth(tempLabel);
 	tempLabel->Appearance.HorizontalAlign = ui::Appearance::AlignLeft;
 	tempLabel->Appearance.VerticalAlign = ui::Appearance::AlignMiddle;
@@ -415,7 +416,7 @@ OptionsView::OptionsView():
 	migrationButton->SetActionCallback({ [] {
 		ByteString from = Platform::originalCwd;
 		ByteString to = Platform::sharedCwd;
-		new ConfirmPrompt("디렉터리를 이동할까요?", "이것은\n\bt" + from.FromUtf8() + "\bw\n에 있는 모든 스탬프, 세이브, 스크립트를 디렉터리\n\bt" + to.FromUtf8() + "\bw로 이동합니다.\n\n" +
+		new ConfirmPrompt("디렉터리를 이동합니까?", "이는\n\bt" + from.FromUtf8() + "\bw\n에 있는 모든 스탬프, 세이브, 스크립트를 디렉터리\n\bt" + to.FromUtf8() + "\bw로 이동합니다.\n\n" +
 			 "이미 존재하는 파일은 덮어쓰이지 않을 것입니다.", { [=] () {
 				 String ret = Client::Ref().DoMigration(from, to);
 				new InformationMessage("이동됨", ret, false);
@@ -436,8 +437,7 @@ void OptionsView::UpdateAmbientAirTempPreview(float airTemp, bool isValid)
 {
 	if (isValid)
 	{
-		int c = HeatToColour(airTemp);
-		ambientAirTempPreview->Appearance.BackgroundInactive = ui::Colour(PIXR(c), PIXG(c), PIXB(c));
+		ambientAirTempPreview->Appearance.BackgroundInactive = RGB<uint8_t>::Unpack(HeatToColour(airTemp)).WithAlpha(0xFF);
 		ambientAirTempPreview->SetText("");
 	}
 	else
@@ -551,8 +551,8 @@ void OptionsView::AttachController(OptionsController * c_)
 void OptionsView::OnDraw()
 {
 	Graphics * g = GetGraphics();
-	g->clearrect(Position.X-2, Position.Y-2, Size.X+3, Size.Y+3);
-	g->drawrect(Position.X, Position.Y, Size.X, Size.Y, 255, 255, 255, 255);
+	g->DrawFilledRect(RectSized(Position - Vec2{ 1, 1 }, Size + Vec2{ 2, 2 }), 0x000000_rgb);
+	g->DrawRect(RectSized(Position, Size), 0xFFFFFF_rgb);
 }
 
 void OptionsView::OnTryExit(ExitMethod method)

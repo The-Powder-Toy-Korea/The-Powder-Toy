@@ -96,26 +96,19 @@ void TickClient()
 void BlueScreen(String detailMessage)
 {
 	auto &engine = ui::Engine::Ref();
-	engine.g->fillrect(0, 0, engine.GetWidth(), engine.GetHeight(), 17, 114, 169, 210);
+	engine.g->BlendFilledRect(engine.g->Size().OriginRect(), 0x1172A9_rgb .WithAlpha(0xD2));
 
 	String errorTitle = "ERROR";
 	String errorDetails = "Details: " + detailMessage;
 	String errorHelp = String("An unrecoverable fault has occurred, please report the error by visiting the website below\n") + SCHEME + SERVER;
-	int currentY = 0, width, height;
-	int errorWidth = 0;
-	Graphics::textsize(errorHelp, errorWidth, height);
 
-	engine.g->drawtext((engine.GetWidth()/2)-(errorWidth/2), ((engine.GetHeight()/2)-100) + currentY, errorTitle.c_str(), 255, 255, 255, 255);
-	Graphics::textsize(errorTitle, width, height);
-	currentY += height + 4;
-
-	engine.g->drawtext((engine.GetWidth()/2)-(errorWidth/2), ((engine.GetHeight()/2)-100) + currentY, errorDetails.c_str(), 255, 255, 255, 255);
-	Graphics::textsize(errorTitle, width, height);
-	currentY += height + 4;
-
-	engine.g->drawtext((engine.GetWidth()/2)-(errorWidth/2), ((engine.GetHeight()/2)-100) + currentY, errorHelp.c_str(), 255, 255, 255, 255);
-	Graphics::textsize(errorTitle, width, height);
-	currentY += height + 4;
+	// We use the width of errorHelp to center, but heights of the individual texts for vertical spacing
+	auto pos = engine.g->Size() / 2 - Vec2(Graphics::TextSize(errorHelp).X / 2, 100);
+	engine.g->BlendText(pos, errorTitle, 0xFFFFFF_rgb .WithAlpha(0xFF));
+	pos.Y += 4 + Graphics::TextSize(errorTitle).Y;
+	engine.g->BlendText(pos, errorDetails, 0xFFFFFF_rgb .WithAlpha(0xFF));
+	pos.Y += 4 + Graphics::TextSize(errorDetails).Y;
+	engine.g->BlendText(pos, errorHelp, 0xFFFFFF_rgb .WithAlpha(0xFF));
 
 	//Death loop
 	SDL_Event event;
@@ -124,7 +117,7 @@ void BlueScreen(String detailMessage)
 		while (SDL_PollEvent(&event))
 			if(event.type == SDL_QUIT)
 				exit(-1); // Don't use Platform::Exit, we're practically zombies at this point anyway.
-		blit(engine.g->vid);
+		blit(engine.g->Data());
 	}
 }
 
@@ -171,7 +164,6 @@ struct ExplicitSingletons
 	http::RequestManagerPtr requestManager;
 	std::unique_ptr<Client> client;
 	std::unique_ptr<SaveRenderer> saveRenderer;
-	std::unique_ptr<RNG> rng;
 	std::unique_ptr<Favorite> favorite;
 	std::unique_ptr<ui::Engine> engine;
 	std::unique_ptr<GameController> gameController;
@@ -351,7 +343,6 @@ int main(int argc, char * argv[])
 	Client::Ref().Initialize();
 
 	explicitSingletons->saveRenderer = std::make_unique<SaveRenderer>();
-	explicitSingletons->rng = std::make_unique<RNG>();
 	explicitSingletons->favorite = std::make_unique<Favorite>();
 	explicitSingletons->engine = std::make_unique<ui::Engine>();
 
@@ -383,8 +374,7 @@ int main(int argc, char * argv[])
 	engine.SetForceIntegerScaling(forceIntegerScaling);
 	engine.MomentumScroll = momentumScroll;
 	engine.ShowAvatars = showAvatars;
-	engine.SetMaxSize(desktopWidth, desktopHeight);
-	engine.Begin(WINDOWW, WINDOWH);
+	engine.Begin();
 	engine.SetFastQuit(prefs.Get("FastQuit", true));
 
 	bool enableBluescreen = !DEBUG && !true_arg(arguments["disable-bluescreen"]);
@@ -425,11 +415,10 @@ int main(int argc, char * argv[])
 					}
 					else
 					{
-						SaveFile * newFile = new SaveFile(openArg.value());
-						GameSave * newSave = new GameSave(std::move(gameSaveData));
-						newFile->SetGameSave(newSave);
-						gameController->LoadSaveFile(newFile);
-						delete newFile;
+						auto newFile = std::make_unique<SaveFile>(openArg.value());
+						auto newSave = std::make_unique<GameSave>(std::move(gameSaveData));
+						newFile->SetGameSave(std::move(newSave));
+						gameController->LoadSaveFile(std::move(newFile));
 					}
 
 				}
@@ -448,11 +437,11 @@ int main(int argc, char * argv[])
 		if (ptsaveArg.has_value())
 		{
 			engine.g->Clear();
-			engine.g->fillrect((engine.GetWidth()/2)-101, (engine.GetHeight()/2)-26, 202, 52, 0, 0, 0, 210);
-			engine.g->drawrect((engine.GetWidth()/2)-100, (engine.GetHeight()/2)-25, 200, 50, 255, 255, 255, 180);
-			engine.g->drawtext((engine.GetWidth()/2)-(Graphics::textwidth("Loading save...")/2), (engine.GetHeight()/2)-5, "Loading save...", style::Colour::InformationTitle.Red, style::Colour::InformationTitle.Green, style::Colour::InformationTitle.Blue, 255);
+			engine.g->DrawRect(RectSized(engine.g->Size() / 2 - Vec2(100, 25), Vec2(200, 50)), 0xB4B4B4_rgb);
+			String loadingText = "Loading save...";
+			engine.g->BlendText(engine.g->Size() / 2 - Vec2((Graphics::TextSize(loadingText).X - 1) / 2, 5), loadingText, style::Colour::InformationTitle);
 
-			blit(engine.g->vid);
+			blit(engine.g->Data());
 			try
 			{
 				ByteString saveIdPart;
@@ -473,17 +462,16 @@ int main(int argc, char * argv[])
 				}
 				int saveId = saveIdPart.ToNumber<int>();
 
-				SaveInfo * newSave = Client::Ref().GetSave(saveId, 0);
+				auto newSave = Client::Ref().GetSave(saveId, 0);
 				if (!newSave)
 					throw std::runtime_error("Could not load save info");
 				auto saveData = Client::Ref().GetSaveData(saveId, 0);
 				if (!saveData.size())
 					throw std::runtime_error(("Could not load save\n" + Client::Ref().GetLastError()).ToUtf8());
-				GameSave * newGameSave = new GameSave(std::move(saveData));
-				newSave->SetGameSave(newGameSave);
+				auto newGameSave = std::make_unique<GameSave>(std::move(saveData));
+				newSave->SetGameSave(std::move(newGameSave));
 
-				gameController->LoadSave(newSave);
-				delete newSave;
+				gameController->LoadSave(std::move(newSave));
 			}
 			catch (std::exception & e)
 			{

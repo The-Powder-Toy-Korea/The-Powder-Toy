@@ -12,7 +12,7 @@ void Element::Element_PSTN()
 {
 	Identifier = "DEFAULT_PT_PSTN";
 	Name = "PSTN";
-	Colour = PIXPACK(0xAA9999);
+	Colour = 0xAA9999_rgb;
 	MenuVisible = 1;
 	MenuSection = SC_FORCE;
 	Enabled = 1;
@@ -39,6 +39,7 @@ void Element::Element_PSTN()
 	Description = "피스톤: 입자들을 밀어냅니다.";
 
 	Properties = TYPE_SOLID;
+	CarriesTypeIn = 1U << FIELD_CTYPE;
 
 	LowPressure = IPL;
 	LowPressureTransition = NT;

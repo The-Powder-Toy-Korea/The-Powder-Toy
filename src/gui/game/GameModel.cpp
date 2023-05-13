@@ -8,6 +8,7 @@
 #include "GameView.h"
 #include "Menu.h"
 #include "Notification.h"
+#include "RectangleBrush.h"
 #include "TriangleBrush.h"
 #include "QuickOptions.h"
 #include "lua/CommandInterface.h"
@@ -31,6 +32,7 @@
 #include "gui/interface/Engine.h"
 #include <iostream>
 #include <algorithm>
+#include <optional>
 
 HistoryEntry::~HistoryEntry()
 {
@@ -39,12 +41,8 @@ HistoryEntry::~HistoryEntry()
 }
 
 GameModel::GameModel():
-	clipboard(NULL),
-	placeSave(NULL),
 	activeMenu(-1),
 	currentBrush(0),
-	currentSave(NULL),
-	currentFile(NULL),
 	currentUser(0, ""),
 	toolStrength(1.0f),
 	historyPosition(0),
@@ -56,7 +54,7 @@ GameModel::GameModel():
 	decoSpace(0)
 {
 	sim = new Simulation();
-	ren = new Renderer(ui::Engine::Ref().g, sim);
+	ren = new Renderer(sim);
 
 	activeTools = regularToolset;
 
@@ -183,16 +181,8 @@ GameModel::~GameModel()
 	{
 		delete *iter;
 	}
-	for (size_t i = 0; i < brushList.size(); i++)
-	{
-		delete brushList[i];
-	}
 	delete sim;
 	delete ren;
-	delete placeSave;
-	delete clipboard;
-	delete currentSave;
-	delete currentFile;
 	//if(activeTools)
 	//	delete[] activeTools;
 }
@@ -233,13 +223,13 @@ void GameModel::BuildMenus()
 
 	ByteString activeToolIdentifiers[4];
 	if(regularToolset[0])
-		activeToolIdentifiers[0] = regularToolset[0]->GetIdentifier();
+		activeToolIdentifiers[0] = regularToolset[0]->Identifier;
 	if(regularToolset[1])
-		activeToolIdentifiers[1] = regularToolset[1]->GetIdentifier();
+		activeToolIdentifiers[1] = regularToolset[1]->Identifier;
 	if(regularToolset[2])
-		activeToolIdentifiers[2] = regularToolset[2]->GetIdentifier();
+		activeToolIdentifiers[2] = regularToolset[2]->Identifier;
 	if(regularToolset[3])
-		activeToolIdentifiers[3] = regularToolset[3]->GetIdentifier();
+		activeToolIdentifiers[3] = regularToolset[3]->Identifier;
 
 	//Empty current menus
 	for (size_t i = 0; i < menuList.size(); i++)
@@ -272,19 +262,19 @@ void GameModel::BuildMenus()
 			Tool * tempTool;
 			if(i == PT_LIGH)
 			{
-				tempTool = new Element_LIGH_Tool(i, sim->elements[i].Name, sim->elements[i].Description, PIXR(sim->elements[i].Colour), PIXG(sim->elements[i].Colour), PIXB(sim->elements[i].Colour), sim->elements[i].Identifier, sim->elements[i].IconGenerator);
+				tempTool = new Element_LIGH_Tool(i, sim->elements[i].Name, sim->elements[i].Description, sim->elements[i].Colour, sim->elements[i].Identifier, sim->elements[i].IconGenerator);
 			}
 			else if(i == PT_TESC)
 			{
-				tempTool = new Element_TESC_Tool(i, sim->elements[i].Name, sim->elements[i].Description, PIXR(sim->elements[i].Colour), PIXG(sim->elements[i].Colour), PIXB(sim->elements[i].Colour), sim->elements[i].Identifier, sim->elements[i].IconGenerator);
+				tempTool = new Element_TESC_Tool(i, sim->elements[i].Name, sim->elements[i].Description, sim->elements[i].Colour, sim->elements[i].Identifier, sim->elements[i].IconGenerator);
 			}
 			else if(i == PT_STKM || i == PT_FIGH || i == PT_STKM2)
 			{
-				tempTool = new PlopTool(i, sim->elements[i].Name, sim->elements[i].Description, PIXR(sim->elements[i].Colour), PIXG(sim->elements[i].Colour), PIXB(sim->elements[i].Colour), sim->elements[i].Identifier, sim->elements[i].IconGenerator);
+				tempTool = new PlopTool(i, sim->elements[i].Name, sim->elements[i].Description, sim->elements[i].Colour, sim->elements[i].Identifier, sim->elements[i].IconGenerator);
 			}
 			else
 			{
-				tempTool = new ElementTool(i, sim->elements[i].Name, sim->elements[i].Description, PIXR(sim->elements[i].Colour), PIXG(sim->elements[i].Colour), PIXB(sim->elements[i].Colour), sim->elements[i].Identifier, sim->elements[i].IconGenerator);
+				tempTool = new ElementTool(i, sim->elements[i].Name, sim->elements[i].Description, sim->elements[i].Colour, sim->elements[i].Identifier, sim->elements[i].IconGenerator);
 			}
 
 			if (sim->elements[i].MenuSection >= 0 && sim->elements[i].MenuSection < SC_TOTAL && sim->elements[i].MenuVisible)
@@ -302,7 +292,7 @@ void GameModel::BuildMenus()
 	//Build menu for GOL types
 	for(int i = 0; i < NGOL; i++)
 	{
-		Tool * tempTool = new ElementTool(PT_LIFE|PMAPID(i), builtinGol[i].name, builtinGol[i].description, PIXR(builtinGol[i].colour), PIXG(builtinGol[i].colour), PIXB(builtinGol[i].colour), "DEFAULT_PT_LIFE_"+builtinGol[i].name.ToAscii());
+		Tool * tempTool = new ElementTool(PT_LIFE|PMAPID(i), builtinGol[i].name, builtinGol[i].description, builtinGol[i].colour, "DEFAULT_PT_LIFE_"+builtinGol[i].name.ToAscii());
 		menuList[SC_LIFE]->AddTool(tempTool);
 	}
 	{
@@ -355,7 +345,7 @@ void GameModel::BuildMenus()
 		}
 		for (auto &gd : newCustomGol)
 		{
-			Tool * tempTool = new ElementTool(PT_LIFE|PMAPID(gd.rule), gd.nameString, "사용자 지정 생명 게임: " + gd.ruleString, PIXR(gd.colour1), PIXG(gd.colour1), PIXB(gd.colour1), "DEFAULT_PT_LIFECUST_"+gd.nameString.ToAscii(), NULL);
+			Tool * tempTool = new ElementTool(PT_LIFE|PMAPID(gd.rule), gd.nameString, "사용자 지정 생명 게임: " + gd.ruleString, RGB<uint8_t>::Unpack(gd.colour1), "DEFAULT_PT_LIFECUST_"+gd.nameString.ToAscii(), NULL);
 			menuList[SC_LIFE]->AddTool(tempTool);
 		}
 		sim->SetCustomGOL(newCustomGol);
@@ -364,7 +354,7 @@ void GameModel::BuildMenus()
 	//Build other menus from wall data
 	for(int i = 0; i < UI_WALLCOUNT; i++)
 	{
-		Tool * tempTool = new WallTool(i, "", sim->wtypes[i].descs, PIXR(sim->wtypes[i].colour), PIXG(sim->wtypes[i].colour), PIXB(sim->wtypes[i].colour), sim->wtypes[i].identifier, sim->wtypes[i].textureGen);
+		Tool * tempTool = new WallTool(i, sim->wtypes[i].descs, sim->wtypes[i].colour, sim->wtypes[i].identifier, sim->wtypes[i].textureGen);
 		menuList[SC_WALL]->AddTool(tempTool);
 		//sim->wtypes[i]
 	}
@@ -376,28 +366,26 @@ void GameModel::BuildMenus()
 			i,
 			sim->tools[i].Name,
 			sim->tools[i].Description,
-			PIXR(sim->tools[i].Colour),
-			PIXG(sim->tools[i].Colour),
-			PIXB(sim->tools[i].Colour),
+			sim->tools[i].Colour,
 			sim->tools[i].Identifier
 		);
 		menuList[SC_TOOL]->AddTool(tempTool);
 	}
 	//Add special sign and prop tools
-	menuList[SC_TOOL]->AddTool(new WindTool(0, "WIND", "공기 흐름을 생성합니다.", 64, 64, 64, "DEFAULT_UI_WIND"));
-	menuList[SC_TOOL]->AddTool(new PropertyTool(this));
-	menuList[SC_TOOL]->AddTool(new SignTool(this));
-	menuList[SC_TOOL]->AddTool(new SampleTool(this));
-	menuList[SC_LIFE]->AddTool(new GOLTool(this));
+	menuList[SC_TOOL]->AddTool(new WindTool());
+	menuList[SC_TOOL]->AddTool(new PropertyTool(*this));
+	menuList[SC_TOOL]->AddTool(new SignTool(*this));
+	menuList[SC_TOOL]->AddTool(new SampleTool(*this));
+	menuList[SC_LIFE]->AddTool(new GOLTool(*this));
 
 	//Add decoration tools to menu
-	menuList[SC_DECO]->AddTool(new DecorationTool(ren, DECO_ADD,      "ADD",  "색상 혼합: 덧셈.", 0, 0, 0, "DEFAULT_DECOR_ADD"));
-	menuList[SC_DECO]->AddTool(new DecorationTool(ren, DECO_SUBTRACT, "SUB",  "색상 혼합: 뺄셈.", 0, 0, 0, "DEFAULT_DECOR_SUB"));
-	menuList[SC_DECO]->AddTool(new DecorationTool(ren, DECO_MULTIPLY, "MUL",  "색상 혼합: 곱셈.", 0, 0, 0, "DEFAULT_DECOR_MUL"));
-	menuList[SC_DECO]->AddTool(new DecorationTool(ren, DECO_DIVIDE,   "DIV",  "색상 혼합: 나눗셈." , 0, 0, 0, "DEFAULT_DECOR_DIV"));
-	menuList[SC_DECO]->AddTool(new DecorationTool(ren, DECO_SMUDGE,   "SMDG", "블러 도구: 주변 도색을 혼합합니다.", 0, 0, 0, "DEFAULT_DECOR_SMDG"));
-	menuList[SC_DECO]->AddTool(new DecorationTool(ren, DECO_CLEAR,    "CLR",  "도색을 제거합니다.", 0, 0, 0, "DEFAULT_DECOR_CLR"));
-	menuList[SC_DECO]->AddTool(new DecorationTool(ren, DECO_DRAW,     "SET",  "물질을 도색합니다(색상은 번지지 않습니다).", 0, 0, 0, "DEFAULT_DECOR_SET"));
+	menuList[SC_DECO]->AddTool(new DecorationTool(*ren, DECO_ADD, "ADD", "색상 혼합: 덧셈.", 0x000000_rgb, "DEFAULT_DECOR_ADD"));
+	menuList[SC_DECO]->AddTool(new DecorationTool(*ren, DECO_SUBTRACT, "SUB", "색상 혼합: 뺄셈.", 0x000000_rgb, "DEFAULT_DECOR_SUB"));
+	menuList[SC_DECO]->AddTool(new DecorationTool(*ren, DECO_MULTIPLY, "MUL", "색상 혼합: 곱셈.", 0x000000_rgb, "DEFAULT_DECOR_MUL"));
+	menuList[SC_DECO]->AddTool(new DecorationTool(*ren, DECO_DIVIDE, "DIV", "색상 혼합: 나눗셈." , 0x000000_rgb, "DEFAULT_DECOR_DIV"));
+	menuList[SC_DECO]->AddTool(new DecorationTool(*ren, DECO_SMUDGE, "SMDG", "블러 도구: 주변 도색을 혼합합니다.", 0x000000_rgb, "DEFAULT_DECOR_SMDG"));
+	menuList[SC_DECO]->AddTool(new DecorationTool(*ren, DECO_CLEAR, "CLR", "도색을 제거합니다.", 0x000000_rgb, "DEFAULT_DECOR_CLR"));
+	menuList[SC_DECO]->AddTool(new DecorationTool(*ren, DECO_DRAW, "SET", "물질을 도색합니다(색상은 번지지 않습니다).", 0x000000_rgb, "DEFAULT_DECOR_SET"));
 	SetColourSelectorColour(colour); // update tool colors
 	decoToolset[0] = GetToolFromIdentifier("DEFAULT_DECOR_SET");
 	decoToolset[1] = GetToolFromIdentifier("DEFAULT_DECOR_CLR");
@@ -464,40 +452,34 @@ void GameModel::BuildFavoritesMenu()
 
 void GameModel::BuildBrushList()
 {
-	bool hasStoredRadius = false;
-	ui::Point radius = ui::Point(0, 0);
+	ui::Point radius{ 4, 4 };
 	if (brushList.size())
-	{
 		radius = brushList[currentBrush]->GetRadius();
-		hasStoredRadius = true;
-	}
 	brushList.clear();
 
-	brushList.push_back(new EllipseBrush(ui::Point(4, 4), perfectCircle));
-	brushList.push_back(new Brush(ui::Point(4, 4)));
-	brushList.push_back(new TriangleBrush(ui::Point(4, 4)));
+	brushList.push_back(std::make_unique<EllipseBrush>(perfectCircle));
+	brushList.push_back(std::make_unique<RectangleBrush>());
+	brushList.push_back(std::make_unique<TriangleBrush>());
 
 	//Load more from brushes folder
-	std::vector<ByteString> brushFiles = Platform::DirectorySearch(BRUSH_DIR, "", { ".ptb" });
-	for (size_t i = 0; i < brushFiles.size(); i++)
+	for (ByteString brushFile : Platform::DirectorySearch(BRUSH_DIR, "", { ".ptb" }))
 	{
 		std::vector<char> brushData;
-		if (!Platform::ReadFile(brushData, ByteString::Build(BRUSH_DIR, PATH_SEP_CHAR, brushFiles[i])))
+		if (!Platform::ReadFile(brushData, ByteString::Build(BRUSH_DIR, PATH_SEP_CHAR, brushFile)))
 		{
-			std::cout << "Brushes: Skipping " << brushFiles[i] << ". Could not open" << std::endl;
+			std::cout << "Brushes: Skipping " << brushFile << ". Could not open" << std::endl;
 			continue;
 		}
-		auto dimension = size_t(std::sqrt(float(brushData.size())));
+		auto dimension = size_t(std::sqrt(brushData.size()));
 		if (dimension * dimension != brushData.size())
 		{
-			std::cout << "Brushes: Skipping " << brushFiles[i] << ". Invalid bitmap size" << std::endl;
+			std::cout << "Brushes: Skipping " << brushFile << ". Invalid bitmap size" << std::endl;
 			continue;
 		}
-		brushList.push_back(new BitmapBrush(reinterpret_cast<unsigned char *>(&brushData[0]), ui::Point(dimension, dimension)));
+		brushList.push_back(std::make_unique<BitmapBrush>(ui::Point(dimension, dimension), reinterpret_cast<unsigned char const *>(brushData.data())));
 	}
 
-	if (hasStoredRadius && (size_t)currentBrush < brushList.size())
-		brushList[currentBrush]->SetRadius(radius);
+	brushList[currentBrush]->SetRadius(radius);
 	notifyBrushChanged();
 }
 
@@ -507,7 +489,7 @@ Tool *GameModel::GetToolFromIdentifier(ByteString const &identifier)
 	{
 		for (auto *tool : menu->GetToolList())
 		{
-			if (identifier == tool->GetIdentifier())
+			if (identifier == tool->Identifier)
 			{
 				return tool;
 			}
@@ -515,7 +497,7 @@ Tool *GameModel::GetToolFromIdentifier(ByteString const &identifier)
 	}
 	for (auto *extra : extraElementTools)
 	{
-		if (identifier == extra->GetIdentifier())
+		if (identifier == extra->Identifier)
 		{
 			return extra;
 		}
@@ -813,14 +795,17 @@ void GameModel::SetVote(int direction)
 	}
 }
 
-Brush * GameModel::GetBrush()
+Brush &GameModel::GetBrush()
 {
-	return brushList[currentBrush];
+	return *brushList[currentBrush];
 }
 
-std::vector<Brush*> GameModel::GetBrushList()
+Brush *GameModel::GetBrushByID(int i)
 {
-	return brushList;
+	if (i >= 0 && i < (int)brushList.size())
+		return brushList[i].get();
+	else
+		return nullptr;
 }
 
 int GameModel::GetBrushID()
@@ -909,7 +894,7 @@ Tool * GameModel::GetElementTool(int elementID)
 {
 	for(std::vector<Tool*>::iterator iter = elementTools.begin(), end = elementTools.end(); iter != end; ++iter)
 	{
-		if((*iter)->GetToolID() == elementID)
+		if((*iter)->ToolID == elementID)
 			return *iter;
 	}
 	return NULL;
@@ -936,41 +921,58 @@ std::vector<Menu*> GameModel::GetMenuList()
 	return menuList;
 }
 
-SaveInfo * GameModel::GetSave()
+SaveInfo *GameModel::GetSave() // non-owning
 {
-	return currentSave;
+	return currentSave.get();
 }
 
-void GameModel::SetSave(SaveInfo * newSave, bool invertIncludePressure)
+std::unique_ptr<SaveInfo> GameModel::TakeSave()
 {
-	if(currentSave != newSave)
-	{
-		delete currentSave;
-		if(newSave == NULL)
-			currentSave = NULL;
-		else
-			currentSave = new SaveInfo(*newSave);
-	}
-	delete currentFile;
-	currentFile = NULL;
+	// we don't notify listeners because we'll get a new save soon anyway
+	return std::move(currentSave);
+}
 
-	if(currentSave && currentSave->GetGameSave())
+void GameModel::SaveToSimParameters(const GameSave &saveData)
+{
+	SetPaused(saveData.paused | GetPaused());
+	sim->gravityMode = saveData.gravityMode;
+	sim->customGravityX = saveData.customGravityX;
+	sim->customGravityY = saveData.customGravityY;
+	sim->air->airMode = saveData.airMode;
+	sim->air->ambientAirTemp = saveData.ambientAirTemp;
+	sim->edgeMode = saveData.edgeMode;
+	sim->legacy_enable = saveData.legacyEnable;
+	sim->water_equal_test = saveData.waterEEnabled;
+	sim->aheat_enable = saveData.aheatEnable;
+	if (saveData.gravityEnable && !sim->grav->IsEnabled())
 	{
-		GameSave * saveData = currentSave->GetGameSave();
-		SetPaused(saveData->paused | GetPaused());
-		sim->gravityMode = saveData->gravityMode;
-		sim->customGravityX = saveData->customGravityX;
-		sim->customGravityY = saveData->customGravityY;
-		sim->air->airMode = saveData->airMode;
-		sim->air->ambientAirTemp = saveData->ambientAirTemp;
-		sim->edgeMode = saveData->edgeMode;
-		sim->legacy_enable = saveData->legacyEnable;
-		sim->water_equal_test = saveData->waterEEnabled;
-		sim->aheat_enable = saveData->aheatEnable;
-		if(saveData->gravityEnable)
-			sim->grav->start_grav_async();
-		else
-			sim->grav->stop_grav_async();
+		sim->grav->start_grav_async();
+	}
+	else if (!saveData.gravityEnable && sim->grav->IsEnabled())
+	{
+		sim->grav->stop_grav_async();
+	}
+	sim->frameCount = saveData.frameCount;
+	if (saveData.hasRngState)
+	{
+		sim->rng.state(saveData.rngState);
+	}
+	else
+	{
+		sim->rng = RNG();
+	}
+	sim->ensureDeterminism = saveData.ensureDeterminism;
+}
+
+void GameModel::SetSave(std::unique_ptr<SaveInfo> newSave, bool invertIncludePressure)
+{
+	currentSave = std::move(newSave);
+	currentFile.reset();
+
+	if (currentSave && currentSave->GetGameSave())
+	{
+		auto *saveData = currentSave->GetGameSave();
+		SaveToSimParameters(*saveData);
 		sim->clear_sim();
 		ren->ClearAccumulation();
 		if (!sim->Load(saveData, !invertIncludePressure))
@@ -979,19 +981,23 @@ void GameModel::SetSave(SaveInfo * newSave, bool invertIncludePressure)
 			// Add in the correct info
 			if (saveData->authors.size() == 0)
 			{
-				saveData->authors["type"] = "save";
-				saveData->authors["id"] = newSave->id;
-				saveData->authors["username"] = newSave->userName;
-				saveData->authors["title"] = newSave->name.ToUtf8();
-				saveData->authors["description"] = newSave->Description.ToUtf8();
-				saveData->authors["published"] = (int)newSave->Published;
-				saveData->authors["date"] = newSave->updatedDate;
+				auto gameSave = currentSave->TakeGameSave();
+				gameSave->authors["type"] = "save";
+				gameSave->authors["id"] = currentSave->id;
+				gameSave->authors["username"] = currentSave->userName;
+				gameSave->authors["title"] = currentSave->name.ToUtf8();
+				gameSave->authors["description"] = currentSave->Description.ToUtf8();
+				gameSave->authors["published"] = (int)currentSave->Published;
+				gameSave->authors["date"] = currentSave->updatedDate;
+				currentSave->SetGameSave(std::move(gameSave));
 			}
 			// This save was probably just created, and we didn't know the ID when creating it
 			// Update with the proper ID
 			else if (saveData->authors.get("id", -1) == 0 || saveData->authors.get("id", -1) == -1)
 			{
-				saveData->authors["id"] = newSave->id;
+				auto gameSave = currentSave->TakeGameSave();
+				gameSave->authors["id"] = currentSave->id;
+				currentSave->SetGameSave(std::move(gameSave));
 			}
 			Client::Ref().OverwriteAuthorInfo(saveData->authors);
 		}
@@ -1000,45 +1006,26 @@ void GameModel::SetSave(SaveInfo * newSave, bool invertIncludePressure)
 	UpdateQuickOptions();
 }
 
-SaveFile * GameModel::GetSaveFile()
+const SaveFile *GameModel::GetSaveFile() const
 {
-	return currentFile;
+	return currentFile.get();
 }
 
-void GameModel::SetSaveFile(SaveFile * newSave, bool invertIncludePressure)
+std::unique_ptr<SaveFile> GameModel::TakeSaveFile()
 {
-	if(currentFile != newSave)
-	{
-		delete currentFile;
-		if(newSave == NULL)
-			currentFile = NULL;
-		else
-			currentFile = new SaveFile(*newSave);
-	}
-	delete currentSave;
-	currentSave = NULL;
+	// we don't notify listeners because we'll get a new save soon anyway
+	return std::move(currentFile);
+}
 
-	if(newSave && newSave->GetGameSave())
+void GameModel::SetSaveFile(std::unique_ptr<SaveFile> newSave, bool invertIncludePressure)
+{
+	currentFile = std::move(newSave);
+	currentSave.reset();
+
+	if (currentFile && currentFile->GetGameSave())
 	{
-		GameSave * saveData = newSave->GetGameSave();
-		SetPaused(saveData->paused | GetPaused());
-		sim->gravityMode = saveData->gravityMode;
-		sim->customGravityX = saveData->customGravityX;
-		sim->customGravityY = saveData->customGravityY;
-		sim->air->airMode = saveData->airMode;
-		sim->air->ambientAirTemp = saveData->ambientAirTemp;
-		sim->edgeMode = saveData->edgeMode;
-		sim->legacy_enable = saveData->legacyEnable;
-		sim->water_equal_test = saveData->waterEEnabled;
-		sim->aheat_enable = saveData->aheatEnable;
-		if(saveData->gravityEnable && !sim->grav->IsEnabled())
-		{
-			sim->grav->start_grav_async();
-		}
-		else if(!saveData->gravityEnable && sim->grav->IsEnabled())
-		{
-			sim->grav->stop_grav_async();
-		}
+		auto *saveData = currentFile->GetGameSave();
+		SaveToSimParameters(*saveData);
 		sim->clear_sim();
 		ren->ClearAccumulation();
 		if (!sim->Load(saveData, !invertIncludePressure))
@@ -1213,13 +1200,8 @@ void GameModel::SetColourSelectorColour(ui::Colour colour_)
 	colour = colour_;
 
 	std::vector<Tool*> tools = GetMenuList()[SC_DECO]->GetToolList();
-	for (size_t i = 0; i < tools.size(); i++)
-	{
-		((DecorationTool*)tools[i])->Red = colour.Red;
-		((DecorationTool*)tools[i])->Green = colour.Green;
-		((DecorationTool*)tools[i])->Blue = colour.Blue;
-		((DecorationTool*)tools[i])->Alpha = colour.Alpha;
-	}
+	for (auto tool : tools)
+		static_cast<DecorationTool *>(tool)->Colour = colour;
 
 	notifyColourSelectorColourChanged();
 }
@@ -1352,33 +1334,36 @@ void GameModel::ClearSimulation()
 	UpdateQuickOptions();
 }
 
-void GameModel::SetPlaceSave(GameSave * save)
+void GameModel::SetPlaceSave(std::unique_ptr<GameSave> save)
 {
-	if (save != placeSave)
-	{
-		delete placeSave;
-		if (save)
-			placeSave = new GameSave(*save);
-		else
-			placeSave = NULL;
-	}
+	transformedPlaceSave.reset();
+	placeSave = std::move(save);
 	notifyPlaceSaveChanged();
 }
 
-void GameModel::SetClipboard(GameSave * save)
+void GameModel::TransformPlaceSave(Mat2<int> transform, Vec2<int> nudge)
 {
-	delete clipboard;
-	clipboard = save;
+	if (placeSave)
+	{
+		transformedPlaceSave = std::make_unique<GameSave>(*placeSave);
+		transformedPlaceSave->Transform(transform, nudge);
+	}
+	notifyTransformedPlaceSaveChanged();
 }
 
-GameSave * GameModel::GetClipboard()
+void GameModel::SetClipboard(std::unique_ptr<GameSave> save)
 {
-	return clipboard;
+	clipboard = std::move(save);
 }
 
-GameSave * GameModel::GetPlaceSave()
+const GameSave *GameModel::GetClipboard() const
 {
-	return placeSave;
+	return clipboard.get();
+}
+
+const GameSave *GameModel::GetTransformedPlaceSave() const
+{
+	return transformedPlaceSave.get();
 }
 
 void GameModel::Log(String message, bool printToFile)
@@ -1576,6 +1561,14 @@ void GameModel::notifyPlaceSaveChanged()
 	for (size_t i = 0; i < observers.size(); i++)
 	{
 		observers[i]->NotifyPlaceSaveChanged(this);
+	}
+}
+
+void GameModel::notifyTransformedPlaceSaveChanged()
+{
+	for (size_t i = 0; i < observers.size(); i++)
+	{
+		observers[i]->NotifyTransformedPlaceSaveChanged(this);
 	}
 }
 

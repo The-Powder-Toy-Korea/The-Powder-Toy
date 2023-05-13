@@ -1,9 +1,12 @@
 #pragma once
+#include <array>
+#include <memory>
+#include <mutex>
+#include <vector>
 #include "Graphics.h"
 #include "gui/interface/Point.h"
+#include "common/tpt-rand.h"
 #include "SimulationConfig.h"
-#include <vector>
-#include <mutex>
 
 class RenderPreset;
 class Simulation;
@@ -32,11 +35,34 @@ typedef struct gcache_item gcache_item;
 
 int HeatToColour(float temp);
 
-class Renderer
+class Renderer: public RasterDrawMethods<Renderer>
 {
+	using Video = PlaneAdapter<std::array<pixel, WINDOW.X * RES.Y>, WINDOW.X, RES.Y>;
+	Video video;
+	std::array<pixel, WINDOW.X * RES.Y> persistentVideo;
+	Video warpVideo;
+
+	Rect<int> getClipRect() const
+	{
+		return video.Size().OriginRect();
+	}
+
+	friend struct RasterDrawMethods<Renderer>;
+
 public:
+	Vec2<int> Size() const
+	{
+		return video.Size();
+	}
+
+	pixel const *Data() const
+	{
+		return video.data();
+	}
+
+	RNG rng;
+
 	Simulation * sim;
-	Graphics * g;
 	gcache_item *graphicscache;
 
 	std::vector<unsigned int> render_modes;
@@ -75,10 +101,10 @@ public:
 	void RenderEnd();
 
 	void RenderZoom();
-	void DrawBlob(int x, int y, unsigned char cr, unsigned char cg, unsigned char cb);
+	void DrawBlob(Vec2<int> pos, RGB<uint8_t> colour);
 	void DrawWalls();
 	void DrawSigns();
-	void render_gravlensing(pixel * source);
+	void render_gravlensing(const Video &source);
 	void render_fire();
 	void prepare_alpha(int size, float intensity);
 	void render_parts();
@@ -89,43 +115,14 @@ public:
 	void FinaliseParts();
 
 	void ClearAccumulation();
-	void clearScreen(float alpha);
-	void SetSample(int x, int y);
-
-	pixel * vid;
-	pixel * persistentVid;
-	pixel * warpVid;
-	void blendpixel(int x, int y, int r, int g, int b, int a);
-	void addpixel(int x, int y, int r, int g, int b, int a);
+	void clearScreen();
+	void SetSample(Vec2<int> pos);
 
 	void draw_icon(int x, int y, Icon icon);
 
-	int drawtext_outline(int x, int y, const String &s, int r, int g, int b, int a);
-	int drawtext(int x, int y, const String &s, int r, int g, int b, int a);
-	int drawchar(int x, int y, String::value_type c, int r, int g, int b, int a);
-	int addchar(int x, int y, String::value_type c, int r, int g, int b, int a);
-
-	void xor_pixel(int x, int y);
-	void xor_line(int x, int y, int x2, int y2);
-	void xor_rect(int x, int y, int width, int height);
-	void xor_bitmap(unsigned char * bitmap, int x, int y, int w, int h);
-
-	void draw_line(int x, int y, int x2, int y2, int r, int g, int b, int a);
-	void drawrect(int x, int y, int width, int height, int r, int g, int b, int a);
-	void fillrect(int x, int y, int width, int height, int r, int g, int b, int a);
-	void drawcircle(int x, int y, int rx, int ry, int r, int g, int b, int a);
-	void fillcircle(int x, int y, int rx, int ry, int r, int g, int b, int a);
-	void clearrect(int x, int y, int width, int height);
-	void gradientrect(int x, int y, int width, int height, int r, int g, int b, int a, int r2, int g2, int b2, int a2);
-
-	void draw_image(const pixel *img, int x, int y, int w, int h, int a);
-	void draw_image(const VideoBuffer * vidBuf, int w, int h, int a);
-
 	VideoBuffer DumpFrame();
 
-	void drawblob(int x, int y, unsigned char cr, unsigned char cg, unsigned char cb);
-
-	pixel GetPixel(int x, int y);
+	pixel GetPixel(Vec2<int> pos) const;
 	//...
 	//Display mode modifiers
 	void CompileDisplayMode();
@@ -146,14 +143,14 @@ public:
 	int GetGridSize() { return gridSize; }
 	void SetGridSize(int value) { gridSize = value; }
 
-	static VideoBuffer * WallIcon(int wallID, int width, int height);
+	static std::unique_ptr<VideoBuffer> WallIcon(int wallID, Vec2<int> size);
 
-	Renderer(Graphics * g, Simulation * sim);
+	Renderer(Simulation * sim);
 	~Renderer();
 
 #define RENDERER_TABLE(name) \
-	static std::vector<pixel> name; \
-	static inline pixel name ## At(int index) \
+	static std::vector<RGB<uint8_t>> name; \
+	static inline RGB<uint8_t> name ## At(int index) \
 	{ \
 		auto size = int(name.size()); \
 		if (index <        0) index =        0; \

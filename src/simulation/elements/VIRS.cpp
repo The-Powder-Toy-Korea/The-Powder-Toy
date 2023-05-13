@@ -7,7 +7,7 @@ void Element::Element_VIRS()
 {
 	Identifier = "DEFAULT_PT_VIRS";
 	Name = "VIRS";
-	Colour = PIXPACK(0xFE11F6);
+	Colour = 0xFE11F6_rgb;
 	MenuVisible = 1;
 	MenuSection = SC_LIQUID;
 	Enabled = 1;
@@ -34,6 +34,7 @@ void Element::Element_VIRS()
 	Description = "바이러스: 닿는 모든 물질을 자기 자신으로 바꿉니다.";
 
 	Properties = TYPE_LIQUID|PROP_DEADLY;
+	CarriesTypeIn = 1U << FIELD_TMP2;
 
 	LowPressure = IPL;
 	LowPressureTransition = NT;
@@ -54,7 +55,7 @@ int Element_VIRS_update(UPDATE_FUNC_ARGS)
 {
 	//tmp3 measures how many frames until it is cured (0 if still actively spreading and not being cured)
 	//tmp4 measures how many frames until it dies
-	int r, rx, ry, rndstore = RNG::Ref().gen();
+	int r, rx, ry, rndstore = sim->rng.gen();
 	if (parts[i].tmp3)
 	{
 		parts[i].tmp3 -= (rndstore & 0x1) ? 0:1;
@@ -105,7 +106,7 @@ int Element_VIRS_update(UPDATE_FUNC_ARGS)
 				}
 				else if (TYP(r) == PT_PLSM)
 				{
-					if (surround_space && RNG::Ref().chance(10 + int(sim->pv[(y+ry)/CELL][(x+rx)/CELL]), 100))
+					if (surround_space && sim->rng.chance(10 + int(sim->pv[(y+ry)/CELL][(x+rx)/CELL]), 100))
 					{
 						sim->create_part(i, x, y, PT_PLSM);
 						return 1;
@@ -139,7 +140,7 @@ int Element_VIRS_update(UPDATE_FUNC_ARGS)
 			}
 			//reset rndstore only once, halfway through
 			else if (!rx && !ry)
-				rndstore = RNG::Ref().gen();
+				rndstore = sim->rng.gen();
 		}
 	return 0;
 }

@@ -44,8 +44,9 @@ private:
 	std::vector<Notification*> notifications;
 	//int clipboardSize;
 	//unsigned char * clipboardData;
-	GameSave * clipboard;
-	GameSave * placeSave;
+	std::unique_ptr<GameSave> clipboard;
+	std::unique_ptr<GameSave> placeSave;
+	std::unique_ptr<GameSave> transformedPlaceSave;
 	std::deque<String> consoleLog;
 	std::vector<GameView*> observers;
 	std::vector<Tool*> toolList;
@@ -61,9 +62,9 @@ private:
 	std::vector<QuickOption*> quickOptions;
 	int activeMenu;
 	int currentBrush;
-	std::vector<Brush *> brushList;
-	SaveInfo * currentSave;
-	SaveFile * currentFile;
+	std::vector<std::unique_ptr<Brush>> brushList;
+	std::unique_ptr<SaveInfo> currentSave;
+	std::unique_ptr<SaveFile> currentFile;
 	Tool * lastTool;
 	Tool ** activeTools;
 	Tool * decoToolset[4];
@@ -104,6 +105,7 @@ private:
 	void notifyZoomChanged();
 	void notifyClipboardChanged();
 	void notifyPlaceSaveChanged();
+	void notifyTransformedPlaceSaveChanged();
 	void notifyColourSelectorColourChanged();
 	void notifyColourSelectorVisibilityChanged();
 	void notifyColourPresetsChanged();
@@ -114,6 +116,9 @@ private:
 	void notifyToolTipChanged();
 	void notifyQuickOptionsChanged();
 	void notifyLastToolChanged();
+
+	void SaveToSimParameters(const GameSave &saveData);
+
 public:
 	GameModel();
 	~GameModel();
@@ -175,16 +180,18 @@ public:
 	std::vector<Tool*> GetToolList();
 	std::vector<Tool*> GetUnlistedTools();
 
-	Brush * GetBrush();
-	std::vector<Brush*> GetBrushList();
+	Brush &GetBrush();
+	Brush *GetBrushByID(int i);
 	int GetBrushID();
 	void SetBrushID(int i);
 
 	void SetVote(int direction);
-	SaveInfo * GetSave();
-	SaveFile * GetSaveFile();
-	void SetSave(SaveInfo * newSave, bool invertIncludePressure);
-	void SetSaveFile(SaveFile * newSave, bool invertIncludePressure);
+	SaveInfo *GetSave(); // non-owning
+	std::unique_ptr<SaveInfo> TakeSave();
+	const SaveFile *GetSaveFile() const;
+	std::unique_ptr<SaveFile> TakeSaveFile();
+	void SetSave(std::unique_ptr<SaveInfo> newSave, bool invertIncludePressure);
+	void SetSaveFile(std::unique_ptr<SaveFile> newSave, bool invertIncludePressure);
 	void AddObserver(GameView * observer);
 
 	void SetPaused(bool pauseState);
@@ -220,12 +227,14 @@ public:
 	ui::Point AdjustZoomCoords(ui::Point position);
 	void SetZoomWindowPosition(ui::Point position);
 	ui::Point GetZoomWindowPosition();
-	void SetClipboard(GameSave * save);
-	void SetPlaceSave(GameSave * save);
+	void SetClipboard(std::unique_ptr<GameSave> save);
+	void SetPlaceSave(std::unique_ptr<GameSave> save);
+	void TransformPlaceSave(Mat2<int> transform, Vec2<int> nudge);
 	void Log(String message, bool printToFile);
 	std::deque<String> GetLog();
-	GameSave * GetClipboard();
-	GameSave * GetPlaceSave();
+	const GameSave *GetClipboard() const;
+	const GameSave *GetPlaceSave() const;
+	const GameSave *GetTransformedPlaceSave() const;
 	bool GetMouseClickRequired();
 	void SetMouseClickRequired(bool mouseClickRequired);
 	bool GetIncludePressure();

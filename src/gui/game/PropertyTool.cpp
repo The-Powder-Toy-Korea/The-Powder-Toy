@@ -139,11 +139,11 @@ void PropertyWindow::SetProperty(bool warn)
 								v = sim->GetParticleType(value.ToUtf8());
 								if (v == -1)
 								{
-									for (auto *elementTool : tool->gameModel->GetMenuList()[SC_LIFE]->GetToolList())
+									for (auto *elementTool : tool->gameModel.GetMenuList()[SC_LIFE]->GetToolList())
 									{
-										if (elementTool && elementTool->GetName() == value)
+										if (elementTool && elementTool->Name == value)
 										{
-											v = ID(elementTool->GetToolID());
+											v = ID(elementTool->ToolID);
 											break;
 										}
 									}
@@ -199,7 +199,7 @@ void PropertyWindow::SetProperty(bool warn)
 				case StructProperty::Float:
 				{
 					if (properties[property->GetOption().second].Name == "temp")
-						tool->propValue.Float = format::StringToTemperature(value, tool->gameModel->GetTemperatureScale());
+						tool->propValue.Float = format::StringToTemperature(value, tool->gameModel.GetTemperatureScale());
 					else
 						tool->propValue.Float = value.ToNumber<float>();
 				}
@@ -238,8 +238,8 @@ void PropertyWindow::OnDraw()
 {
 	Graphics * g = GetGraphics();
 
-	g->clearrect(Position.X-2, Position.Y-2, Size.X+3, Size.Y+3);
-	g->drawrect(Position.X, Position.Y, Size.X, Size.Y, 200, 200, 200, 255);
+	g->DrawFilledRect(RectSized(Position - Vec2{ 1, 1 }, Size + Vec2{ 2, 2 }), 0x000000_rgb);
+	g->DrawRect(RectSized(Position, Size), 0xC8C8C8_rgb);
 }
 
 void PropertyWindow::OnKeyPress(int key, int scan, bool repeat, bool shift, bool ctrl, bool alt)
@@ -288,24 +288,21 @@ void PropertyTool::SetProperty(Simulation *sim, ui::Point position)
 	}
 }
 
-void PropertyTool::Draw(Simulation *sim, Brush *cBrush, ui::Point position)
+void PropertyTool::Draw(Simulation *sim, Brush const &cBrush, ui::Point position)
 {
-	if(cBrush)
+	for (ui::Point off : cBrush)
 	{
-		int radiusX = cBrush->GetRadius().X, radiusY = cBrush->GetRadius().Y, sizeX = cBrush->GetSize().X, sizeY = cBrush->GetSize().Y;
-		unsigned char *bitmap = cBrush->GetBitmap();
-		for(int y = 0; y < sizeY; y++)
-			for(int x = 0; x < sizeX; x++)
-				if(bitmap[(y*sizeX)+x] && (position.X+(x-radiusX) >= 0 && position.Y+(y-radiusY) >= 0 && position.X+(x-radiusX) < XRES && position.Y+(y-radiusY) < YRES))
-					SetProperty(sim, ui::Point(position.X+(x-radiusX), position.Y+(y-radiusY)));
+		ui::Point coords = position + off;
+		if (coords.X >= 0 && coords.Y >= 0 && coords.X < XRES && coords.Y < YRES)
+			SetProperty(sim, coords);
 	}
 }
 
-void PropertyTool::DrawLine(Simulation *sim, Brush *cBrush, ui::Point position, ui::Point position2, bool dragging)
+void PropertyTool::DrawLine(Simulation *sim, Brush const &cBrush, ui::Point position, ui::Point position2, bool dragging)
 {
 	int x1 = position.X, y1 = position.Y, x2 = position2.X, y2 = position2.Y;
 	bool reverseXY = abs(y2-y1) > abs(x2-x1);
-	int x, y, dx, dy, sy, rx = cBrush->GetRadius().X, ry = cBrush->GetRadius().Y;
+	int x, y, dx, dy, sy, rx = cBrush.GetRadius().X, ry = cBrush.GetRadius().Y;
 	float e = 0.0f, de;
 	if (reverseXY)
 	{
@@ -355,7 +352,7 @@ void PropertyTool::DrawLine(Simulation *sim, Brush *cBrush, ui::Point position, 
 	}
 }
 
-void PropertyTool::DrawRect(Simulation *sim, Brush *cBrush, ui::Point position, ui::Point position2)
+void PropertyTool::DrawRect(Simulation *sim, Brush const &cBrush, ui::Point position, ui::Point position2)
 {
 	int x1 = position.X, y1 = position.Y, x2 = position2.X, y2 = position2.Y;
 	int i, j;
@@ -376,7 +373,7 @@ void PropertyTool::DrawRect(Simulation *sim, Brush *cBrush, ui::Point position, 
 			SetProperty(sim, ui::Point(i, j));
 }
 
-void PropertyTool::DrawFill(Simulation *sim, Brush *cBrush, ui::Point position)
+void PropertyTool::DrawFill(Simulation *sim, Brush const &cBrush, ui::Point position)
 {
 	if (validProperty)
 		sim->flood_prop(position.X, position.Y, propOffset, propValue, propType);

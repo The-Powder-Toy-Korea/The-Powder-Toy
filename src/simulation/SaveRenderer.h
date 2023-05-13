@@ -1,6 +1,7 @@
 #pragma once
-#include "common/ExplicitSingleton.h"
+#include <memory>
 #include <mutex>
+#include "common/ExplicitSingleton.h"
 
 class GameSave;
 class VideoBuffer;
@@ -9,14 +10,12 @@ class Simulation;
 class Renderer;
 
 class SaveRenderer: public ExplicitSingleton<SaveRenderer> {
-	Graphics * g;
 	Simulation * sim;
 	Renderer * ren;
 	std::mutex renderMutex;
 public:
 	SaveRenderer();
-	VideoBuffer * Render(GameSave * save, bool decorations = true, bool fire = true, Renderer *renderModeSource = nullptr);
-	VideoBuffer * Render(unsigned char * saveData, int saveDataSize, bool decorations = true, bool fire = true);
+	std::unique_ptr<VideoBuffer> Render(const GameSave *save, bool decorations = true, bool fire = true, Renderer *renderModeSource = nullptr);
 	void Flush(int begin, int end);
 	virtual ~SaveRenderer();
 };

@@ -15,7 +15,7 @@ void Element::Element_FIGH()
 {
 	Identifier = "DEFAULT_PT_FIGH";
 	Name = "FIGH";
-	Colour = PIXPACK(0xFFE0A0);
+	Colour = 0xFFE0A0_rgb;
 	MenuVisible = 1;
 	MenuSection = SC_SPECIAL;
 	Enabled = 1;
@@ -43,6 +43,7 @@ void Element::Element_FIGH()
 	Description = "싸움꾼: STKM을 공격하며, 공격할 무기로 사용될 물질을 선택할 수 있습니다.";
 
 	Properties = PROP_NOCTYPEDRAW;
+	CarriesTypeIn = 1U << FIELD_CTYPE;
 
 	LowPressure = IPL;
 	LowPressureTransition = NT;
@@ -70,7 +71,7 @@ static int update(UPDATE_FUNC_ARGS)
 	}
 	playerst* figh = &sim->fighters[(unsigned char)parts[i].tmp];
 
-	int tarx, tary;
+	int tarx = 0, tary = 0;
 
 	parts[i].tmp2 = 0; //0 - stay in place, 1 - seek a stick man
 

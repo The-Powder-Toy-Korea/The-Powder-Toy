@@ -19,20 +19,20 @@
 TagsView::TagsView():
 	ui::Window(ui::Point(-1, -1), ui::Point(195, 250))
 {
-	closeButton = new ui::Button(ui::Point(0, Size.Y-16), ui::Point(195, 16), "Close");
+	closeButton = new ui::Button(ui::Point(0, Size.Y-16), ui::Point(195, 16), "닫기");
 	closeButton->Appearance.HorizontalAlign = ui::Appearance::AlignLeft;
 	closeButton->Appearance.VerticalAlign = ui::Appearance::AlignMiddle;
 	closeButton->SetActionCallback({ [this] { c->Exit(); } });
 	AddComponent(closeButton);
 	SetCancelButton(closeButton);
 
-	tagInput = new ui::Textbox(ui::Point(8, Size.Y-40), ui::Point(Size.X-60, 16), "", "[new tag]");
+	tagInput = new ui::Textbox(ui::Point(8, Size.Y-40), ui::Point(Size.X-65, 16), "", "새 태그 이름");
 	tagInput->Appearance.icon = IconTag;
 	tagInput->Appearance.HorizontalAlign = ui::Appearance::AlignLeft;
 	tagInput->Appearance.VerticalAlign = ui::Appearance::AlignMiddle;
 	AddComponent(tagInput);
 
-	addButton = new ui::Button(ui::Point(tagInput->Position.X+tagInput->Size.X+4, tagInput->Position.Y), ui::Point(40, 16), "Add");
+	addButton = new ui::Button(ui::Point(tagInput->Position.X+tagInput->Size.X+4, tagInput->Position.Y), ui::Point(45, 16), "추가");
 	addButton->Appearance.icon = IconAdd;
 	addButton->Appearance.HorizontalAlign = ui::Appearance::AlignLeft;
 	addButton->Appearance.VerticalAlign = ui::Appearance::AlignMiddle;
@@ -42,7 +42,7 @@ TagsView::TagsView():
 	if (!Client::Ref().GetAuthUser().UserID)
 		addButton->Enabled = false;
 
-	title = new ui::Label(ui::Point(5, 5), ui::Point(185, 28), "Manage tags:    \bgTags are only to \nbe used to improve search results");
+	title = new ui::Label(ui::Point(5, 5), ui::Point(185, 28), "태그 관리: \bg태그는 검색 결과를 개선하기 위해서만 쓰여야 합니다.");
 	title->Appearance.HorizontalAlign = ui::Appearance::AlignLeft;
 	title->Appearance.VerticalAlign = ui::Appearance::AlignTop;
 	title->SetMultiline(true);
@@ -52,8 +52,8 @@ TagsView::TagsView():
 void TagsView::OnDraw()
 {
 	Graphics * g = GetGraphics();
-	g->clearrect(Position.X-2, Position.Y-2, Size.X+3, Size.Y+3);
-	g->drawrect(Position.X, Position.Y, Size.X, Size.Y, 255, 255, 255, 255);
+	g->DrawFilledRect(RectSized(Position - Vec2{ 1, 1 }, Size + Vec2{ 2, 2 }), 0x000000_rgb);
+	g->DrawRect(RectSized(Position, Size), 0xFFFFFF_rgb);
 }
 
 void TagsView::NotifyTagsChanged(TagsModel * sender)

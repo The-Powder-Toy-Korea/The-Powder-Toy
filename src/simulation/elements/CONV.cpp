@@ -6,7 +6,7 @@ void Element::Element_CONV()
 {
 	Identifier = "DEFAULT_PT_CONV";
 	Name = "CONV";
-	Colour = PIXPACK(0x0AAB0A);
+	Colour = 0x0AAB0A_rgb;
 	MenuVisible = 1;
 	MenuSection = SC_SPECIAL;
 	Enabled = 1;
@@ -32,6 +32,7 @@ void Element::Element_CONV()
 	Description = "변환기: 닿는 모든 물질을 처음에 닿는 물질로 바꿉니다.";
 
 	Properties = TYPE_SOLID | PROP_NOCTYPEDRAW;
+	CarriesTypeIn = (1U << FIELD_CTYPE) | (1U << FIELD_TMP);
 
 	LowPressure = IPL;
 	LowPressureTransition = NT;

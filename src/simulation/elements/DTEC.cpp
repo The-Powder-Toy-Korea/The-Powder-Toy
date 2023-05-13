@@ -6,7 +6,7 @@ void Element::Element_DTEC()
 {
 	Identifier = "DEFAULT_PT_DTEC";
 	Name = "DTEC";
-	Colour = PIXPACK(0xFD9D18);
+	Colour = 0xFD9D18_rgb;
 	MenuVisible = 1;
 	MenuSection = SC_SENSOR;
 	Enabled = 1;
@@ -32,6 +32,7 @@ void Element::Element_DTEC()
 	Description = "탐지기: ctype으로 설정된 물질이 근처에 있으면 전류를 방출합니다.";
 
 	Properties = TYPE_SOLID;
+	CarriesTypeIn = 1U << FIELD_CTYPE;
 
 	LowPressure = IPL;
 	LowPressureTransition = NT;

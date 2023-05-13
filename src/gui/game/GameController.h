@@ -127,8 +127,8 @@ public:
 	void SetActiveColourPreset(int preset);
 	void SetColour(ui::Colour colour);
 	void SetToolStrength(float value);
-	void LoadSaveFile(SaveFile * file);
-	void LoadSave(SaveInfo * save);
+	void LoadSaveFile(std::unique_ptr<SaveFile> file);
+	void LoadSave(std::unique_ptr<SaveInfo> save);
 	void OpenSearch(String searchText);
 	void OpenLogin();
 	void OpenProfile();
@@ -152,8 +152,7 @@ public:
 	void ShowConsole();
 	void HideConsole();
 	void FrameStep();
-	void TranslateSave(ui::Point point);
-	void TransformSave(matrix2d transform);
+	void TransformPlaceSave(Mat2<int> transform, Vec2<int> nudge);
 	bool MouseInZoom(ui::Point position);
 	ui::Point PointTranslate(ui::Point point);
 	ui::Point PointTranslateNoClamp(ui::Point point);
@@ -175,7 +174,7 @@ public:
 	void ToggleNewtonianGravity();
 
 	bool LoadClipboard();
-	void LoadStamp(GameSave *stamp);
+	void LoadStamp(std::unique_ptr<GameSave> stamp);
 
 	void RemoveNotification(Notification * notification);
 

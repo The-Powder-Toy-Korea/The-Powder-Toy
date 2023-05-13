@@ -8,7 +8,7 @@ void Element::Element_VINE()
 {
 	Identifier = "DEFAULT_PT_VINE";
 	Name = "VINE";
-	Colour = PIXPACK(0x079A00);
+	Colour = 0x079A00_rgb;
 	MenuVisible = 1;
 	MenuSection = SC_SOLIDS;
 	Enabled = 1;
@@ -52,7 +52,7 @@ void Element::Element_VINE()
 
 static int update(UPDATE_FUNC_ARGS)
 {
-	int r, np, rx, ry, rndstore = RNG::Ref().gen();
+	int r, np, rx, ry, rndstore = sim->rng.gen();
 	rx = (rndstore % 3) - 1;
 	rndstore >>= 2;
 	ry = (rndstore % 3) - 1;

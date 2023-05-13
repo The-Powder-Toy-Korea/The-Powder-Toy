@@ -12,7 +12,7 @@ void Element::Element_STKM2()
 {
 	Identifier = "DEFAULT_PT_STKM2";
 	Name = "STK2";
-	Colour = PIXPACK(0x6464FF);
+	Colour = 0x6464FF_rgb;
 	MenuVisible = 1;
 	MenuSection = SC_SPECIAL;
 	Enabled = 1;
@@ -40,6 +40,7 @@ void Element::Element_STKM2()
 	Description = "스틱맨 2: [W], [A], [S], [D] 키로 조종할 수 있습니다.";
 
 	Properties = PROP_NOCTYPEDRAW;
+	CarriesTypeIn = 1U << FIELD_CTYPE;
 
 	LowPressure = IPL;
 	LowPressureTransition = NT;

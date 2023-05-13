@@ -45,50 +45,46 @@ void ToolButton::OnMouseUp(int x, int y, unsigned int button)
 void ToolButton::Draw(const ui::Point& screenPos)
 {
 	Graphics * g = GetGraphics();
-	int x = clipRectX;
-	int y = clipRectY;
-	int w = clipRectW;
-	int h = clipRectH;
-	if (clipRectW && clipRectH)
-	{
-		g->SetClipRect(x, y, w, h); // old cliprect is now in x, y, w, h
-	}
+	auto rect = ClipRect;
+	if (ClipRect.Size().X && ClipRect.Size().Y)
+		g->SwapClipRect(rect); // old cliprect is now in rect
+
 	int totalColour = Appearance.BackgroundInactive.Blue + (3*Appearance.BackgroundInactive.Green) + (2*Appearance.BackgroundInactive.Red);
 
 	if (Appearance.GetTexture())
 	{
-		g->draw_image(Appearance.GetTexture(), screenPos.X+2, screenPos.Y+2, 255);
+		auto *tex = Appearance.GetTexture();
+		g->BlendImage(tex->Data(), 255, RectSized(screenPos + Vec2{ 2, 2 }, tex->Size()));
 	}
 	else
 	{
-		g->fillrect(screenPos.X+2, screenPos.Y+2, Size.X-4, Size.Y-4, Appearance.BackgroundInactive.Red, Appearance.BackgroundInactive.Green, Appearance.BackgroundInactive.Blue, Appearance.BackgroundInactive.Alpha);
+		g->BlendFilledRect(RectSized(screenPos + Vec2{ 2, 2 }, Size - Vec2{ 4, 4 }), Appearance.BackgroundInactive);
 	}
 
 	if (isMouseInside && currentSelection == -1)
 	{
-		g->drawrect(screenPos.X, screenPos.Y, Size.X, Size.Y, Appearance.BorderActive.Red, Appearance.BorderActive.Green, Appearance.BorderActive.Blue, Appearance.BorderActive.Alpha);
+		g->BlendRect(RectSized(screenPos, Size), Appearance.BorderActive);
 	}
 	else
 	{
-		g->drawrect(screenPos.X, screenPos.Y, Size.X, Size.Y, Appearance.BorderInactive.Red, Appearance.BorderInactive.Green, Appearance.BorderInactive.Blue, Appearance.BorderInactive.Alpha);
+		g->BlendRect(RectSized(screenPos, Size), Appearance.BorderInactive);
 	}
 	if (Favorite::Ref().IsFavorite(toolIdentifier))
 	{
-		g->drawtext(screenPos.X, screenPos.Y, 0xE068, Appearance.BorderFavorite.Red, Appearance.BorderFavorite.Green, Appearance.BorderFavorite.Blue, Appearance.BorderFavorite.Alpha);
+		g->BlendText(screenPos, 0xE068, Appearance.BorderFavorite);
 	}
 
 	if (totalColour<544)
 	{
-		g->drawtext(screenPos.X+textPosition.X, screenPos.Y+textPosition.Y, buttonDisplayText, 255, 255, 255, 255);
+		g->BlendText(screenPos + textPosition, buttonDisplayText, 0xFFFFFF_rgb .WithAlpha(255));
 	}
 	else
 	{
-		g->drawtext(screenPos.X+textPosition.X, screenPos.Y+textPosition.Y, buttonDisplayText, 0, 0, 0, 255);
+		g->BlendText(screenPos + textPosition, buttonDisplayText, 0x000000_rgb .WithAlpha(255));
 	}
-	if (clipRectW && clipRectH)
-	{
-		g->SetClipRect(x, y, w, h); // apply old clip rect
-	}
+
+	if (ClipRect.Size().X && ClipRect.Size().Y)
+		g->SwapClipRect(rect); // apply old clip rect
 }
 
 void ToolButton::SetSelectionState(int state)

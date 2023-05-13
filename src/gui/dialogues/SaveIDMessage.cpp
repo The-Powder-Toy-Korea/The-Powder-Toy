@@ -10,26 +10,26 @@
 SaveIDMessage::SaveIDMessage(int id):
 	ui::Window(ui::Point((XRES-244)/2, (YRES-90)/2), ui::Point(244, 90))
 {
-	int textWidth = Graphics::textwidth("세이브 ID");
+	int textWidth = Graphics::TextSize("세이브 ID").X - 1;
 	ui::Label * titleLabel = new ui::Label(ui::Point(4, 5), ui::Point(textWidth+20, 16), "세이브 ID");
 	titleLabel->SetTextColour(style::Colour::InformationTitle);
 	titleLabel->Appearance.HorizontalAlign = ui::Appearance::AlignLeft;
 	titleLabel->Appearance.VerticalAlign = ui::Appearance::AlignMiddle;
 	AddComponent(titleLabel);
 
-	textWidth = Graphics::textwidth("성공적으로 저장됨");
+	textWidth = Graphics::TextSize("성공적으로 저장됨").X - 1;
 	ui::Label * messageLabel = new ui::Label(ui::Point(4, 24), ui::Point(textWidth+20, 16), "성공적으로 저장됨");
 	messageLabel->Appearance.HorizontalAlign = ui::Appearance::AlignLeft;
 	messageLabel->Appearance.VerticalAlign = ui::Appearance::AlignTop;
 	AddComponent(messageLabel);
 
-	textWidth = Graphics::textwidth("세이브 ID를 복사하려면 아래의 상자를 클릭하세요");
+	textWidth = Graphics::TextSize("세이브 ID를 복사하려면 아래의 상자를 클릭하세요").X - 1;
 	ui::Label * copyTextLabel = new ui::Label(ui::Point((Size.X-textWidth-20)/2, 35), ui::Point(textWidth+20, 16), "세이브 ID를 복사하려면 아래의 상자를 클릭하세요");
 	copyTextLabel->SetTextColour(ui::Colour(150, 150, 150));
 	copyTextLabel->Appearance.HorizontalAlign = ui::Appearance::AlignCentre;
 	AddComponent(copyTextLabel);
 
-	textWidth = Graphics::textwidth(String::Build(id));
+	textWidth = Graphics::TextSize(String::Build(id)).X - 1;
 	ui::CopyTextButton * copyTextButton = new ui::CopyTextButton(ui::Point((Size.X-textWidth-10)/2, 50), ui::Point(textWidth+10, 18), String::Build(id), copyTextLabel);
 	AddComponent(copyTextButton);
 
@@ -52,8 +52,8 @@ void SaveIDMessage::OnDraw()
 {
 	Graphics * g = GetGraphics();
 
-	g->clearrect(Position.X-2, Position.Y-2, Size.X+3, Size.Y+3);
-	g->drawrect(Position.X, Position.Y, Size.X, Size.Y, 200, 200, 200, 255);
+	g->DrawFilledRect(RectSized(Position - Vec2{ 1, 1 }, Size + Vec2{ 2, 2 }), 0x000000_rgb);
+	g->DrawRect(RectSized(Position, Size), 0xC8C8C8_rgb);
 }
 
 void SaveIDMessage::OnTryExit(ExitMethod method)

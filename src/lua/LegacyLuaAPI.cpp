@@ -35,6 +35,8 @@ void initLegacyProps()
 			legacyPropNames.insert(std::pair<ByteString, StructProperty>("menu", prop));
 		else if (prop.Name == "PhotonReflectWavelengths")
 			continue;
+		else if (prop.Name == "CarriesTypeIn")
+			continue;
 		else if (prop.Name == "Temperature")
 			legacyPropNames.insert(std::pair<ByteString, StructProperty>("heat", prop));
 		else if (prop.Name == "HeatConduct")
@@ -260,11 +262,12 @@ int luacon_elementwrite(lua_State* l)
 
 void luacon_hook(lua_State * l, lua_Debug * ar)
 {
-	if(ar->event == LUA_HOOKCOUNT && Platform::GetTime()-ui::Engine::Ref().LastTick() > 3000)
+	auto *luacon_ci = static_cast<LuaScriptInterface *>(commandInterface);
+	if (ar->event == LUA_HOOKCOUNT && Platform::GetTime() - luacon_ci->luaExecutionStart > 3000)
 	{
 		if(ConfirmPrompt::Blocking("Script not responding", "The Lua script may have stopped responding. There might be an infinite loop. Press \"Stop\" to stop it", "Stop"))
 			luaL_error(l, "Error: Script not responding");
-		ui::Engine::Ref().LastTick(Platform::GetTime());
+		luacon_ci->luaExecutionStart = Platform::GetTime();
 	}
 }
 
@@ -329,7 +332,7 @@ int luatpt_drawtext(lua_State* l)
 	if (textalpha<0) textalpha = 0;
 	if (textalpha>255) textalpha = 255;
 
-	luacon_g->drawtext(textx, texty, string, textred, textgreen, textblue, textalpha);
+	luacon_g->BlendText({ textx, texty }, string, RGBA<uint8_t>(textred, textgreen, textblue, textalpha));
 	return 0;
 }
 
@@ -888,7 +891,7 @@ int luatpt_drawpixel(lua_State* l)
 	else if (b>255) b = 255;
 	if (a<0) a = 0;
 	else if (a>255) a = 255;
-	luacon_g->blendpixel(x, y, r, g, b, a);
+	luacon_g->BlendPixel({ x, y }, RGBA<uint8_t>(r, g, b, a));
 	return 0;
 }
 
@@ -918,7 +921,14 @@ int luatpt_drawrect(lua_State* l)
 	else if (b>255) b = 255;
 	if (a<0) a = 0;
 	else if (a>255) a = 255;
-	luacon_g->drawrect(x, y, w, h, r, g, b, a);
+	if (a == 255)
+	{
+		luacon_g->DrawRect(RectSized(Vec2{ x, y }, Vec2{ w, h }), RGB<uint8_t>(r, g, b));
+	}
+	else
+	{
+		luacon_g->BlendRect(RectSized(Vec2{ x, y }, Vec2{ w, h }), RGBA<uint8_t>(r, g, b, a));
+	}
 	return 0;
 }
 
@@ -948,7 +958,14 @@ int luatpt_fillrect(lua_State* l)
 	else if (b>255) b = 255;
 	if (a<0) a = 0;
 	else if (a>255) a = 255;
-	luacon_g->fillrect(x, y, w, h, r, g, b, a);
+	if (a == 255)
+	{
+		luacon_g->DrawFilledRect(RectSized(Vec2{ x, y }, Vec2{ w, h }), RGB<uint8_t>(r, g, b));
+	}
+	else
+	{
+		luacon_g->BlendFilledRect(RectSized(Vec2{ x, y }, Vec2{ w, h }), RGBA<uint8_t>(r, g, b, a));
+	}
 	return 0;
 }
 
@@ -973,14 +990,21 @@ int luatpt_drawline(lua_State* l)
 	else if (b>255) b = 255;
 	if (a<0) a = 0;
 	else if (a>255) a = 255;
-	luacon_g->draw_line(x1, y1, x2, y2, r, g, b, a);
+	if (a == 255)
+	{
+		luacon_g->DrawLine({ x1, y1 }, { x2, y2 }, RGB<uint8_t>(r, g, b));
+	}
+	else
+	{
+		luacon_g->BlendLine({ x1, y1 }, { x2, y2 }, RGBA<uint8_t>(r, g, b, a));
+	}
 	return 0;
 }
 
 int luatpt_textwidth(lua_State* l)
 {
 	auto string = tpt_lua_optString(l, 1, "");
-	int strwidth = Graphics::textwidth(string);
+	int strwidth = Graphics::TextSize(string).X - 1;
 	lua_pushinteger(l, strwidth);
 	return 1;
 }

@@ -495,10 +495,10 @@ void Client::MoveStampToFront(ByteString stampID)
 	}
 }
 
-SaveFile * Client::GetStamp(ByteString stampID)
+std::unique_ptr<SaveFile> Client::GetStamp(ByteString stampID)
 {
 	ByteString stampFile = ByteString(ByteString::Build(STAMPS_DIR, PATH_SEP_CHAR, stampID, ".stm"));
-	SaveFile *saveFile = LoadSaveFile(stampFile);
+	auto saveFile = LoadSaveFile(stampFile);
 	if (!saveFile)
 		saveFile = LoadSaveFile(stampID);
 	else
@@ -512,11 +512,12 @@ void Client::DeleteStamp(ByteString stampID)
 	if (it != stampIDs.end())
 	{
 		stampIDs.erase(it, stampIDs.end());
+		Platform::RemoveFile(ByteString::Build(STAMPS_DIR, PATH_SEP_CHAR, stampID, ".stm"));
 		WriteStamps();
 	}
 }
 
-ByteString Client::AddStamp(GameSave * saveData)
+ByteString Client::AddStamp(std::unique_ptr<GameSave> saveData)
 {
 	auto now = (uint64_t)time(NULL);
 	if (lastStampTime != now)
@@ -853,7 +854,7 @@ RequestStatus Client::PublishSave(int saveID)
 	return ret;
 }
 
-SaveInfo * Client::GetSave(int saveID, int saveDate)
+std::unique_ptr<SaveInfo> Client::GetSave(int saveID, int saveDate)
 {
 	lastError = "";
 	ByteStringBuilder urlStream;
@@ -901,7 +902,7 @@ SaveInfo * Client::GetSave(int saveID, int saveDate)
 			for (Json::UInt j = 0; j < tagsArray.size(); j++)
 				tempTags.push_back(tagsArray[j].asString());
 
-			SaveInfo * tempSave = new SaveInfo(tempID, tempCreatedDate, tempUpdatedDate, tempScoreUp,
+			auto tempSave = std::make_unique<SaveInfo>(tempID, tempCreatedDate, tempUpdatedDate, tempScoreUp,
 			                                   tempScoreDown, tempMyScore, tempUsername, tempName,
 			                                   tempDescription, tempPublished, tempTags);
 			tempSave->Comments = tempComments;
@@ -913,29 +914,29 @@ SaveInfo * Client::GetSave(int saveID, int saveDate)
 		catch (std::exception & e)
 		{
 			lastError = "Could not read response: " + ByteString(e.what()).FromUtf8();
-			return NULL;
+			return nullptr;
 		}
 	}
 	else
 	{
 		lastError = http::StatusText(dataStatus);
 	}
-	return NULL;
+	return nullptr;
 }
 
-SaveFile * Client::LoadSaveFile(ByteString filename)
+std::unique_ptr<SaveFile> Client::LoadSaveFile(ByteString filename)
 {
 	ByteString err;
-	SaveFile *file = nullptr;
+	std::unique_ptr<SaveFile> file;
 	if (Platform::FileExists(filename))
 	{
-		file = new SaveFile(filename);
+		file = std::make_unique<SaveFile>(filename);
 		try
 		{
 			std::vector<char> data;
 			if (Platform::ReadFile(data, filename))
 			{
-				file->SetGameSave(new GameSave(std::move(data)));
+				file->SetGameSave(std::make_unique<GameSave>(std::move(data)));
 			}
 			else
 			{
@@ -1176,7 +1177,7 @@ String Client::DoMigration(ByteString fromDir, ByteString toDir)
 			std::string to = toDir + directory + "/" + item;
 			if (!Platform::FileExists(to))
 			{
-				if (rename(from.c_str(), to.c_str()))
+				if (Platform::RenameFile(from, to, false))
 				{
 					failedCount++;
 					logFile << "failed to move " << from << " to " << to << std::endl;
@@ -1206,7 +1207,7 @@ String Client::DoMigration(ByteString fromDir, ByteString toDir)
 		ByteString to = toDir + filename;
 		if (!Platform::FileExists(to))
 		{
-			if (rename(from.c_str(), to.c_str()))
+			if (Platform::RenameFile(from, to, false))
 			{
 				logFile << "failed to move " << from << " to " << to << std::endl;
 				result << "\n\br" << filename.FromUtf8() << " migration failed\x0E";

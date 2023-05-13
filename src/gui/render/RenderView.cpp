@@ -155,22 +155,22 @@ void RenderView::NotifyColourChanged(RenderModel * sender)
 void RenderView::OnDraw()
 {
 	Graphics * g = GetGraphics();
-	g->clearrect(-1, -1, WINDOWW+1, WINDOWH+1);
+	g->DrawFilledRect(WINDOW.OriginRect(), 0x000000_rgb);
 	if(ren)
 	{
-		ren->clearScreen(1.0f);
+		ren->clearScreen();
 		ren->RenderBegin();
 		ren->RenderEnd();
 	}
-	g->draw_line(0, YRES, XRES-1, YRES, 200, 200, 200, 255);
-	g->draw_line(line1, YRES, line1, WINDOWH, 200, 200, 200, 255);
-	g->draw_line(line2, YRES, line2, WINDOWH, 200, 200, 200, 255);
-	g->draw_line(line3, YRES, line3, WINDOWH, 200, 200, 200, 255);
-	g->draw_line(line4, YRES, line4, WINDOWH, 200, 200, 200, 255);
-	g->draw_line(XRES, 0, XRES, WINDOWH, 255, 255, 255, 255);
+	g->DrawLine({ 0, YRES }, { XRES-1, YRES }, 0xC8C8C8_rgb);
+	g->DrawLine({ line1, YRES }, { line1, WINDOWH }, 0xC8C8C8_rgb);
+	g->DrawLine({ line2, YRES }, { line2, WINDOWH }, 0xC8C8C8_rgb);
+	g->DrawLine({ line3, YRES }, { line3, WINDOWH }, 0xC8C8C8_rgb);
+	g->DrawLine({ line4, YRES }, { line4, WINDOWH }, 0xC8C8C8_rgb);
+	g->DrawLine({ XRES, 0 }, { XRES, WINDOWH }, 0xFFFFFF_rgb);
 	if(toolTipPresence && toolTip.length())
 	{
-		g->drawtext(6, Size.Y-MENUSIZE-12, toolTip, 255, 255, 255, toolTipPresence>51?255:toolTipPresence*5);
+		g->BlendText({ 6, Size.Y-MENUSIZE-12 }, toolTip, 0xFFFFFF_rgb .WithAlpha(toolTipPresence>51?255:toolTipPresence*5));
 	}
 }
 

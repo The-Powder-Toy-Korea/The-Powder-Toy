@@ -17,6 +17,7 @@
 #include "client/SaveInfo.h"
 #include "client/SaveFile.h"
 #include "client/Client.h"
+#include "client/GameSave.h"
 #include "common/platform/Platform.h"
 #include "graphics/Graphics.h"
 #include "graphics/Renderer.h"
@@ -35,6 +36,7 @@
 
 #include "Config.h"
 #include <cstring>
+#include <cstdlib>
 #include <iostream>
 #include <SDL.h>
 
@@ -153,7 +155,7 @@ public:
 		drawn = true;
 
 		if(showSplit)
-			g->draw_line(splitPosition+screenPos.X, screenPos.Y+1, splitPosition+screenPos.X, screenPos.Y+Size.Y-2, 180, 180, 180, 255);
+			g->DrawLine(screenPos + Vec2{ splitPosition, 1 }, screenPos + Vec2{ splitPosition, Size.Y-2 }, 0xB4B4B4_rgb);
 	}
 };
 
@@ -213,7 +215,7 @@ GameView::GameView():
 	selectPoint2(0, 0),
 	currentMouse(0, 0),
 	mousePosition(0, 0),
-	placeSaveThumb(NULL),
+	placeSaveThumb(nullptr),
 	placeSaveOffset(0, 0)
 {
 
@@ -345,8 +347,6 @@ GameView::~GameView()
 		}
 
 	}
-
-	delete placeSaveThumb;
 }
 
 class GameView::OptionListener: public QuickOptionListener
@@ -520,15 +520,15 @@ void GameView::NotifyActiveToolsChanged(GameModel * sender)
 			toolButtons[i]->SetSelectionState(-1);
 	}
 
-	decoBrush = sender->GetActiveTool(0)->GetIdentifier().BeginsWith("DEFAULT_DECOR_");
+	decoBrush = sender->GetActiveTool(0)->Identifier.BeginsWith("DEFAULT_DECOR_");
 
 	if (sender->GetRenderer()->findingElement)
 	{
 		Tool *active = sender->GetActiveTool(0);
-		if (!active->GetIdentifier().Contains("_PT_"))
+		if (!active->Identifier.Contains("_PT_"))
 			ren->findingElement = 0;
 		else
-			ren->findingElement = sender->GetActiveTool(0)->GetToolID();
+			ren->findingElement = sender->GetActiveTool(0)->ToolID;
 	}
 }
 
@@ -536,8 +536,8 @@ void GameView::NotifyLastToolChanged(GameModel * sender)
 {
 	if (sender->GetLastTool())
 	{
-		wallBrush = sender->GetLastTool()->GetBlocky();
-		toolBrush = sender->GetLastTool()->GetIdentifier().BeginsWith("DEFAULT_TOOL_");
+		wallBrush = sender->GetLastTool()->Blocky;
+		toolBrush = sender->GetLastTool()->Identifier.BeginsWith("DEFAULT_TOOL_");
 	}
 }
 
@@ -565,22 +565,19 @@ void GameView::NotifyToolListChanged(GameModel * sender)
 	for (size_t i = 0; i < toolList.size(); i++)
 	{
 		auto *tool = toolList[i];
-		VideoBuffer * tempTexture = tool->GetTexture(26, 14);
+		auto tempTexture = tool->GetTexture(Vec2(26, 14));
 		ToolButton * tempButton;
 
 		//get decotool texture manually, since it changes depending on it's own color
 		if (sender->GetActiveMenu() == SC_DECO)
-			tempTexture = ((DecorationTool*)tool)->GetIcon(tool->GetToolID(), 26, 14);
+			tempTexture = ((DecorationTool*)tool)->GetIcon(tool->ToolID, Vec2(26, 14));
 
-		if(tempTexture)
-			tempButton = new ToolButton(ui::Point(currentX, YRES+1), ui::Point(30, 18), "", tool->GetIdentifier(), tool->GetDescription());
+		if (tempTexture)
+			tempButton = new ToolButton(ui::Point(currentX, YRES+1), ui::Point(30, 18), "", tool->Identifier, tool->Description);
 		else
-			tempButton = new ToolButton(ui::Point(currentX, YRES+1), ui::Point(30, 18), tool->GetName(), tool->GetIdentifier(), tool->GetDescription());
+			tempButton = new ToolButton(ui::Point(currentX, YRES+1), ui::Point(30, 18), tool->Name, tool->Identifier, tool->Description);
 
-		tempButton->clipRectX = 1;
-		tempButton->clipRectY = YRES + 1;
-		tempButton->clipRectW = XRES - 1;
-		tempButton->clipRectH = 18;
+		tempButton->ClipRect = RectSized(Vec2(1, RES.Y + 1), Vec2(RES.X - 1, 18));
 
 		//currentY -= 17;
 		currentX -= 31;
@@ -591,19 +588,19 @@ void GameView::NotifyToolListChanged(GameModel * sender)
 			{
 				if (tempButton->GetSelectionState() == 0)
 				{
-					if (Favorite::Ref().IsFavorite(tool->GetIdentifier()))
+					if (Favorite::Ref().IsFavorite(tool->Identifier))
 					{
-						Favorite::Ref().RemoveFavorite(tool->GetIdentifier());
+						Favorite::Ref().RemoveFavorite(tool->Identifier);
 					}
 					else
 					{
-						Favorite::Ref().AddFavorite(tool->GetIdentifier());
+						Favorite::Ref().AddFavorite(tool->Identifier);
 					}
 					c->RebuildFavoritesMenu();
 				}
 				else if (tempButton->GetSelectionState() == 1)
 				{
-					auto identifier = tool->GetIdentifier();
+					auto identifier = tool->Identifier;
 					if (Favorite::Ref().IsFavorite(identifier))
 					{
 						Favorite::Ref().RemoveFavorite(identifier);
@@ -622,7 +619,7 @@ void GameView::NotifyToolListChanged(GameModel * sender)
 			{
 				if (CtrlBehaviour() && AltBehaviour() && !ShiftBehaviour())
 				{
-					if (tool->GetIdentifier().Contains("_PT_"))
+					if (tool->Identifier.Contains("_PT_"))
 					{
 						tempButton->SetSelectionState(3);
 					}
@@ -633,10 +630,9 @@ void GameView::NotifyToolListChanged(GameModel * sender)
 			}
 		} });
 
-		tempButton->Appearance.SetTexture(tempTexture);
-		delete tempTexture;
+		tempButton->Appearance.SetTexture(std::move(tempTexture));
 
-		tempButton->Appearance.BackgroundInactive = ui::Colour(toolList[i]->colRed, toolList[i]->colGreen, toolList[i]->colBlue);
+		tempButton->Appearance.BackgroundInactive = toolList[i]->Colour.WithAlpha(0xFF);
 
 		if(sender->GetActiveTool(0) == toolList[i])
 		{
@@ -920,7 +916,7 @@ void GameView::NotifySaveChanged(GameModel * sender)
 
 void GameView::NotifyBrushChanged(GameModel * sender)
 {
-	activeBrush = sender->GetBrush();
+	activeBrush = &sender->GetBrush();
 }
 
 ByteString GameView::TakeScreenshot(int captureUI, int fileType)
@@ -960,7 +956,7 @@ ByteString GameView::TakeScreenshot(int captureUI, int fileType)
 		// We should be able to simply use SDL_PIXELFORMAT_XRGB8888 here with a bit depth of 32 to convert RGBA data to RGB data,
 		// and save the resulting surface directly. However, ubuntu-18.04 ships SDL2 so old that it doesn't have
 		// SDL_PIXELFORMAT_XRGB8888, so we first create an RGBA surface and then convert it.
-		auto *rgbaSurface = SDL_CreateRGBSurfaceWithFormatFrom(screenshot->Buffer, screenshot->Width, screenshot->Height, 32, screenshot->Width * sizeof(pixel), SDL_PIXELFORMAT_ARGB8888);
+		auto *rgbaSurface = SDL_CreateRGBSurfaceWithFormatFrom(screenshot->Data(), screenshot->Size().X, screenshot->Size().Y, 32, screenshot->Size().X * sizeof(pixel), SDL_PIXELFORMAT_ARGB8888);
 		auto *rgbSurface = SDL_ConvertSurfaceFormat(rgbaSurface, SDL_PIXELFORMAT_RGB888, 0);
 		if (!rgbSurface || SDL_SaveBMP(rgbSurface, filename.c_str()))
 		{
@@ -973,7 +969,7 @@ ByteString GameView::TakeScreenshot(int captureUI, int fileType)
 	else if (fileType == 2)
 	{
 		filename += ".ppm";
-		if (!Platform::WriteFile(format::VideoBufferToPPM(*screenshot), filename))
+		if (!Platform::WriteFile(screenshot->ToPPM(), filename))
 		{
 			filename = "";
 		}
@@ -981,10 +977,13 @@ ByteString GameView::TakeScreenshot(int captureUI, int fileType)
 	else
 	{
 		filename += ".png";
-		if (!screenshot->WritePNG(filename))
+		if (auto data = screenshot->ToPNG())
 		{
-			filename = "";
+			if (!Platform::WriteFile(*data, filename))
+				filename = "";
 		}
+		else
+			filename = "";
 	}
 
 	return filename;
@@ -1006,7 +1005,7 @@ int GameView::Record(bool record)
 			time_t startTime = time(NULL);
 			recordingFolder = startTime;
 			Platform::MakeDirectory("recordings");
-			Platform::MakeDirectory(ByteString::Build("recordings", PATH_SEP_CHAR, recordingFolder).c_str());
+			Platform::MakeDirectory(ByteString::Build("recordings", PATH_SEP_CHAR, recordingFolder));
 			recording = true;
 			recordingIndex = 0;
 		}
@@ -1158,8 +1157,8 @@ void GameView::OnMouseDown(int x, int y, unsigned button)
 				return;
 			Tool *lastTool = c->GetActiveTool(toolIndex);
 			c->SetLastTool(lastTool);
-			windTool = lastTool->GetIdentifier() == "DEFAULT_UI_WIND";
-			decoBrush = lastTool->GetIdentifier().BeginsWith("DEFAULT_DECOR_");
+			windTool = lastTool->Identifier == "DEFAULT_UI_WIND";
+			decoBrush = lastTool->Identifier.BeginsWith("DEFAULT_DECOR_");
 
 			UpdateDrawMode();
 
@@ -1202,20 +1201,9 @@ void GameView::OnMouseUp(int x, int y, unsigned button)
 				{
 					if (placeSaveThumb && y <= WINDOWH-BARSIZE)
 					{
-						int thumbX = selectPoint2.X - ((placeSaveThumb->Width-placeSaveOffset.X)/2);
-						int thumbY = selectPoint2.Y - ((placeSaveThumb->Height-placeSaveOffset.Y)/2);
-
-						if (thumbX < 0)
-							thumbX = 0;
-						if (thumbX+(placeSaveThumb->Width) >= XRES)
-							thumbX = XRES-placeSaveThumb->Width;
-
-						if (thumbY < 0)
-							thumbY = 0;
-						if (thumbY+(placeSaveThumb->Height) >= YRES)
-							thumbY = YRES-placeSaveThumb->Height;
-
-						c->PlaceSave(ui::Point(thumbX, thumbY));
+						auto thumb = selectPoint2 + placeSaveOffset;
+						thumb = thumb.Clamp(RectBetween(Vec2<int>::Zero, RES - placeSaveThumb->Size()));
+						c->PlaceSave(thumb);
 					}
 				}
 				else
@@ -1294,16 +1282,16 @@ void GameView::ToolTip(ui::Point senderPosition, String toolTip)
 	else if(senderPosition.X > Size.X-BARSIZE)// < Size.Y-(quickOptionButtons.size()+1)*16)
 	{
 		this->toolTip = toolTip;
-		toolTipPosition = ui::Point(Size.X-27-Graphics::textwidth(toolTip), senderPosition.Y+3);
+		toolTipPosition = ui::Point(Size.X-27-(Graphics::TextSize(toolTip).X - 1), senderPosition.Y+3);
 		if(toolTipPosition.Y+10 > Size.Y-MENUSIZE)
-			toolTipPosition = ui::Point(Size.X-27-Graphics::textwidth(toolTip), Size.Y-MENUSIZE-10);
+			toolTipPosition = ui::Point(Size.X-27-(Graphics::TextSize(toolTip).X - 1), Size.Y-MENUSIZE-10);
 		isToolTipFadingIn = true;
 	}
 	// element tooltips
 	else
 	{
 		this->toolTip = toolTip;
-		toolTipPosition = ui::Point(Size.X-27-Graphics::textwidth(toolTip), Size.Y-MENUSIZE-10);
+		toolTipPosition = ui::Point(Size.X-27-(Graphics::TextSize(toolTip).X - 1), Size.Y-MENUSIZE-10);
 		isToolTipFadingIn = true;
 	}
 }
@@ -1322,7 +1310,7 @@ void GameView::OnMouseWheel(int x, int y, int d)
 	}
 	else
 	{
-		c->AdjustBrushSize(d, false, shiftBehaviour, ctrlBehaviour);
+		c->AdjustBrushSize(d, false, ctrlBehaviour, shiftBehaviour);
 	}
 }
 
@@ -1349,16 +1337,16 @@ void GameView::OnKeyPress(int key, int scan, bool repeat, bool shift, bool ctrl,
 			switch (key)
 			{
 			case SDLK_RIGHT:
-				c->TranslateSave(ui::Point(1, 0));
+				TranslateSave({  1,  0 });
 				return;
 			case SDLK_LEFT:
-				c->TranslateSave(ui::Point(-1, 0));
+				TranslateSave({ -1,  0 });
 				return;
 			case SDLK_UP:
-				c->TranslateSave(ui::Point(0, -1));
+				TranslateSave({  0, -1 });
 				return;
 			case SDLK_DOWN:
-				c->TranslateSave(ui::Point(0, 1));
+				TranslateSave({  0,  1 });
 				return;
 			}
 			if (scan == SDL_SCANCODE_R && !repeat)
@@ -1366,17 +1354,17 @@ void GameView::OnKeyPress(int key, int scan, bool repeat, bool shift, bool ctrl,
 				if (ctrl && shift)
 				{
 					//Vertical flip
-					c->TransformSave(m2d_new(1,0,0,-1));
+					TransformSave(Mat2<int>::MirrorY);
 				}
 				else if (!ctrl && shift)
 				{
 					//Horizontal flip
-					c->TransformSave(m2d_new(-1,0,0,1));
+					TransformSave(Mat2<int>::MirrorX);
 				}
 				else
 				{
 					//Rotate 90deg
-					c->TransformSave(m2d_new(0,1,-1,0));
+					TransformSave(Mat2<int>::CCW);
 				}
 				return;
 			}
@@ -1448,10 +1436,10 @@ void GameView::OnKeyPress(int key, int scan, bool repeat, bool shift, bool ctrl,
 		if (ctrl)
 		{
 			Tool *active = c->GetActiveTool(0);
-			if (!active->GetIdentifier().Contains("_PT_") || (ren->findingElement == active->GetToolID()))
+			if (!active->Identifier.Contains("_PT_") || (ren->findingElement == active->ToolID))
 				ren->findingElement = 0;
 			else
-				ren->findingElement = active->GetToolID();
+				ren->findingElement = active->ToolID;
 		}
 		else
 			c->FrameStep();
@@ -1558,11 +1546,10 @@ void GameView::OnKeyPress(int key, int scan, bool repeat, bool shift, bool ctrl,
 		auto &stampIDs = Client::Ref().GetStamps();
 		if (stampIDs.size())
 		{
-			SaveFile *saveFile = Client::Ref().GetStamp(stampIDs[0]);
+			auto saveFile = Client::Ref().GetStamp(stampIDs[0]);
 			if (!saveFile || !saveFile->GetGameSave())
 				break;
-			c->LoadStamp(saveFile->GetGameSave());
-			delete saveFile;
+			c->LoadStamp(saveFile->TakeGameSave());
 			selectPoint1 = selectPoint2 = mousePosition;
 			isMouseDown = false;
 			break;
@@ -1577,13 +1564,13 @@ void GameView::OnKeyPress(int key, int scan, bool repeat, bool shift, bool ctrl,
 		if(zoomEnabled && !zoomCursorFixed)
 			c->AdjustZoomSize(1, !alt);
 		else
-			c->AdjustBrushSize(1, !alt, shiftBehaviour, ctrlBehaviour);
+			c->AdjustBrushSize(1, !alt, ctrlBehaviour, shiftBehaviour);
 		break;
 	case SDL_SCANCODE_LEFTBRACKET:
 		if(zoomEnabled && !zoomCursorFixed)
 			c->AdjustZoomSize(-1, !alt);
 		else
-			c->AdjustBrushSize(-1, !alt, shiftBehaviour, ctrlBehaviour);
+			c->AdjustBrushSize(-1, !alt, ctrlBehaviour, shiftBehaviour);
 		break;
 	case SDL_SCANCODE_I:
 		if(ctrl)
@@ -1657,7 +1644,7 @@ void GameView::OnFileDrop(ByteString filename)
 		return;
 	}
 
-	SaveFile *saveFile = Client::Ref().LoadSaveFile(filename);
+	auto saveFile = Client::Ref().LoadSaveFile(filename);
 	if (!saveFile)
 		return;
 	if (saveFile->GetError().length())
@@ -1665,8 +1652,7 @@ void GameView::OnFileDrop(ByteString filename)
 		new ErrorMessage("세이브 불러오기 오류", "세이브 파일을 블러오는 중에 문제가 발생했습니다. 오류: " + saveFile->GetError());
 		return;
 	}
-	c->LoadSaveFile(saveFile);
-	delete saveFile;
+	c->LoadSaveFile(std::move(saveFile));
 
 	// hide the info text if it's not already hidden
 	introText = 0;
@@ -1853,19 +1839,16 @@ void GameView::DoDraw()
 		255, 195, 145, 103, 69, 42, 23, 10, 3
 	} };
 	auto *g = GetGraphics();
-	for (auto x = 0U; x < fadeout.size(); ++x)
+	for (auto x = 0; x < int(fadeout.size()); ++x)
 	{
-		g->draw_line(x, YRES + 1, x, YRES + 18, 0, 0, 0, fadeout[x]);
-		g->draw_line(XRES - x, YRES + 1, XRES - x, YRES + 18, 0, 0, 0, fadeout[x]);
+		g->BlendLine({ x, YRES + 1 }, { x, YRES + 18 }, 0x000000_rgb .WithAlpha(fadeout[x]));
+		g->BlendLine({ XRES - x, YRES + 1 }, { XRES - x, YRES + 18 }, 0x000000_rgb .WithAlpha(fadeout[x]));
 	}
 
 	c->Tick();
 	{
-		int x = 0;
-		int y = 0;
-		int w = WINDOWW;
-		int h = WINDOWH;
-		g->SetClipRect(x, y, w, h); // reset any nonsense cliprect Lua left configured
+		auto rect = g->Size().OriginRect();
+		g->SwapClipRect(rect);  // reset any nonsense cliprect Lua left configured
 	}
 }
 
@@ -1883,7 +1866,7 @@ void GameView::NotifyNotificationsChanged(GameModel * sender)
 	int currentY = YRES-23;
 	for (auto *notification : notifications)
 	{
-		int width = (Graphics::textwidth(notification->Message))+8;
+		int width = Graphics::TextSize(notification->Message).X + 7;
 		ui::Button * tempButton = new ui::Button(ui::Point(XRES-width-22, currentY), ui::Point(width, 15), notification->Message);
 		tempButton->SetActionCallback({ [notification] {
 			notification->Action();
@@ -1928,17 +1911,62 @@ void GameView::NotifyLogChanged(GameModel * sender, String entry)
 
 void GameView::NotifyPlaceSaveChanged(GameModel * sender)
 {
-	delete placeSaveThumb;
-	placeSaveOffset = ui::Point(0, 0);
-	if(sender->GetPlaceSave())
+	placeSaveTransform = Mat2<int>::Identity;
+	placeSaveTranslate = Vec2<int>::Zero;
+	ApplyTransformPlaceSave();
+}
+
+void GameView::TranslateSave(Vec2<int> addToTranslate)
+{
+	placeSaveTranslate += addToTranslate;
+	ApplyTransformPlaceSave();
+}
+
+void GameView::TransformSave(Mat2<int> mulToTransform)
+{
+	placeSaveTranslate = Vec2<int>::Zero; // reset offset
+	placeSaveTransform = mulToTransform * placeSaveTransform;
+	ApplyTransformPlaceSave();
+}
+
+template<class Signed>
+static std::pair<Signed, Signed> floorDiv(Signed a, Signed b)
+{
+	auto quo = a / b;
+	auto rem = a % b;
+	if (a < Signed(0) && rem)
 	{
-		placeSaveThumb = SaveRenderer::Ref().Render(sender->GetPlaceSave(), true, true, sender->GetRenderer());
+		quo -= Signed(1);
+		rem += b;
+	}
+	return { quo, rem };
+}
+
+void GameView::ApplyTransformPlaceSave()
+{
+	auto remX = floorDiv(placeSaveTranslate.X, CELL).second;
+	auto remY = floorDiv(placeSaveTranslate.Y, CELL).second;
+	c->TransformPlaceSave(placeSaveTransform, { remX, remY });
+}
+
+void GameView::NotifyTransformedPlaceSaveChanged(GameModel *sender)
+{
+	if (sender->GetTransformedPlaceSave())
+	{
+		placeSaveThumb = SaveRenderer::Ref().Render(sender->GetTransformedPlaceSave(), true, true, sender->GetRenderer());
+		auto [ quoX, remX ] = floorDiv(placeSaveTranslate.X, CELL);
+		auto [ quoY, remY ] = floorDiv(placeSaveTranslate.Y, CELL);
+		placeSaveOffset = Vec2{ quoX, quoY } * CELL;
+		auto usefulSize = placeSaveThumb->Size();
+		if (remX) usefulSize.X -= CELL;
+		if (remY) usefulSize.Y -= CELL;
+		placeSaveOffset -= usefulSize / 2;
 		selectMode = PlaceSave;
 		selectPoint2 = mousePosition;
 	}
 	else
 	{
-		placeSaveThumb = NULL;
+		placeSaveThumb.reset();
 		selectMode = SelectNone;
 	}
 }
@@ -2076,9 +2104,9 @@ void GameView::OnDraw()
 	Graphics * g = GetGraphics();
 	if (ren)
 	{
-		ren->clearScreen(1.0f);
+		ren->clearScreen();
 		ren->RenderBegin();
-		ren->SetSample(c->PointTranslate(currentMouse).X, c->PointTranslate(currentMouse).Y);
+		ren->SetSample(c->PointTranslate(currentMouse));
 		if (showBrush && selectMode == SelectNone && (!zoomEnabled || zoomCursorFixed) && activeBrush && (isMouseDown || (currentMouse.X >= 0 && currentMouse.X < XRES && currentMouse.Y >= 0 && currentMouse.Y < YRES)))
 		{
 			ui::Point finalCurrentMouse = windTool ? c->PointTranslateNoClamp(currentMouse) : c->PointTranslate(currentMouse);
@@ -2128,11 +2156,12 @@ void GameView::OnDraw()
 				if (wallBrush)
 				{
 					ui::Point finalBrushRadius = c->NormaliseBlockCoord(activeBrush->GetRadius());
-					ren->xor_line(finalCurrentMouse.X-finalBrushRadius.X, finalCurrentMouse.Y-finalBrushRadius.Y, finalCurrentMouse.X+finalBrushRadius.X+CELL-1, finalCurrentMouse.Y-finalBrushRadius.Y);
-					ren->xor_line(finalCurrentMouse.X-finalBrushRadius.X, finalCurrentMouse.Y+finalBrushRadius.Y+CELL-1, finalCurrentMouse.X+finalBrushRadius.X+CELL-1, finalCurrentMouse.Y+finalBrushRadius.Y+CELL-1);
-
-					ren->xor_line(finalCurrentMouse.X-finalBrushRadius.X, finalCurrentMouse.Y-finalBrushRadius.Y+1, finalCurrentMouse.X-finalBrushRadius.X, finalCurrentMouse.Y+finalBrushRadius.Y+CELL-2);
-					ren->xor_line(finalCurrentMouse.X+finalBrushRadius.X+CELL-1, finalCurrentMouse.Y-finalBrushRadius.Y+1, finalCurrentMouse.X+finalBrushRadius.X+CELL-1, finalCurrentMouse.Y+finalBrushRadius.Y+CELL-2);
+					auto topLeft     = finalCurrentMouse - finalBrushRadius;
+					auto bottomRight = finalCurrentMouse + finalBrushRadius + Vec2{ CELL - 1, CELL - 1 };
+					ren->XorLine({     topLeft.X,     topLeft.Y     }, { bottomRight.X,     topLeft.Y     });
+					ren->XorLine({     topLeft.X, bottomRight.Y     }, { bottomRight.X, bottomRight.Y     });
+					ren->XorLine({     topLeft.X,     topLeft.Y + 1 }, {     topLeft.X, bottomRight.Y - 1 }); // offset by 1 so the corners don't get xor'd twice
+					ren->XorLine({ bottomRight.X,     topLeft.Y + 1 }, { bottomRight.X, bottomRight.Y - 1 }); // offset by 1 so the corners don't get xor'd twice
 				}
 				else
 				{
@@ -2147,31 +2176,18 @@ void GameView::OnDraw()
 			{
 				if(placeSaveThumb && selectPoint2.X!=-1)
 				{
-					int thumbX = selectPoint2.X - ((placeSaveThumb->Width-placeSaveOffset.X)/2) + CELL/2;
-					int thumbY = selectPoint2.Y - ((placeSaveThumb->Height-placeSaveOffset.Y)/2) + CELL/2;
-
-					ui::Point thumbPos = c->NormaliseBlockCoord(ui::Point(thumbX, thumbY));
-
-					if(thumbPos.X<0)
-						thumbPos.X = 0;
-					if(thumbPos.X+(placeSaveThumb->Width)>=XRES)
-						thumbPos.X = XRES-placeSaveThumb->Width;
-
-					if(thumbPos.Y<0)
-						thumbPos.Y = 0;
-					if(thumbPos.Y+(placeSaveThumb->Height)>=YRES)
-						thumbPos.Y = YRES-placeSaveThumb->Height;
-
-					ren->draw_image(placeSaveThumb, thumbPos.X, thumbPos.Y, 128);
-
-					ren->xor_rect(thumbPos.X, thumbPos.Y, placeSaveThumb->Width, placeSaveThumb->Height);
+					auto thumb = selectPoint2 + placeSaveOffset + Vec2(1, 1) * CELL / 2;
+					thumb = c->NormaliseBlockCoord(thumb).Clamp(RectBetween(Vec2<int>::Zero, RES - placeSaveThumb->Size()));
+					auto rect = RectSized(thumb, placeSaveThumb->Size());
+					ren->BlendImage(placeSaveThumb->Data(), 0x80, rect);
+					ren->XorDottedRect(rect);
 				}
 			}
 			else
 			{
 				if(selectPoint1.X==-1)
 				{
-					ren->fillrect(0, 0, XRES, YRES, 0, 0, 0, 100);
+					ren->BlendFilledRect(RectSized(Vec2{ 0, 0 }, Vec2{ XRES, YRES }), 0x000000_rgb .WithAlpha(100));
 				}
 				else
 				{
@@ -2185,18 +2201,20 @@ void GameView::OnDraw()
 					if(y2>YRES-1)
 						y2 = YRES-1;
 
-					ren->fillrect(0, 0, XRES, y1, 0, 0, 0, 100);
-					ren->fillrect(0, y2+1, XRES, YRES-y2-1, 0, 0, 0, 100);
+					ren->BlendFilledRect(RectSized(Vec2{ 0, 0 }, Vec2{ XRES, y1 }), 0x000000_rgb .WithAlpha(100));
+					ren->BlendFilledRect(RectSized(Vec2{ 0, y2+1 }, Vec2{ XRES, YRES-y2-1 }), 0x000000_rgb .WithAlpha(100));
 
-					ren->fillrect(0, y1, x1, (y2-y1)+1, 0, 0, 0, 100);
-					ren->fillrect(x2+1, y1, XRES-x2-1, (y2-y1)+1, 0, 0, 0, 100);
+					ren->BlendFilledRect(RectSized(Vec2{ 0, y1 }, Vec2{ x1, (y2-y1)+1 }), 0x000000_rgb .WithAlpha(100));
+					ren->BlendFilledRect(RectSized(Vec2{ x2+1, y1 }, Vec2{ XRES-x2-1, (y2-y1)+1 }), 0x000000_rgb .WithAlpha(100));
 
-					ren->xor_rect(x1, y1, (x2-x1)+1, (y2-y1)+1);
+					ren->XorDottedRect(RectBetween(Vec2{ x1, y1 }, Vec2{ x2, y2 }));
 				}
 			}
 		}
 
 		ren->RenderEnd();
+
+		std::copy_n(ren->Data(), ren->Size().X * ren->Size().Y, g->Data());
 
 		if (doScreenshot)
 		{
@@ -2206,8 +2224,7 @@ void GameView::OnDraw()
 
 		if(recording)
 		{
-			VideoBuffer screenshot(ren->DumpFrame());
-			std::vector<char> data = format::VideoBufferToPPM(screenshot);
+			std::vector<char> data = ren->DumpFrame().ToPPM();
 
 			ByteString filename = ByteString::Build("recordings", PATH_SEP_CHAR, recordingFolder, PATH_SEP_CHAR, "frame_", Format::Width(recordingIndex++, 6), ".ppm");
 
@@ -2229,8 +2246,8 @@ void GameView::OnDraw()
 					break;
 				}
 				startY -= 14;
-				g->fillrect(startX-3, startY-3, Graphics::textwidth(message)+6, 14, 0, 0, 0, std::min(100, alpha));
-				g->drawtext(startX, startY, message, 255, 255, 255, alpha);
+				g->BlendFilledRect(RectSized(Vec2{ startX-3, startY-3 }, Vec2{ Graphics::TextSize(message).X + 5, 14 }), 0x000000_rgb .WithAlpha(std::min(100, alpha)));
+				g->BlendText({ startX, startY }, message, 0xFFFFFF_rgb .WithAlpha(alpha));
 				(*iter).second -= 3;
 			}
 		}
@@ -2240,9 +2257,9 @@ void GameView::OnDraw()
 	{
 		String sampleInfo = String::Build("#", screenshotIndex, " ", String(0xE00E), " REC");
 
-		int textWidth = Graphics::textwidth(sampleInfo);
-		g->fillrect(XRES-20-textWidth, 12, textWidth+8, 15, 0, 0, 0, 127);
-		g->drawtext(XRES-16-textWidth, 16, sampleInfo, 255, 50, 20, 255);
+		int textWidth = Graphics::TextSize(sampleInfo).X - 1;
+		g->BlendFilledRect(RectSized(Vec2{ XRES-20-textWidth, 12 }, Vec2{ textWidth+8, 15 }), 0x000000_rgb .WithAlpha(127));
+		g->BlendText({ XRES-16-textWidth, 16 }, sampleInfo, 0xFF3214_rgb .WithAlpha(255));
 	}
 	else if(showHud)
 	{
@@ -2361,15 +2378,15 @@ void GameView::OnDraw()
 			sampleInfo << "비어 있음";
 		}
 
-		int textWidth = Graphics::textwidth(sampleInfo.Build());
-		g->fillrect(XRES-20-textWidth, 12, textWidth+8, 15, 0, 0, 0, int(alpha*0.5f));
-		g->drawtext(XRES-16-textWidth, 16, sampleInfo.Build(), 255, 255, 255, int(alpha*0.75f));
+		int textWidth = Graphics::TextSize(sampleInfo.Build()).X - 1;
+		g->BlendFilledRect(RectSized(Vec2{ XRES-20-textWidth, 12 }, Vec2{ textWidth+8, 15 }), 0x000000_rgb .WithAlpha(int(alpha*0.5f)));
+		g->BlendText({ XRES-16-textWidth, 16 }, sampleInfo.Build(), 0xFFFFFF_rgb .WithAlpha(int(alpha*0.75f)));
 
 		if (wavelengthGfx)
 		{
 			int i, cr, cg, cb, j, h = 3, x = XRES-19-textWidth, y = 10;
 			int tmp;
-			g->fillrect(x, y, 30, h, 64, 64, 64, alpha); // coords -1 size +1 to work around bug in fillrect - TODO: fix fillrect
+			g->BlendFilledRect(RectSized(Vec2{ x, y }, Vec2{ 30, h }), 0x404040_rgb .WithAlpha(alpha));
 			for (i = 0; i < 30; i++)
 			{
 				if ((wavelengthGfx >> i)&1)
@@ -2395,7 +2412,7 @@ void GameView::OnDraw()
 					cg *= tmp;
 					cb *= tmp;
 					for (j=0; j<h; j++)
-						g->blendpixel(x+29-i, y+j, cr>255?255:cr, cg>255?255:cg, cb>255?255:cb, alpha);
+						g->BlendPixel({ x+29-i, y+j }, RGBA<uint8_t>(cr>255?255:cr, cg>255?255:cg, cb>255?255:cb, alpha));
 				}
 			}
 		}
@@ -2419,9 +2436,9 @@ void GameView::OnDraw()
 				format::RenderTemperature(sampleInfo, sample.AirTemperature, c->GetTemperatureScale());
 			}
 
-			textWidth = Graphics::textwidth(sampleInfo.Build());
-			g->fillrect(XRES-20-textWidth, 27, textWidth+8, 14, 0, 0, 0, int(alpha*0.5f));
-			g->drawtext(XRES-16-textWidth, 30, sampleInfo.Build(), 255, 255, 255, int(alpha*0.75f));
+			auto textWidth = Graphics::TextSize(sampleInfo.Build()).X - 1;
+			g->BlendFilledRect(RectSized(Vec2{ XRES-20-textWidth, 27 }, Vec2{ textWidth+8, 14 }), 0x000000_rgb .WithAlpha(int(alpha*0.5f)));
+			g->BlendText({ XRES-16-textWidth, 30 }, sampleInfo.Build(), 0xFFFFFF_rgb .WithAlpha(int(alpha*0.75f)));
 		}
 	}
 
@@ -2447,42 +2464,38 @@ void GameView::OnDraw()
 		if (ren && ren->findingElement)
 			fpsInfo << " [찾기]";
 
-		int textWidth = Graphics::textwidth(fpsInfo.Build());
+		int textWidth = Graphics::TextSize(fpsInfo.Build()).X - 1;
 		int alpha = 255-introText*5;
-		g->fillrect(12, 12, textWidth+8, 15, 0, 0, 0, int(alpha*0.5));
-		g->drawtext(16, 16, fpsInfo.Build(), 32, 216, 255, int(alpha*0.75));
+		g->BlendFilledRect(RectSized(Vec2{ 12, 12 }, Vec2{ textWidth+8, 15 }), 0x000000_rgb .WithAlpha(int(alpha*0.5)));
+		g->BlendText({ 16, 16 }, fpsInfo.Build(), 0x20D8FF_rgb .WithAlpha(int(alpha*0.75)));
 	}
 
 	//Tooltips
 	if(infoTipPresence)
 	{
 		int infoTipAlpha = (infoTipPresence>50?50:infoTipPresence)*5;
-		g->drawtext_outline((XRES-Graphics::textwidth(infoTip))/2, (YRES/2)-2, infoTip, 255, 255, 255, infoTipAlpha);
+		g->BlendTextOutline({ (XRES - (Graphics::TextSize(infoTip).X - 1)) / 2, YRES / 2 - 2 }, infoTip, 0xFFFFFF_rgb .WithAlpha(infoTipAlpha));
 	}
 
 	if(toolTipPresence && toolTipPosition.X!=-1 && toolTipPosition.Y!=-1 && toolTip.length())
 	{
 		if (toolTipPosition.Y == Size.Y-MENUSIZE-10)
-			g->drawtext_outline(toolTipPosition.X, toolTipPosition.Y, toolTip, 255, 255, 255, toolTipPresence>51?255:toolTipPresence*5);
+			g->BlendTextOutline(toolTipPosition, toolTip, 0xFFFFFF_rgb .WithAlpha(toolTipPresence>51?255:toolTipPresence*5));
 		else
-			g->drawtext(toolTipPosition.X, toolTipPosition.Y, toolTip, 255, 255, 255, toolTipPresence>51?255:toolTipPresence*5);
+			g->BlendText(toolTipPosition, toolTip, 0xFFFFFF_rgb .WithAlpha(toolTipPresence>51?255:toolTipPresence*5));
 	}
 
 	if(buttonTipShow > 0)
 	{
-		g->drawtext(16, Size.Y-MENUSIZE-24, buttonTip, 255, 255, 255, buttonTipShow>51?255:buttonTipShow*5);
+		g->BlendText({ 16, Size.Y-MENUSIZE-24 }, buttonTip, 0xFFFFFF_rgb .WithAlpha(buttonTipShow>51?255:buttonTipShow*5));
 	}
 
 	//Introduction text
 	if(introText && showHud)
 	{
-		g->fillrect(0, 0, WINDOWW, WINDOWH, 0, 0, 0, introText>51?102:introText*2);
-		g->drawtext(16, 16, introTextMessage, 255, 255, 255, introText>51?255:introText*5);
+		g->BlendFilledRect(RectSized(Vec2{ 0, 0 }, WINDOW), 0x000000_rgb .WithAlpha(introText>51?102:introText*2));
+		g->BlendText({ 16, 16 }, introTextMessage, 0xFFFFFF_rgb .WithAlpha(introText>51?255:introText*5));
 	}
-
-	// Clear menu areas, to ensure particle graphics don't overlap
-	memset(g->vid+((XRES+BARSIZE)*YRES), 0, (PIXELSIZE*(XRES+BARSIZE))*MENUSIZE);
-	g->clearrect(XRES, 1, BARSIZE, YRES-1);
 }
 
 ui::Point GameView::lineSnapCoords(ui::Point point1, ui::Point point2)

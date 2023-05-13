@@ -19,11 +19,9 @@
 
 #include "gui/Style.h"
 
-#include "save_online.png.h"
-
 class SaveUploadTask: public Task
 {
-	SaveInfo save;
+	SaveInfo &save;
 
 	void before() override
 	{
@@ -42,33 +40,26 @@ class SaveUploadTask: public Task
 	}
 
 public:
-	SaveInfo GetSave()
-	{
-		return save;
-	}
-
-	SaveUploadTask(SaveInfo save):
-		save(save)
+	SaveUploadTask(SaveInfo &newSave):
+		save(newSave)
 	{
 
 	}
 };
 
-ServerSaveActivity::ServerSaveActivity(SaveInfo save, OnUploaded onUploaded_) :
+ServerSaveActivity::ServerSaveActivity(std::unique_ptr<SaveInfo> newSave, OnUploaded onUploaded_) :
 	WindowActivity(ui::Point(-1, -1), ui::Point(440, 200)),
 	thumbnailRenderer(nullptr),
-	save(save),
+	save(std::move(newSave)),
 	onUploaded(onUploaded_),
 	saveUploadTask(NULL)
 {
-	PngDataToPixels(save_to_server_image, save_to_server_imageW, save_to_server_imageH, reinterpret_cast<const char *>(save_online_png), save_online_png_size, false);
-
 	titleLabel = new ui::Label(ui::Point(4, 5), ui::Point((Size.X/2)-8, 16), "");
 	titleLabel->SetTextColour(style::Colour::InformationTitle);
 	titleLabel->Appearance.HorizontalAlign = ui::Appearance::AlignLeft;
 	titleLabel->Appearance.VerticalAlign = ui::Appearance::AlignMiddle;
 	AddComponent(titleLabel);
-	CheckName(save.GetName()); //set titleLabel text
+	CheckName(save->GetName()); //set titleLabel text
 
 	ui::Label * previewLabel = new ui::Label(ui::Point((Size.X/2)+4, 5), ui::Point((Size.X/2)-8, 16), "미리 보기:");
 	previewLabel->SetTextColour(style::Colour::InformationTitle);
@@ -76,14 +67,14 @@ ServerSaveActivity::ServerSaveActivity(SaveInfo save, OnUploaded onUploaded_) :
 	previewLabel->Appearance.VerticalAlign = ui::Appearance::AlignMiddle;
 	AddComponent(previewLabel);
 
-	nameField = new ui::Textbox(ui::Point(8, 25), ui::Point((Size.X/2)-16, 16), save.GetName(), "세이브 이름");
+	nameField = new ui::Textbox(ui::Point(8, 25), ui::Point((Size.X/2)-16, 16), save->GetName(), "세이브 이름");
 	nameField->Appearance.VerticalAlign = ui::Appearance::AlignMiddle;
 	nameField->Appearance.HorizontalAlign = ui::Appearance::AlignLeft;
 	nameField->SetActionCallback({ [this] { CheckName(nameField->GetText()); } });
 	AddComponent(nameField);
 	FocusComponent(nameField);
 
-	descriptionField = new ui::Textbox(ui::Point(8, 65), ui::Point((Size.X/2)-16, Size.Y-(65+16+4)), save.GetDescription(), "세이브 설명");
+	descriptionField = new ui::Textbox(ui::Point(8, 65), ui::Point((Size.X/2)-16, Size.Y-(65+16+4)), save->GetDescription(), "세이브 설명");
 	descriptionField->SetMultiline(true);
 	descriptionField->SetLimit(254);
 	descriptionField->Appearance.VerticalAlign = ui::Appearance::AlignTop;
@@ -91,7 +82,7 @@ ServerSaveActivity::ServerSaveActivity(SaveInfo save, OnUploaded onUploaded_) :
 	AddComponent(descriptionField);
 
 	publishedCheckbox = new ui::Checkbox(ui::Point(8, 45), ui::Point((Size.X/2)-80, 16), "게시", "");
-	if(Client::Ref().GetAuthUser().Username != save.GetUserName())
+	if(Client::Ref().GetAuthUser().Username != save->GetUserName())
 	{
 		//Save is not owned by the user, disable by default
 		publishedCheckbox->SetChecked(false);
@@ -99,12 +90,12 @@ ServerSaveActivity::ServerSaveActivity(SaveInfo save, OnUploaded onUploaded_) :
 	else
 	{
 		//Save belongs to the current user, use published state already set
-		publishedCheckbox->SetChecked(save.GetPublished());
+		publishedCheckbox->SetChecked(save->GetPublished());
 	}
 	AddComponent(publishedCheckbox);
 
 	pausedCheckbox = new ui::Checkbox(ui::Point(149, 45), ui::Point(55, 16), "일시 정지", "");
-	pausedCheckbox->SetChecked(save.GetGameSave()->paused);
+	pausedCheckbox->SetChecked(save->GetGameSave()->paused);
 	AddComponent(pausedCheckbox);
 
 	ui::Button * cancelButton = new ui::Button(ui::Point(0, Size.Y-16), ui::Point((Size.X/2)-75, 16), "취소");
@@ -145,22 +136,20 @@ ServerSaveActivity::ServerSaveActivity(SaveInfo save, OnUploaded onUploaded_) :
 	} });
 	AddComponent(RulesButton);
 
-	if (save.GetGameSave())
+	if (save->GetGameSave())
 	{
-		thumbnailRenderer = new ThumbnailRendererTask(save.GetGameSave(), (Size.X/2)-16, -1, false, false, true);
+		thumbnailRenderer = new ThumbnailRendererTask(*save->GetGameSave(), Size / 2 - Vec2(16, 16), false, true);
 		thumbnailRenderer->Start();
 	}
 }
 
-ServerSaveActivity::ServerSaveActivity(SaveInfo save, bool saveNow, OnUploaded onUploaded_) :
+ServerSaveActivity::ServerSaveActivity(std::unique_ptr<SaveInfo> newSave, bool saveNow, OnUploaded onUploaded_) :
 	WindowActivity(ui::Point(-1, -1), ui::Point(200, 50)),
 	thumbnailRenderer(nullptr),
-	save(save),
+	save(std::move(newSave)),
 	onUploaded(onUploaded_),
 	saveUploadTask(NULL)
 {
-	PngDataToPixels(save_to_server_image, save_to_server_imageW, save_to_server_imageH, reinterpret_cast<const char *>(save_online_png), save_online_png_size, false);
-
 	ui::Label * titleLabel = new ui::Label(ui::Point(0, 0), Size, "서버에 저장하는 중...");
 	titleLabel->SetTextColour(style::Colour::InformationTitle);
 	titleLabel->Appearance.HorizontalAlign = ui::Appearance::AlignCentre;
@@ -169,7 +158,7 @@ ServerSaveActivity::ServerSaveActivity(SaveInfo save, bool saveNow, OnUploaded o
 
 	AddAuthorInfo();
 
-	saveUploadTask = new SaveUploadTask(this->save);
+	saveUploadTask = new SaveUploadTask(*this->save);
 	saveUploadTask->AddTaskListener(this);
 	saveUploadTask->Start();
 }
@@ -185,7 +174,7 @@ void ServerSaveActivity::NotifyDone(Task * task)
 	{
 		if (onUploaded)
 		{
-			onUploaded(save);
+			onUploaded(std::move(save));
 		}
 		Exit();
 	}
@@ -195,9 +184,9 @@ void ServerSaveActivity::Save()
 {
 	if(nameField->GetText().length())
 	{
-		if(Client::Ref().GetAuthUser().Username != save.GetUserName() && publishedCheckbox->GetChecked())
+		if(Client::Ref().GetAuthUser().Username != save->GetUserName() && publishedCheckbox->GetChecked())
 		{
-			new ConfirmPrompt("게시", "이 세이브는 " + save.GetUserName().FromUtf8() + "에 의해 제작되었으며, 귀하가 이것을 귀하의 이름으로 게시하려고 하고 있습니다. 게시자의 허가가 있지 않다면 게시 확인 상자를 해제하십시오. 게시자의 허락이 있다면 게시해도 됩니다.", { [this] {
+			new ConfirmPrompt("게시", "이 세이브는 " + save->GetUserName().FromUtf8() + "에 의해 제작되었으며, 귀하가 이것을 귀하의 이름으로 게시하려고 하고 있습니다. 게시자의 허가가 있지 않다면 게시 확인 상자를 해제하십시오. 게시자의 허가가 있다면 게시해도 됩니다.", { [this] {
 				Exit();
 				saveUpload();
 			} });
@@ -218,34 +207,42 @@ void ServerSaveActivity::AddAuthorInfo()
 {
 	Json::Value serverSaveInfo;
 	serverSaveInfo["type"] = "save";
-	serverSaveInfo["id"] = save.GetID();
+	serverSaveInfo["id"] = save->GetID();
 	serverSaveInfo["username"] = Client::Ref().GetAuthUser().Username;
-	serverSaveInfo["title"] = save.GetName().ToUtf8();
-	serverSaveInfo["description"] = save.GetDescription().ToUtf8();
-	serverSaveInfo["published"] = (int)save.GetPublished();
+	serverSaveInfo["title"] = save->GetName().ToUtf8();
+	serverSaveInfo["description"] = save->GetDescription().ToUtf8();
+	serverSaveInfo["published"] = (int)save->GetPublished();
 	serverSaveInfo["date"] = (Json::Value::UInt64)time(NULL);
 	Client::Ref().SaveAuthorInfo(&serverSaveInfo);
-	save.GetGameSave()->authors = serverSaveInfo;
+	{
+		auto gameSave = save->TakeGameSave();
+		gameSave->authors = serverSaveInfo;
+		save->SetGameSave(std::move(gameSave));
+	}
 }
 
 void ServerSaveActivity::saveUpload()
 {
-	save.SetName(nameField->GetText());
-	save.SetDescription(descriptionField->GetText());
-	save.SetPublished(publishedCheckbox->GetChecked());
-	save.SetUserName(Client::Ref().GetAuthUser().Username);
-	save.SetID(0);
-	save.GetGameSave()->paused = pausedCheckbox->GetChecked();
+	save->SetName(nameField->GetText());
+	save->SetDescription(descriptionField->GetText());
+	save->SetPublished(publishedCheckbox->GetChecked());
+	save->SetUserName(Client::Ref().GetAuthUser().Username);
+	save->SetID(0);
+	{
+		auto gameSave = save->TakeGameSave();
+		gameSave->paused = pausedCheckbox->GetChecked();
+		save->SetGameSave(std::move(gameSave));
+	}
 	AddAuthorInfo();
 
-	if(Client::Ref().UploadSave(save) != RequestOkay)
+	if(Client::Ref().UploadSave(*save) != RequestOkay)
 	{
 		new ErrorMessage("오류", "업로드에 실패하였습니다. 오류:\n"+Client::Ref().GetLastError());
 	}
 	else if (onUploaded)
 	{
-		new SaveIDMessage(save.GetID());
-		onUploaded(save);
+		new SaveIDMessage(save->GetID());
+		onUploaded(std::move(save));
 	}
 }
 
@@ -349,7 +346,7 @@ void ServerSaveActivity::ShowRules()
 
 void ServerSaveActivity::CheckName(String newname)
 {
-	if (newname.length() && newname == save.GetName() && save.GetUserName() == Client::Ref().GetAuthUser().Username)
+	if (newname.length() && newname == save->GetName() && save->GetUserName() == Client::Ref().GetAuthUser().Username)
 		titleLabel->SetText("시뮬레이션 속성 수정:");
 	else
 		titleLabel->SetText("새 시뮬레이션 업로드:");
@@ -374,17 +371,18 @@ void ServerSaveActivity::OnTick(float dt)
 void ServerSaveActivity::OnDraw()
 {
 	Graphics * g = GetGraphics();
-	g->draw_rgba_image(&save_to_server_image[0], save_to_server_imageW, save_to_server_imageH, -36, 0, 1.0f);
-	g->clearrect(Position.X-2, Position.Y-2, Size.X+3, Size.Y+3);
-	g->drawrect(Position.X, Position.Y, Size.X, Size.Y, 255, 255, 255, 255);
+	g->BlendRGBAImage(saveToServerImage->data(), RectSized(Vec2(-36, 0), saveToServerImage->Size()));
+	g->DrawFilledRect(RectSized(Position, Size).Inset(-1), 0x000000_rgb);
+	g->DrawRect(RectSized(Position, Size), 0xFFFFFF_rgb);
 
-	if(Size.X>220)
-		g->draw_line(Position.X+(Size.X/2)-1, Position.Y, Position.X+(Size.X/2)-1, Position.Y+Size.Y-1, 255, 255, 255, 255);
+	if (Size.X > 220)
+		g->DrawLine(Position + Vec2(Size.X / 2 - 1, 0), Position + Vec2(Size.X / 2 - 1, Size.Y - 1), 0xFFFFFF_rgb);
 
-	if(thumbnail)
+	if (thumbnail)
 	{
-		g->draw_image(thumbnail.get(), Position.X+(Size.X/2)+((Size.X/2)-thumbnail->Width)/2, Position.Y+25, 255);
-		g->drawrect(Position.X+(Size.X/2)+((Size.X/2)-thumbnail->Width)/2, Position.Y+25, thumbnail->Width, thumbnail->Height, 180, 180, 180, 255);
+		auto rect = RectSized(Position + Vec2(Size.X / 2 + (Size.X / 2 - thumbnail->Size().X) / 2, 25), thumbnail->Size());
+		g->BlendImage(thumbnail->Data(), 0xFF, rect);
+		g->DrawRect(rect, 0xB4B4B4_rgb);
 	}
 }
 

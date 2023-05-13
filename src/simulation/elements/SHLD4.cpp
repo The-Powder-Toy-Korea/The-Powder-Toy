@@ -6,7 +6,7 @@ void Element::Element_SHLD4()
 {
 	Identifier = "DEFAULT_PT_SHLD4";
 	Name = "SHD4";
-	Colour = PIXPACK(0x212121);
+	Colour = 0x212121_rgb;
 	MenuVisible = 0;
 	MenuSection = SC_CRACKER2;
 	Enabled = 1;
@@ -55,7 +55,7 @@ static int update(UPDATE_FUNC_ARGS)
 				r = pmap[y+ry][x+rx];
 				if (!r)
 				{
-					if (RNG::Ref().chance(1, 5500))
+					if (sim->rng.chance(1, 5500))
 					{
 						np = sim->create_part(-1,x+rx,y+ry,PT_SHLD1);
 						if (np<0) continue;

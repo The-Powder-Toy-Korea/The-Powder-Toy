@@ -22,6 +22,8 @@ std::unique_ptr<Snapshot> Simulation::CreateSnapshot()
 	snap->AmbientHeat    .insert   (snap->AmbientHeat    .begin(), &hv  [0][0]      , &hv  [0][0] + NCELL);
 	snap->BlockMap       .insert   (snap->BlockMap       .begin(), &bmap[0][0]      , &bmap[0][0] + NCELL);
 	snap->ElecMap        .insert   (snap->ElecMap        .begin(), &emap[0][0]      , &emap[0][0] + NCELL);
+	snap->BlockAir       .insert   (snap->BlockAir       .begin(), &air->bmap_blockair[0][0] , &air->bmap_blockair[0][0]  + NCELL);
+	snap->BlockAirH      .insert   (snap->BlockAirH      .begin(), &air->bmap_blockairh[0][0], &air->bmap_blockairh[0][0] + NCELL);
 	snap->FanVelocityX   .insert   (snap->FanVelocityX   .begin(), &fvx [0][0]      , &fvx [0][0] + NCELL);
 	snap->FanVelocityY   .insert   (snap->FanVelocityY   .begin(), &fvy [0][0]      , &fvy [0][0] + NCELL);
 	snap->GravVelocityX  .insert   (snap->GravVelocityX  .begin(), &gravx  [0]      , &gravx  [0] + NCELL);
@@ -35,6 +37,8 @@ std::unique_ptr<Snapshot> Simulation::CreateSnapshot()
 	snap->stickmen       .push_back(player2);
 	snap->stickmen       .push_back(player);
 	snap->signs = signs;
+	snap->FrameCount = frameCount;
+	snap->RngState = rng.state();
 	return snap;
 }
 
@@ -53,6 +57,8 @@ void Simulation::Restore(const Snapshot &snap)
 	std::copy(snap.AmbientHeat    .begin(), snap.AmbientHeat    .end(), &hv[0][0]        );
 	std::copy(snap.BlockMap       .begin(), snap.BlockMap       .end(), &bmap[0][0]      );
 	std::copy(snap.ElecMap        .begin(), snap.ElecMap        .end(), &emap[0][0]      );
+	std::copy(snap.BlockAir       .begin(), snap.BlockAir       .end(), &air->bmap_blockair[0][0] );
+	std::copy(snap.BlockAirH      .begin(), snap.BlockAirH      .end(), &air->bmap_blockairh[0][0]);
 	std::copy(snap.FanVelocityX   .begin(), snap.FanVelocityX   .end(), &fvx[0][0]       );
 	std::copy(snap.FanVelocityY   .begin(), snap.FanVelocityY   .end(), &fvy[0][0]       );
 	if (grav->IsEnabled())
@@ -70,8 +76,9 @@ void Simulation::Restore(const Snapshot &snap)
 	player  = snap.stickmen[snap.stickmen.size() - 1];
 	player2 = snap.stickmen[snap.stickmen.size() - 2];
 	signs = snap.signs;
+	frameCount = snap.FrameCount;
+	rng.state(snap.RngState);
 	parts_lastActiveIndex = NPART - 1;
-	air->RecalculateBlockAirMaps();
 	RecalcFreeParticles(false);
 	gravWallChanged = true;
 }
@@ -179,7 +186,7 @@ int Simulation::Tool(int x, int y, int tool, int brushX, int brushY, float stren
 	return tools[tool].Perform(this, cpart, x, y, brushX, brushY, strength);
 }
 
-int Simulation::CreateWalls(int x, int y, int rx, int ry, int wall, Brush * cBrush)
+int Simulation::CreateWalls(int x, int y, int rx, int ry, int wall, Brush const *cBrush)
 {
 	if(cBrush)
 	{
@@ -239,7 +246,7 @@ int Simulation::CreateWalls(int x, int y, int rx, int ry, int wall, Brush * cBru
 	return 1;
 }
 
-void Simulation::CreateWallLine(int x1, int y1, int x2, int y2, int rx, int ry, int wall, Brush * cBrush)
+void Simulation::CreateWallLine(int x1, int y1, int x2, int y2, int rx, int ry, int wall, Brush const *cBrush)
 {
 	int x, y, dx, dy, sy;
 	bool reverseXY = abs(y2-y1) > abs(x2-x1);
@@ -608,37 +615,24 @@ void Simulation::ApplyDecoration(int x, int y, int colR_, int colG_, int colB_, 
 	parts[ID(rp)].dcolour = ((colA_<<24)|(colR_<<16)|(colG_<<8)|colB_);
 }
 
-void Simulation::ApplyDecorationPoint(int positionX, int positionY, int colR, int colG, int colB, int colA, int mode, Brush * cBrush)
+void Simulation::ApplyDecorationPoint(int positionX, int positionY, int colR, int colG, int colB, int colA, int mode, Brush const &cBrush)
 {
-	if(cBrush)
+	for (ui::Point off : cBrush)
 	{
-		int radiusX = cBrush->GetRadius().X, radiusY = cBrush->GetRadius().Y, sizeX = cBrush->GetSize().X, sizeY = cBrush->GetSize().Y;
-		unsigned char *bitmap = cBrush->GetBitmap();
-
-		for(int y = 0; y < sizeY; y++)
-		{
-			for(int x = 0; x < sizeX; x++)
-			{
-				if(bitmap[(y*sizeX)+x] && (positionX+(x-radiusX) >= 0 && positionY+(y-radiusY) >= 0 && positionX+(x-radiusX) < XRES && positionY+(y-radiusY) < YRES))
-				{
-					ApplyDecoration(positionX+(x-radiusX), positionY+(y-radiusY), colR, colG, colB, colA, mode);
-				}
-			}
-		}
+		ui::Point coords = ui::Point(positionX, positionY) + off;
+		if (coords.X >= 0 && coords.Y >= 0 && coords.X < XRES && coords.Y < YRES)
+			ApplyDecoration(coords.X, coords.Y, colR, colG, colB, colA, mode);
 	}
 }
 
-void Simulation::ApplyDecorationLine(int x1, int y1, int x2, int y2, int colR, int colG, int colB, int colA, int mode, Brush * cBrush)
+void Simulation::ApplyDecorationLine(int x1, int y1, int x2, int y2, int colR, int colG, int colB, int colA, int mode, Brush const &cBrush)
 {
 	bool reverseXY = abs(y2-y1) > abs(x2-x1);
 	int x, y, dx, dy, sy, rx = 0, ry = 0;
 	float e = 0.0f, de;
 
-	if(cBrush)
-	{
-		rx = cBrush->GetRadius().X;
-		ry = cBrush->GetRadius().Y;
-	}
+	rx = cBrush.GetRadius().X;
+	ry = cBrush.GetRadius().Y;
 
 	if (reverseXY)
 	{
@@ -708,10 +702,10 @@ void Simulation::ApplyDecorationBox(int x1, int y1, int x2, int y2, int colR, in
 
 bool Simulation::ColorCompare(Renderer *ren, int x, int y, int replaceR, int replaceG, int replaceB)
 {
-	pixel pix = ren->vid[x+y*WINDOWW];
-	int r = PIXR(pix);
-	int g = PIXG(pix);
-	int b = PIXB(pix);
+	auto pix = RGB<uint8_t>::Unpack(ren->GetPixel({ x, y }));
+	int r = pix.Red;
+	int g = pix.Green;
+	int b = pix.Blue;
 	int diff = std::abs(replaceR-r) + std::abs(replaceG-g) + std::abs(replaceB-b);
 	return diff < 15;
 }
@@ -784,24 +778,21 @@ void Simulation::ApplyDecorationFill(Renderer *ren, int x, int y, int colR, int 
 	free(bitmap);
 }
 
-int Simulation::ToolBrush(int positionX, int positionY, int tool, Brush * cBrush, float strength)
+int Simulation::ToolBrush(int positionX, int positionY, int tool, Brush const &cBrush, float strength)
 {
-	if(cBrush)
+	for (ui::Point off : cBrush)
 	{
-		int radiusX = cBrush->GetRadius().X, radiusY = cBrush->GetRadius().Y, sizeX = cBrush->GetSize().X, sizeY = cBrush->GetSize().Y;
-		unsigned char *bitmap = cBrush->GetBitmap();
-		for(int y = 0; y < sizeY; y++)
-			for(int x = 0; x < sizeX; x++)
-				if(bitmap[(y*sizeX)+x] && (positionX+(x-radiusX) >= 0 && positionY+(y-radiusY) >= 0 && positionX+(x-radiusX) < XRES && positionY+(y-radiusY) < YRES))
-					Tool(positionX + (x - radiusX), positionY + (y - radiusY), tool, positionX, positionY, strength);
+		ui::Point coords = ui::Point(positionX, positionY) + off;
+		if (coords.X >= 0 && coords.Y >= 0 && coords.X < XRES && coords.Y < YRES)
+			Tool(coords.X, coords.Y, tool, positionX, positionY, strength);
 	}
 	return 0;
 }
 
-void Simulation::ToolLine(int x1, int y1, int x2, int y2, int tool, Brush * cBrush, float strength)
+void Simulation::ToolLine(int x1, int y1, int x2, int y2, int tool, Brush const &cBrush, float strength)
 {
 	bool reverseXY = abs(y2-y1) > abs(x2-x1);
-	int x, y, dx, dy, sy, rx = cBrush->GetRadius().X, ry = cBrush->GetRadius().Y;
+	int x, y, dx, dy, sy, rx = cBrush.GetRadius().X, ry = cBrush.GetRadius().Y;
 	float e = 0.0f, de;
 	if (reverseXY)
 	{
@@ -871,45 +862,37 @@ void Simulation::ToolBox(int x1, int y1, int x2, int y2, int tool, float strengt
 			Tool(i, j, tool, brushX, brushY, strength);
 }
 
-int Simulation::CreateParts(int positionX, int positionY, int c, Brush * cBrush, int flags)
+int Simulation::CreateParts(int positionX, int positionY, int c, Brush const &cBrush, int flags)
 {
 	if (flags == -1)
 		flags = replaceModeFlags;
-	if (cBrush)
+	int radiusX = cBrush.GetRadius().X, radiusY = cBrush.GetRadius().Y;
+
+	// special case for LIGH
+	if (c == PT_LIGH)
 	{
-		int radiusX = cBrush->GetRadius().X, radiusY = cBrush->GetRadius().Y, sizeX = cBrush->GetSize().X, sizeY = cBrush->GetSize().Y;
-		unsigned char *bitmap = cBrush->GetBitmap();
+		if (currentTick < lightningRecreate)
+			return 1;
+		int newlife = radiusX + radiusY;
+		if (newlife > 55)
+			newlife = 55;
+		c = PMAP(newlife, c);
+		lightningRecreate = currentTick + std::max(newlife / 4, 1);
+		return CreatePartFlags(positionX, positionY, c, flags);
+	}
+	else if (c == PT_TESC)
+	{
+		int newtmp = (radiusX*4+radiusY*4+7);
+		if (newtmp > 300)
+			newtmp = 300;
+		c = PMAP(newtmp, c);
+	}
 
-		// special case for LIGH
-		if (c == PT_LIGH)
-		{
-			if (currentTick < lightningRecreate)
-				return 1;
-			int newlife = radiusX + radiusY;
-			if (newlife > 55)
-				newlife = 55;
-			c = PMAP(newlife, c);
-			lightningRecreate = currentTick + std::max(newlife / 4, 1);
-			return CreatePartFlags(positionX, positionY, c, flags);
-		}
-		else if (c == PT_TESC)
-		{
-			int newtmp = (radiusX*4+radiusY*4+7);
-			if (newtmp > 300)
-				newtmp = 300;
-			c = PMAP(newtmp, c);
-		}
-
-		for (int y = sizeY-1; y >=0; y--)
-		{
-			for (int x = 0; x < sizeX; x++)
-			{
-				if (bitmap[(y*sizeX)+x] && (positionX+(x-radiusX) >= 0 && positionY+(y-radiusY) >= 0 && positionX+(x-radiusX) < XRES && positionY+(y-radiusY) < YRES))
-				{
-					CreatePartFlags(positionX+(x-radiusX), positionY+(y-radiusY), c, flags);
-				}
-			}
-		}
+	for (ui::Point off : cBrush)
+	{
+		ui::Point coords = ui::Point(positionX, positionY) + off;
+		if (coords.X >= 0 && coords.Y >= 0 && coords.X < XRES && coords.Y < YRES)
+			CreatePartFlags(coords.X, coords.Y, c, flags);
 	}
 	return 0;
 }
@@ -948,9 +931,9 @@ int Simulation::CreateParts(int x, int y, int rx, int ry, int c, int flags)
 	return !created;
 }
 
-void Simulation::CreateLine(int x1, int y1, int x2, int y2, int c, Brush * cBrush, int flags)
+void Simulation::CreateLine(int x1, int y1, int x2, int y2, int c, Brush const &cBrush, int flags)
 {
-	int x, y, dx, dy, sy, rx = cBrush->GetRadius().X, ry = cBrush->GetRadius().Y;
+	int x, y, dx, dy, sy, rx = cBrush.GetRadius().X, ry = cBrush.GetRadius().Y;
 	bool reverseXY = abs(y2-y1) > abs(x2-x1);
 	float e = 0.0f, de;
 	if (reverseXY)

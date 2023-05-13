@@ -6,7 +6,7 @@ void SimTool::Tool_NGRV()
 {
 	Identifier = "DEFAULT_TOOL_NGRV";
 	Name = "NGRV";
-	Colour = PIXPACK(0xAACCFF);
+	Colour = 0xAACCFF_rgb;
 	Description = "순간적인 방출 중력을 생성합니다.";
 	Perform = &perform;
 }

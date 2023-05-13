@@ -44,7 +44,7 @@ void ElementPopulationDebug::Draw()
 	halfValString = String::Build(maxAverage/2);
 
 
-	g->fillrect(xStart-5, yBottom - 263, bars+10+Graphics::textwidth(maxValString)+10, 255 + 13, 0, 0, 0, 180);
+	g->BlendFilledRect(RectSized(Vec2{ xStart-5, yBottom - 263 }, Vec2{ bars+10+Graphics::TextSize(maxValString).X+9, 255 + 13 }), 0x000000_rgb .WithAlpha(180));
 
 	bars = 0;
 	for(int i = 0; i < PT_NUM; i++)
@@ -55,28 +55,30 @@ void ElementPopulationDebug::Draw()
 			auto barSize = int(count * scale - 0.5f);
 			int barX = bars;//*2;
 
-			g->draw_line(xStart+barX, yBottom+3, xStart+barX, yBottom+2, PIXR(sim->elements[i].Colour), PIXG(sim->elements[i].Colour), PIXB(sim->elements[i].Colour), 255);
+			RGB<uint8_t> colour = sim->elements[i].Colour;
+
+			g->DrawLine({ xStart+barX, yBottom+3 }, { xStart+barX, yBottom+2 }, colour);
 			if(sim->elementCount[i])
 			{
 				if(barSize > 256)
 				{
 					barSize = 256;
-					g->blendpixel(xStart+barX, yBottom-barSize-3, PIXR(sim->elements[i].Colour), PIXG(sim->elements[i].Colour), PIXB(sim->elements[i].Colour), 255);
-					g->blendpixel(xStart+barX, yBottom-barSize-5, PIXR(sim->elements[i].Colour), PIXG(sim->elements[i].Colour), PIXB(sim->elements[i].Colour), 255);
-					g->blendpixel(xStart+barX, yBottom-barSize-7, PIXR(sim->elements[i].Colour), PIXG(sim->elements[i].Colour), PIXB(sim->elements[i].Colour), 255);
+					g->DrawPixel({ xStart+barX, yBottom-barSize-3 }, colour);
+					g->DrawPixel({ xStart+barX, yBottom-barSize-5 }, colour);
+					g->DrawPixel({ xStart+barX, yBottom-barSize-7 }, colour);
 				} else {
 
-					g->draw_line(xStart+barX, yBottom-barSize-3, xStart+barX, yBottom-barSize-2, 255, 255, 255, 180);
+					g->BlendLine({ xStart+barX, yBottom-barSize-3 }, { xStart+barX, yBottom-barSize-2 }, 0xFFFFFF_rgb .WithAlpha(180));
 				}
-				g->draw_line(xStart+barX, yBottom-barSize, xStart+barX, yBottom, PIXR(sim->elements[i].Colour), PIXG(sim->elements[i].Colour), PIXB(sim->elements[i].Colour), 255);
+				g->DrawLine({ xStart+barX, yBottom-barSize }, { xStart+barX, yBottom }, colour);
 			}
 			bars++;
 		}
 	}
 
-	g->drawtext(xStart + bars + 5, yBottom-5, "0", 255, 255, 255, 255);
-	g->drawtext(xStart + bars + 5, yBottom-132, halfValString, 255, 255, 255, 255);
-	g->drawtext(xStart + bars + 5, yBottom-260, maxValString, 255, 255, 255, 255);
+	g->BlendText({ xStart + bars + 5, yBottom-5 }, "0", 0xFFFFFF_rgb .WithAlpha(255));
+	g->BlendText({ xStart + bars + 5, yBottom-132 }, halfValString, 0xFFFFFF_rgb .WithAlpha(255));
+	g->BlendText({ xStart + bars + 5, yBottom-260 }, maxValString, 0xFFFFFF_rgb .WithAlpha(255));
 }
 
 ElementPopulationDebug::~ElementPopulationDebug()

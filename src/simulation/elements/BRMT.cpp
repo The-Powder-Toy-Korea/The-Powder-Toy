@@ -6,7 +6,7 @@ void Element::Element_BRMT()
 {
 	Identifier = "DEFAULT_PT_BRMT";
 	Name = "BRMT";
-	Colour = PIXPACK(0x705060);
+	Colour = 0x705060_rgb;
 	MenuVisible = 1;
 	MenuSection = SC_POWDERS;
 	Enabled = 1;
@@ -60,9 +60,9 @@ static int update(UPDATE_FUNC_ARGS)
 					r = pmap[y+ry][x+rx];
 					if (!r)
 						continue;
-					if (TYP(r)==PT_BREC && RNG::Ref().chance(1, tempFactor))
+					if (TYP(r)==PT_BREC && sim->rng.chance(1, tempFactor))
 					{
-						if (RNG::Ref().chance(1, 2))
+						if (sim->rng.chance(1, 2))
 						{
 							sim->create_part(ID(r), x+rx, y+ry, PT_THRM);
 						}

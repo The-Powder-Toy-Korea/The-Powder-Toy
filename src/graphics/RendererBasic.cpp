@@ -1,27 +1,16 @@
-#include "Renderer.h"
-#include "gui/game/RenderPreset.h"
-#include "simulation/Simulation.h"
-#include "simulation/ElementGraphics.h"
-#include "simulation/ElementClasses.h"
 #include <cmath>
+#include "gui/game/RenderPreset.h"
+#include "RasterDrawMethodsImpl.h"
+#include "Renderer.h"
+#include "simulation/ElementClasses.h"
+#include "simulation/ElementGraphics.h"
+#include "simulation/Simulation.h"
 
 constexpr auto VIDXRES = WINDOWW;
 constexpr auto VIDYRES = WINDOWH;
 
 void Renderer::RenderBegin()
 {
-	if(display_mode & DISPLAY_PERS)
-	{
-		std::copy(persistentVid, persistentVid+(VIDXRES*YRES), vid);
-	}
-	pixel * oldVid = NULL;
-	if(display_mode & DISPLAY_WARP)
-	{
-		oldVid = vid;
-		vid = warpVid;
-		std::fill(warpVid, warpVid+(VIDXRES*VIDYRES), 0);
-	}
-
 	draw_air();
 	draw_grav();
 	DrawWalls();
@@ -29,31 +18,15 @@ void Renderer::RenderBegin()
 	
 	if(display_mode & DISPLAY_PERS)
 	{
-		int i,r,g,b;
-		for (i = 0; i < VIDXRES*YRES; i++)
-		{
-			r = PIXR(vid[i]);
-			g = PIXG(vid[i]);
-			b = PIXB(vid[i]);
-			if (r>0)
-				r--;
-			if (g>0)
-				g--;
-			if (b>0)
-				b--;
-			persistentVid[i] = PIXRGB(r,g,b);
-		}
+		std::transform(video.RowIterator({ 0, 0 }), video.RowIterator({ 0, YRES }), persistentVideo.begin(), [](pixel p) {
+			return RGB<uint8_t>::Unpack(p).Decay().Pack();
+		});
 	}
 
 	render_fire();
 	draw_other();
 	draw_grav_zones();
 	DrawSigns();
-
-	if(display_mode & DISPLAY_WARP)
-	{
-		vid = oldVid;
-	}
 
 	FinaliseParts();
 }
@@ -63,21 +36,29 @@ void Renderer::RenderEnd()
 	RenderZoom();
 }
 
-void Renderer::SetSample(int x, int y)
+void Renderer::SetSample(Vec2<int> pos)
 {
-	sampleColor = GetPixel(x, y);
+	sampleColor = GetPixel(pos);
 }
 
-void Renderer::clearScreen(float alpha)
-{
-	g->Clear();
+void Renderer::clearScreen() {
+	if(display_mode & DISPLAY_PERS)
+	{
+		std::copy(persistentVideo.begin(), persistentVideo.end(), video.RowIterator({ 0, 0 }));
+	}
+	else
+	{
+		std::fill_n(video.data(), VIDXRES * YRES, 0);
+	}
 }
 
 void Renderer::FinaliseParts()
 {
 	if(display_mode & DISPLAY_WARP)
 	{
-		render_gravlensing(warpVid);
+		warpVideo = video;
+		std::fill_n(video.data(), VIDXRES * YRES, 0);
+		render_gravlensing(warpVideo);
 	}
 }
 
@@ -88,57 +69,50 @@ void Renderer::RenderZoom()
 	{
 		int x, y, i, j;
 		pixel pix;
-		pixel * img = vid;
-		clearrect(zoomWindowPosition.X-1, zoomWindowPosition.Y-1, zoomScopeSize*ZFACTOR+1, zoomScopeSize*ZFACTOR+1);
-		drawrect(zoomWindowPosition.X-2, zoomWindowPosition.Y-2, zoomScopeSize*ZFACTOR+3, zoomScopeSize*ZFACTOR+3, 192, 192, 192, 255);
-		drawrect(zoomWindowPosition.X-1, zoomWindowPosition.Y-1, zoomScopeSize*ZFACTOR+1, zoomScopeSize*ZFACTOR+1, 0, 0, 0, 255);
+
+		DrawFilledRect(RectSized(zoomWindowPosition, { zoomScopeSize * ZFACTOR, zoomScopeSize * ZFACTOR }), 0x000000_rgb);
+		DrawRect(RectSized(zoomWindowPosition - Vec2{ 2, 2 }, Vec2{ zoomScopeSize*ZFACTOR+3, zoomScopeSize*ZFACTOR+3 }), 0xC0C0C0_rgb);
+		DrawRect(RectSized(zoomWindowPosition - Vec2{ 1, 1 }, Vec2{ zoomScopeSize*ZFACTOR+1, zoomScopeSize*ZFACTOR+1 }), 0x000000_rgb);
 		for (j=0; j<zoomScopeSize; j++)
 			for (i=0; i<zoomScopeSize; i++)
 			{
-				pix = img[(j+zoomScopePosition.Y)*(VIDXRES)+(i+zoomScopePosition.X)];
+				pix = video[{ i + zoomScopePosition.X, j + zoomScopePosition.Y }];
 				for (y=0; y<ZFACTOR-1; y++)
 					for (x=0; x<ZFACTOR-1; x++)
-						img[(j*ZFACTOR+y+zoomWindowPosition.Y)*(VIDXRES)+(i*ZFACTOR+x+zoomWindowPosition.X)] = pix;
+						video[{ i * ZFACTOR + x + zoomWindowPosition.X, j * ZFACTOR + y + zoomWindowPosition.Y }] = pix;
 			}
 		if (zoomEnabled)
 		{
 			for (j=-1; j<=zoomScopeSize; j++)
 			{
-				xor_pixel(zoomScopePosition.X+j, zoomScopePosition.Y-1);
-				xor_pixel(zoomScopePosition.X+j, zoomScopePosition.Y+zoomScopeSize);
+				XorPixel(zoomScopePosition + Vec2{ j, -1 });
+				XorPixel(zoomScopePosition + Vec2{ j, zoomScopeSize });
 			}
 			for (j=0; j<zoomScopeSize; j++)
 			{
-				xor_pixel(zoomScopePosition.X-1, zoomScopePosition.Y+j);
-				xor_pixel(zoomScopePosition.X+zoomScopeSize, zoomScopePosition.Y+j);
+				XorPixel(zoomScopePosition + Vec2{ -1, j });
+				XorPixel(zoomScopePosition + Vec2{ zoomScopeSize, j });
 			}
 		}
 	}
 }
 
-void Renderer::DrawBlob(int x, int y, unsigned char cr, unsigned char cg, unsigned char cb)
+void Renderer::DrawBlob(Vec2<int> pos, RGB<uint8_t> colour)
 {
-	blendpixel(x+1, y, cr, cg, cb, 112);
-	blendpixel(x-1, y, cr, cg, cb, 112);
-	blendpixel(x, y+1, cr, cg, cb, 112);
-	blendpixel(x, y-1, cr, cg, cb, 112);
-
-	blendpixel(x+1, y-1, cr, cg, cb, 64);
-	blendpixel(x-1, y-1, cr, cg, cb, 64);
-	blendpixel(x+1, y+1, cr, cg, cb, 64);
-	blendpixel(x-1, y+1, cr, cg, cb, 64);
+	BlendPixel(pos + Vec2{ +1,  0 }, colour.WithAlpha(112));
+	BlendPixel(pos + Vec2{ -1,  0 }, colour.WithAlpha(112));
+	BlendPixel(pos + Vec2{  0,  1 }, colour.WithAlpha(112));
+	BlendPixel(pos + Vec2{  0, -1 }, colour.WithAlpha(112));
+	BlendPixel(pos + Vec2{  1, -1 }, colour.WithAlpha(64));
+	BlendPixel(pos + Vec2{ -1, -1 }, colour.WithAlpha(64));
+	BlendPixel(pos + Vec2{  1,  1 }, colour.WithAlpha(64));
+	BlendPixel(pos + Vec2{ -1, +1 }, colour.WithAlpha(64));
 }
 
 
-void Renderer::render_gravlensing(pixel * source)
+void Renderer::render_gravlensing(const Video &source)
 {
 	int nx, ny, rx, ry, gx, gy, bx, by, co;
-	int r, g, b;
-	pixel t;
-	pixel *src = source;
-	pixel *dst = vid;
-	if (!dst)
-		return;
 	for(nx = 0; nx < XRES; nx++)
 	{
 		for(ny = 0; ny < YRES; ny++)
@@ -152,17 +126,11 @@ void Renderer::render_gravlensing(pixel * source)
 			by = (int)(ny-sim->gravy[co]+0.5f);
 			if(rx >= 0 && rx < XRES && ry >= 0 && ry < YRES && gx >= 0 && gx < XRES && gy >= 0 && gy < YRES && bx >= 0 && bx < XRES && by >= 0 && by < YRES)
 			{
-				t = dst[ny*(VIDXRES)+nx];
-				r = PIXR(src[ry*(VIDXRES)+rx]) + PIXR(t);
-				g = PIXG(src[gy*(VIDXRES)+gx]) + PIXG(t);
-				b = PIXB(src[by*(VIDXRES)+bx]) + PIXB(t);
-				if (r>255)
-					r = 255;
-				if (g>255)
-					g = 255;
-				if (b>255)
-					b = 255;
-				dst[ny*(VIDXRES)+nx] = PIXRGB(r,g,b);
+				auto t = RGB<uint8_t>::Unpack(video[{ nx, ny }]);
+				t.Red   = std::min(0xFF, (int)RGB<uint8_t>::Unpack(source[{ rx, ry }]).Red   + t.Red);
+				t.Green = std::min(0xFF, (int)RGB<uint8_t>::Unpack(source[{ gx, gy }]).Green + t.Green);
+				t.Blue  = std::min(0xFF, (int)RGB<uint8_t>::Unpack(source[{ bx, by }]).Blue  + t.Blue);
+				video[{ nx, ny }] = t.Pack();
 			}
 		}
 	}
@@ -190,31 +158,18 @@ void Renderer::prepare_alpha(int size, float intensity)
 
 }
 
-void Renderer::drawblob(int x, int y, unsigned char cr, unsigned char cg, unsigned char cb)
+pixel Renderer::GetPixel(Vec2<int> pos) const
 {
-	blendpixel(x+1, y, cr, cg, cb, 112);
-	blendpixel(x-1, y, cr, cg, cb, 112);
-	blendpixel(x, y+1, cr, cg, cb, 112);
-	blendpixel(x, y-1, cr, cg, cb, 112);
-
-	blendpixel(x+1, y-1, cr, cg, cb, 64);
-	blendpixel(x-1, y-1, cr, cg, cb, 64);
-	blendpixel(x+1, y+1, cr, cg, cb, 64);
-	blendpixel(x-1, y+1, cr, cg, cb, 64);
-}
-
-pixel Renderer::GetPixel(int x, int y)
-{
-	if (x<0 || y<0 || x>=VIDXRES || y>=VIDYRES)
+	if (pos.X<0 || pos.Y<0 || pos.X>=VIDXRES || pos.Y>=VIDYRES)
 		return 0;
-	return vid[(y*VIDXRES)+x];
+	return video[pos];
 }
 
-std::vector<pixel> Renderer::flameTable;
-std::vector<pixel> Renderer::plasmaTable;
-std::vector<pixel> Renderer::heatTable;
-std::vector<pixel> Renderer::clfmTable;
-std::vector<pixel> Renderer::firwTable;
+std::vector<RGB<uint8_t>> Renderer::flameTable;
+std::vector<RGB<uint8_t>> Renderer::plasmaTable;
+std::vector<RGB<uint8_t>> Renderer::heatTable;
+std::vector<RGB<uint8_t>> Renderer::clfmTable;
+std::vector<RGB<uint8_t>> Renderer::firwTable;
 static bool tablesPopulated = false;
 static std::mutex tablesPopulatedMx;
 void Renderer::PopulateTables()
@@ -224,54 +179,53 @@ void Renderer::PopulateTables()
 	{
 		tablesPopulated = true;
 		flameTable = Graphics::Gradient({
-			{ 0x000000, 0.00f },
-			{ 0x60300F, 0.50f },
-			{ 0xDFBF6F, 0.90f },
-			{ 0xAF9F0F, 1.00f },
+			{ 0x000000_rgb, 0.00f },
+			{ 0x60300F_rgb, 0.50f },
+			{ 0xDFBF6F_rgb, 0.90f },
+			{ 0xAF9F0F_rgb, 1.00f },
 		}, 200);
 		plasmaTable = Graphics::Gradient({
-			{ 0x000000, 0.00f },
-			{ 0x301040, 0.25f },
-			{ 0x301060, 0.50f },
-			{ 0xAFFFFF, 0.90f },
-			{ 0xAFFFFF, 1.00f },
+			{ 0x000000_rgb, 0.00f },
+			{ 0x301040_rgb, 0.25f },
+			{ 0x301060_rgb, 0.50f },
+			{ 0xAFFFFF_rgb, 0.90f },
+			{ 0xAFFFFF_rgb, 1.00f },
 		}, 200);
 		heatTable = Graphics::Gradient({
-			{ 0x2B00FF, 0.00f },
-			{ 0x003CFF, 0.01f },
-			{ 0x00C0FF, 0.05f },
-			{ 0x00FFEB, 0.08f },
-			{ 0x00FF14, 0.19f },
-			{ 0x4BFF00, 0.25f },
-			{ 0xC8FF00, 0.37f },
-			{ 0xFFDC00, 0.45f },
-			{ 0xFF0000, 0.71f },
-			{ 0xFF00DC, 1.00f },
+			{ 0x2B00FF_rgb, 0.00f },
+			{ 0x003CFF_rgb, 0.01f },
+			{ 0x00C0FF_rgb, 0.05f },
+			{ 0x00FFEB_rgb, 0.08f },
+			{ 0x00FF14_rgb, 0.19f },
+			{ 0x4BFF00_rgb, 0.25f },
+			{ 0xC8FF00_rgb, 0.37f },
+			{ 0xFFDC00_rgb, 0.45f },
+			{ 0xFF0000_rgb, 0.71f },
+			{ 0xFF00DC_rgb, 1.00f },
 		}, 1024);
 		clfmTable = Graphics::Gradient({
-			{ 0x000000, 0.00f },
-			{ 0x0A0917, 0.10f },
-			{ 0x19163C, 0.20f },
-			{ 0x28285E, 0.30f },
-			{ 0x343E77, 0.40f },
-			{ 0x49769A, 0.60f },
-			{ 0x57A0B4, 0.80f },
-			{ 0x5EC4C6, 1.00f },
+			{ 0x000000_rgb, 0.00f },
+			{ 0x0A0917_rgb, 0.10f },
+			{ 0x19163C_rgb, 0.20f },
+			{ 0x28285E_rgb, 0.30f },
+			{ 0x343E77_rgb, 0.40f },
+			{ 0x49769A_rgb, 0.60f },
+			{ 0x57A0B4_rgb, 0.80f },
+			{ 0x5EC4C6_rgb, 1.00f },
 		}, 200);
 		firwTable = Graphics::Gradient({
-			{ 0xFF00FF, 0.00f },
-			{ 0x0000FF, 0.20f },
-			{ 0x00FFFF, 0.40f },
-			{ 0x00FF00, 0.60f },
-			{ 0xFFFF00, 0.80f },
-			{ 0xFF0000, 1.00f },
+			{ 0xFF00FF_rgb, 0.00f },
+			{ 0x0000FF_rgb, 0.20f },
+			{ 0x00FFFF_rgb, 0.40f },
+			{ 0x00FF00_rgb, 0.60f },
+			{ 0xFFFF00_rgb, 0.80f },
+			{ 0xFF0000_rgb, 1.00f },
 		}, 200);
 	}
 }
 
-Renderer::Renderer(Graphics * g, Simulation * sim):
+Renderer::Renderer(Simulation * sim):
 	sim(NULL),
-	g(NULL),
 	render_mode(0),
 	colour_mode(0),
 	display_mode(0),
@@ -293,11 +247,7 @@ Renderer::Renderer(Graphics * g, Simulation * sim):
 {
 	PopulateTables();
 
-	this->g = g;
 	this->sim = sim;
-	vid = g->vid;
-	persistentVid = new pixel[VIDXRES*YRES];
-	warpVid = new pixel[VIDXRES*VIDYRES];
 
 	memset(fire_r, 0, sizeof(fire_r));
 	memset(fire_g, 0, sizeof(fire_g));
@@ -400,7 +350,7 @@ void Renderer::ClearAccumulation()
 	std::fill(&fire_r[0][0], &fire_r[0][0] + NCELL, 0);
 	std::fill(&fire_g[0][0], &fire_g[0][0] + NCELL, 0);
 	std::fill(&fire_b[0][0], &fire_b[0][0] + NCELL, 0);
-	std::fill(persistentVid, persistentVid+(VIDXRES*YRES), 0);
+	std::fill(persistentVideo.begin(), persistentVideo.end(), 0);
 }
 
 void Renderer::AddRenderMode(unsigned int mode)
@@ -512,21 +462,14 @@ void Renderer::ResetModes()
 
 VideoBuffer Renderer::DumpFrame()
 {
-	VideoBuffer newBuffer(XRES, YRES);
-	for(int y = 0; y < YRES; y++)
-	{
-		std::copy(vid+(y*WINDOWW), vid+(y*WINDOWW)+XRES, newBuffer.Buffer+(y*XRES));
-	}
+	VideoBuffer newBuffer(RES);
+	newBuffer.BlendImage(video.data(), 0xFF, Size().OriginRect());
 	return newBuffer;
 }
 
 Renderer::~Renderer()
 {
-	delete[] persistentVid;
-	delete[] warpVid;
 	delete[] graphicscache;
 }
 
-#define PIXELMETHODS_CLASS Renderer
-#include "RasterDrawMethods.inl"
-#undef PIXELMETHODS_CLASS
+template struct RasterDrawMethods<Renderer>;

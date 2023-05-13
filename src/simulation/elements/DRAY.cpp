@@ -6,7 +6,7 @@ void Element::Element_DRAY()
 {
 	Identifier = "DEFAULT_PT_DRAY";
 	Name = "DRAY";
-	Colour = PIXPACK(0xFFAA22);
+	Colour = 0xFFAA22_rgb;
 	MenuVisible = 1;
 	MenuSection = SC_ELEC;
 	Enabled = 1;
@@ -32,6 +32,7 @@ void Element::Element_DRAY()
 	Description = "D-Type 광선 방출기: 앞에 있는 물질을 복사합니다.";
 
 	Properties = TYPE_SOLID;
+	CarriesTypeIn = 1U << FIELD_CTYPE;
 
 	LowPressure = IPL;
 	LowPressureTransition = NT;

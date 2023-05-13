@@ -8,7 +8,7 @@ void Element::Element_PQRT()
 {
 	Identifier = "DEFAULT_PT_PQRT";
 	Name = "PQRT";
-	Colour = PIXPACK(0x88BBBB);
+	Colour = 0x88BBBB_rgb;
 	MenuVisible = 1;
 	MenuSection = SC_POWDERS;
 	Enabled = 1;
@@ -51,5 +51,5 @@ void Element::Element_PQRT()
 
 static void create(ELEMENT_CREATE_FUNC_ARGS)
 {
-	sim->parts[i].tmp2 = RNG::Ref().between(0, 10);
+	sim->parts[i].tmp2 = sim->rng.between(0, 10);
 }

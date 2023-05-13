@@ -24,7 +24,7 @@ class LoadFilesTask: public Task
 {
 	ByteString directory;
 	ByteString search;
-	std::vector<SaveFile*> saveFiles;
+	std::vector<std::unique_ptr<SaveFile>> saveFiles;
 
 	void before() override
 	{
@@ -44,20 +44,20 @@ class LoadFilesTask: public Task
 		notifyProgress(-1);
 		for(std::vector<ByteString>::iterator iter = files.begin(), end = files.end(); iter != end; ++iter)
 		{
-			SaveFile * saveFile = new SaveFile(directory + *iter, true);
-			saveFiles.push_back(saveFile);
+			auto saveFile = std::make_unique<SaveFile>(directory + *iter, true);
 
 			ByteString filename = (*iter).SplitFromEndBy(PATH_SEP_CHAR).After();
 			filename = filename.SplitFromEndBy('.').Before();
 			saveFile->SetDisplayName(filename.FromUtf8());
+			saveFiles.push_back(std::move(saveFile));
 		}
 		return true;
 	}
 
 public:
-	std::vector<SaveFile*> GetSaveFiles()
+	std::vector<std::unique_ptr<SaveFile>> TakeSaveFiles()
 	{
-		return saveFiles;
+		return std::move(saveFiles);
 	}
 
 	LoadFilesTask(ByteString directory, ByteString search):
@@ -82,7 +82,7 @@ FileBrowserActivity::FileBrowserActivity(ByteString directory, OnSelected onSele
 	titleLabel->Appearance.VerticalAlign = ui::Appearance::AlignMiddle;
 	AddComponent(titleLabel);
 
-	ui::Textbox * textField = new ui::Textbox(ui::Point(8, 25), ui::Point(Size.X-16, 16), "", "검색하려면 여기에 입력하세요.");
+	ui::Textbox * textField = new ui::Textbox(ui::Point(8, 25), ui::Point(Size.X-16, 16), "", "저장된 세이브 검색");
 	textField->Appearance.VerticalAlign = ui::Appearance::AlignMiddle;
 	textField->Appearance.HorizontalAlign = ui::Appearance::AlignLeft;
 	textField->SetActionCallback({ [this, textField] { DoSearch(textField->GetText().ToUtf8()); } });
@@ -128,31 +128,36 @@ void FileBrowserActivity::DoSearch(ByteString search)
 	}
 }
 
-void FileBrowserActivity::SelectSave(SaveFile * file)
+void FileBrowserActivity::SelectSave(int index)
 {
 	if (onSelected)
-		onSelected(std::unique_ptr<SaveFile>(new SaveFile(*file)));
+	{
+		auto file = std::move(files[index]);
+		files.clear();
+		onSelected(std::move(file));
+	}
 	Exit();
 }
 
-void FileBrowserActivity::DeleteSave(SaveFile * file)
+void FileBrowserActivity::DeleteSave(int index)
 {
+	auto &file = files[index];
 	String deleteMessage = file->GetDisplayName() + ".cps를 정말로 삭제하시겠습니까?";
 	if (ConfirmPrompt::Blocking("세이브 제거", deleteMessage))
 	{
-		remove(file->GetName().c_str());
+		Platform::RemoveFile(file->GetName());
 		loadDirectory(directory, "");
 	}
 }
 
-void FileBrowserActivity::RenameSave(SaveFile * file)
+void FileBrowserActivity::RenameSave(int index)
 {
+	auto &file = files[index];
 	ByteString newName = TextPrompt::Blocking("이름 바꾸기", "세이브 이름 바꾸기", file->GetDisplayName(), "", 0).ToUtf8();
 	if (newName.length())
 	{
 		newName = ByteString::Build(directory, PATH_SEP_CHAR, newName, ".cps");
-		int ret = rename(file->GetName().c_str(), newName.c_str());
-		if (ret)
+		if (!Platform::RenameFile(file->GetName(), newName, false))
 			ErrorMessage::Blocking("오류", "세이브의 이름을 바꿀 수 없습니다.");
 		else
 			loadDirectory(directory, "");
@@ -169,10 +174,6 @@ void FileBrowserActivity::cleanup()
 	}
 	componentsQueue.clear();
 
-	for (auto file : files)
-	{
-		delete file;
-	}
 	files.clear();
 }
 
@@ -200,7 +201,8 @@ void FileBrowserActivity::NotifyDone(Task * task)
 {
 	fileX = 0;
 	fileY = 0;
-	files = ((LoadFilesTask*)task)->GetSaveFiles();
+	files = ((LoadFilesTask*)task)->TakeSaveFiles();
+	createButtons = true;
 	totalFiles = files.size();
 	delete loadFiles;
 	loadFiles = NULL;
@@ -255,35 +257,37 @@ void FileBrowserActivity::OnTick(float dt)
 	if(loadFiles)
 		loadFiles->Poll();
 
-	while(files.size())
+	if (createButtons)
 	{
-		SaveFile * saveFile = files.back();
-		files.pop_back();
-
-		if(fileX == filesX)
+		createButtons = false;
+		for (auto i = 0; i < int(files.size()); ++i)
 		{
-			fileX = 0;
-			fileY++;
-		}
-		ui::SaveButton * saveButton = new ui::SaveButton(
-						ui::Point(
-							buttonXOffset + buttonPadding + fileX*(buttonWidth+buttonPadding*2),
-							buttonYOffset + buttonPadding + fileY*(buttonHeight+buttonPadding*2)
-							),
-						ui::Point(buttonWidth, buttonHeight),
-						saveFile);
-		saveButton->AddContextMenu(1);
-		saveButton->Tick(dt);
-		saveButton->SetActionCallback({
-			[this, saveButton] { SelectSave(saveButton->GetSaveFile()); },
-			[this, saveButton] { RenameSave(saveButton->GetSaveFile()); },
-			[this, saveButton] { DeleteSave(saveButton->GetSaveFile()); }
-		});
+			auto &saveFile = files[i];
+			if(fileX == filesX)
+			{
+				fileX = 0;
+				fileY++;
+			}
+			ui::SaveButton * saveButton = new ui::SaveButton(
+							ui::Point(
+								buttonXOffset + buttonPadding + fileX*(buttonWidth+buttonPadding*2),
+								buttonYOffset + buttonPadding + fileY*(buttonHeight+buttonPadding*2)
+								),
+							ui::Point(buttonWidth, buttonHeight),
+							saveFile.get());
+			saveButton->AddContextMenu(1);
+			saveButton->Tick(dt);
+			saveButton->SetActionCallback({
+				[this, i] { SelectSave(i); },
+				[this, i] { RenameSave(i); },
+				[this, i] { DeleteSave(i); }
+			});
 
-		progressBar->SetStatus("섬네일을 렌더하는 중");
-		progressBar->SetProgress(totalFiles ? (totalFiles - files.size()) * 100 / totalFiles : 0);
-		componentsQueue.push_back(saveButton);
-		fileX++;
+			progressBar->SetStatus("섬네일을 렌더하는 중");
+			progressBar->SetProgress(totalFiles ? (totalFiles - files.size()) * 100 / totalFiles : 0);
+			componentsQueue.push_back(saveButton);
+			fileX++;
+		}
 	}
 	if(componentsQueue.size())
 	{
@@ -304,8 +308,8 @@ void FileBrowserActivity::OnDraw()
 	Graphics * g = GetGraphics();
 
 	//Window Background+Outline
-	g->clearrect(Position.X-2, Position.Y-2, Size.X+4, Size.Y+4);
-	g->drawrect(Position.X, Position.Y, Size.X, Size.Y, 255, 255, 255, 255);
+	g->DrawFilledRect(RectSized(Position - Vec2{ 1, 1 }, Size + Vec2{ 2, 2 }), 0x000000_rgb);
+	g->DrawRect(RectSized(Position, Size), 0xFFFFFF_rgb);
 }
 
 FileBrowserActivity::~FileBrowserActivity()

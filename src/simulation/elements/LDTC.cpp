@@ -7,7 +7,7 @@ void Element::Element_LDTC()
 {
 	Identifier = "DEFAULT_PT_LDTC";
 	Name = "LDTC";
-	Colour = PIXPACK(0x66ff66);
+	Colour = 0x66ff66_rgb;
 	MenuVisible = 1;
 	MenuSection = SC_SENSOR;
 	Enabled = 1;
@@ -33,6 +33,7 @@ void Element::Element_LDTC()
 	Description = "선형 감지기: 여덟 방향의 물질을 스캔하여 ctype으로 설정된 물질이 있는 쪽의 반대편에 전류를 흘립니다.";
 
 	Properties = TYPE_SOLID | PROP_NOCTYPEDRAW;
+	CarriesTypeIn = 1U << FIELD_CTYPE;
 
 	LowPressure = IPL;
 	LowPressureTransition = NT;

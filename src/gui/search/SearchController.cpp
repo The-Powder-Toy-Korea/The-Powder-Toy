@@ -5,6 +5,8 @@
 #include "SearchView.h"
 
 #include "client/Client.h"
+#include "client/SaveInfo.h"
+#include "client/GameSave.h"
 #include "common/platform/Platform.h"
 #include "common/tpt-minmax.h"
 #include "graphics/Graphics.h"
@@ -34,14 +36,14 @@ SearchController::SearchController(std::function<void ()> onDone_):
 	onDone = onDone_;
 }
 
-SaveInfo * SearchController::GetLoadedSave()
+const SaveInfo *SearchController::GetLoadedSave() const
 {
 	return searchModel->GetLoadedSave();
 }
 
-void SearchController::ReleaseLoadedSave()
+std::unique_ptr<SaveInfo> SearchController::TakeLoadedSave()
 {
-	searchModel->SetLoadedSave(NULL);
+	return searchModel->TakeLoadedSave();
 }
 
 void SearchController::Update()
@@ -194,11 +196,11 @@ void SearchController::OpenSaveDone()
 {
 	if (activePreview->GetDoOpen() && activePreview->GetSaveInfo())
 	{
-		searchModel->SetLoadedSave(activePreview->GetSaveInfo());
+		searchModel->SetLoadedSave(activePreview->TakeSaveInfo());
 	}
 	else
 	{
-		searchModel->SetLoadedSave(NULL);
+		searchModel->SetLoadedSave(nullptr);
 	}
 }
 
@@ -206,7 +208,7 @@ void SearchController::OpenSave(int saveID)
 {
 	delete activePreview;
 	Graphics * g = searchView->GetGraphics();
-	g->fillrect(XRES/3, WINDOWH-20, XRES/3, 20, 0, 0, 0, 150); //dim the "Page X of Y" a little to make the CopyTextButton more noticeable
+	g->BlendFilledRect(RectSized(Vec2{ XRES/3, WINDOWH-20 }, Vec2{ XRES/3, 20 }), 0x000000_rgb .WithAlpha(150)); //dim the "Page X of Y" a little to make the CopyTextButton more noticeable
 	activePreview = new PreviewController(saveID, 0, instantOpen, [this] { OpenSaveDone(); });
 	activePreview->GetView()->MakeActiveWindow();
 }
@@ -215,7 +217,7 @@ void SearchController::OpenSave(int saveID, int saveDate)
 {
 	delete activePreview;
 	Graphics * g = searchView->GetGraphics();
-	g->fillrect(XRES/3, WINDOWH-20, XRES/3, 20, 0, 0, 0, 150); //dim the "Page X of Y" a little to make the CopyTextButton more noticeable
+	g->BlendFilledRect(RectSized(Vec2{ XRES/3, WINDOWH-20 }, Vec2{ XRES/3, 20 }), 0x000000_rgb .WithAlpha(150)); //dim the "Page X of Y" a little to make the CopyTextButton more noticeable
 	activePreview = new PreviewController(saveID, saveDate, instantOpen, [this] { OpenSaveDone(); });
 	activePreview->GetView()->MakeActiveWindow();
 }

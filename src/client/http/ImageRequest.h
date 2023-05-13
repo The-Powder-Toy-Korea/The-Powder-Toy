@@ -1,6 +1,7 @@
 #pragma once
-#include "Request.h"
 #include "common/String.h"
+#include "common/Vec2.h"
+#include "Request.h"
 
 #include <memory>
 
@@ -10,10 +11,10 @@ namespace http
 {
 	class ImageRequest : public Request
 	{
-		int Width, Height;
-		
+		Vec2<int> size;
+
 	public:
-		ImageRequest(ByteString url, int width, int height);
+		ImageRequest(ByteString url, Vec2<int> size);
 		virtual ~ImageRequest();
 
 		std::unique_ptr<VideoBuffer> Finish();

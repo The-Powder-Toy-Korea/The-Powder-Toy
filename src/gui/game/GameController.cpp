@@ -238,7 +238,7 @@ std::pair<int, sign::Type> GameController::GetSignSplit(int signID)
 
 void GameController::PlaceSave(ui::Point position)
 {
-	GameSave *placeSave = gameModel->GetPlaceSave();
+	auto *placeSave = gameModel->GetTransformedPlaceSave();
 	if (placeSave)
 	{
 		HistorySnapshot();
@@ -248,6 +248,7 @@ void GameController::PlaceSave(ui::Point position)
 			Client::Ref().MergeStampAuthorInfo(placeSave->authors);
 		}
 	}
+	gameModel->SetPlaceSave(nullptr);
 }
 
 void GameController::Install()
@@ -285,37 +286,14 @@ void GameController::InvertAirSim()
 }
 
 
-void GameController::AdjustBrushSize(int delta, bool logarithmic, bool xAxis, bool yAxis)
+void GameController::AdjustBrushSize(int delta, bool logarithmic, bool keepX, bool keepY)
 {
-	if(xAxis && yAxis)
-		return;
-
-	ui::Point newSize(0, 0);
-	ui::Point oldSize = gameModel->GetBrush()->GetRadius();
-	if(logarithmic)
-		newSize = gameModel->GetBrush()->GetRadius() + ui::Point(delta * std::max(gameModel->GetBrush()->GetRadius().X / 5, 1), delta * std::max(gameModel->GetBrush()->GetRadius().Y / 5, 1));
-	else
-		newSize = gameModel->GetBrush()->GetRadius() + ui::Point(delta, delta);
-	if(newSize.X < 0)
-		newSize.X = 0;
-	if(newSize.Y < 0)
-		newSize.Y = 0;
-	if(newSize.X > 200)
-		newSize.X = 200;
-	if(newSize.Y > 200)
-		newSize.Y = 200;
-
-	if(xAxis)
-		SetBrushSize(ui::Point(newSize.X, oldSize.Y));
-	else if(yAxis)
-		SetBrushSize(ui::Point(oldSize.X, newSize.Y));
-	else
-		SetBrushSize(newSize);
+	gameModel->GetBrush().AdjustSize(delta, logarithmic, keepX, keepY);
 }
 
 void GameController::SetBrushSize(ui::Point newSize)
 {
-	gameModel->GetBrush()->SetRadius(newSize);
+	gameModel->GetBrush().SetRadius(newSize);
 }
 
 void GameController::AdjustZoomSize(int delta, bool logarithmic)
@@ -380,10 +358,10 @@ void GameController::DrawRect(int toolSelection, ui::Point point1, ui::Point poi
 	Simulation * sim = gameModel->GetSimulation();
 	Tool * activeTool = gameModel->GetActiveTool(toolSelection);
 	gameModel->SetLastTool(activeTool);
-	Brush * cBrush = gameModel->GetBrush();
-	if(!activeTool || !cBrush)
+	Brush &cBrush = gameModel->GetBrush();
+	if (!activeTool)
 		return;
-	activeTool->SetStrength(1.0f);
+	activeTool->Strength = 1.0f;
 	activeTool->DrawRect(sim, cBrush, point1, point2);
 }
 
@@ -392,10 +370,10 @@ void GameController::DrawLine(int toolSelection, ui::Point point1, ui::Point poi
 	Simulation * sim = gameModel->GetSimulation();
 	Tool * activeTool = gameModel->GetActiveTool(toolSelection);
 	gameModel->SetLastTool(activeTool);
-	Brush * cBrush = gameModel->GetBrush();
-	if(!activeTool || !cBrush)
+	Brush &cBrush = gameModel->GetBrush();
+	if (!activeTool)
 		return;
-	activeTool->SetStrength(1.0f);
+	activeTool->Strength = 1.0f;
 	activeTool->DrawLine(sim, cBrush, point1, point2);
 }
 
@@ -404,10 +382,10 @@ void GameController::DrawFill(int toolSelection, ui::Point point)
 	Simulation * sim = gameModel->GetSimulation();
 	Tool * activeTool = gameModel->GetActiveTool(toolSelection);
 	gameModel->SetLastTool(activeTool);
-	Brush * cBrush = gameModel->GetBrush();
-	if(!activeTool || !cBrush)
+	Brush &cBrush = gameModel->GetBrush();
+	if (!activeTool)
 		return;
-	activeTool->SetStrength(1.0f);
+	activeTool->Strength = 1.0f;
 	activeTool->DrawFill(sim, cBrush, point);
 }
 
@@ -416,13 +394,13 @@ void GameController::DrawPoints(int toolSelection, ui::Point oldPos, ui::Point n
 	Simulation * sim = gameModel->GetSimulation();
 	Tool * activeTool = gameModel->GetActiveTool(toolSelection);
 	gameModel->SetLastTool(activeTool);
-	Brush * cBrush = gameModel->GetBrush();
-	if (!activeTool || !cBrush)
+	Brush &cBrush = gameModel->GetBrush();
+	if (!activeTool)
 	{
 		return;
 	}
 
-	activeTool->SetStrength(gameModel->GetToolStrength());
+	activeTool->Strength = gameModel->GetToolStrength();
 	if (!held)
 		activeTool->Draw(sim, cBrush, newPos);
 	else
@@ -431,53 +409,40 @@ void GameController::DrawPoints(int toolSelection, ui::Point oldPos, ui::Point n
 
 bool GameController::LoadClipboard()
 {
-	GameSave *clip = gameModel->GetClipboard();
+	auto *clip = gameModel->GetClipboard();
 	if (!clip)
 		return false;
-	gameModel->SetPlaceSave(clip);
+	gameModel->SetPlaceSave(std::make_unique<GameSave>(*clip));
 	return true;
 }
 
-void GameController::LoadStamp(GameSave *stamp)
+void GameController::LoadStamp(std::unique_ptr<GameSave> stamp)
 {
-	gameModel->SetPlaceSave(stamp);
+	gameModel->SetPlaceSave(std::move(stamp));
 }
 
-void GameController::TranslateSave(ui::Point point)
+void GameController::TransformPlaceSave(Mat2<int> transform, Vec2<int> nudge)
 {
-	vector2d translate = v2d_new(float(point.X), float(point.Y));
-	vector2d translated = gameModel->GetPlaceSave()->Translate(translate);
-	ui::Point currentPlaceSaveOffset = gameView->GetPlaceSaveOffset();
-	// resets placeSaveOffset to 0, which is why we back it up first
-	gameModel->SetPlaceSave(gameModel->GetPlaceSave());
-	gameView->SetPlaceSaveOffset(ui::Point(int(translated.x), int(translated.y)) + currentPlaceSaveOffset);
-}
-
-void GameController::TransformSave(matrix2d transform)
-{
-	vector2d translate = v2d_zero;
-	gameModel->GetPlaceSave()->Transform(transform, translate);
-	gameModel->SetPlaceSave(gameModel->GetPlaceSave());
+	gameModel->TransformPlaceSave(transform, nudge);
 }
 
 void GameController::ToolClick(int toolSelection, ui::Point point)
 {
 	Simulation * sim = gameModel->GetSimulation();
 	Tool * activeTool = gameModel->GetActiveTool(toolSelection);
-	Brush * cBrush = gameModel->GetBrush();
-	if(!activeTool || !cBrush)
+	Brush &cBrush = gameModel->GetBrush();
+	if (!activeTool)
 		return;
 	activeTool->Click(sim, cBrush, point);
 }
 
 ByteString GameController::StampRegion(ui::Point point1, ui::Point point2)
 {
-	GameSave * newSave = gameModel->GetSimulation()->Save(gameModel->GetIncludePressure() != gameView->ShiftBehaviour(), point1.X, point1.Y, point2.X, point2.Y);
+	auto newSave = gameModel->GetSimulation()->Save(gameModel->GetIncludePressure() != gameView->ShiftBehaviour(), point1.X, point1.Y, point2.X, point2.Y);
 	if(newSave)
 	{
 		newSave->paused = gameModel->GetPaused();
-		ByteString stampName = Client::Ref().AddStamp(newSave);
-		delete newSave;
+		ByteString stampName = Client::Ref().AddStamp(std::move(newSave));
 		if (stampName.length() == 0)
 			new ErrorMessage("스탬프를 생성할 수 없음", "세이브 파일을 시리얼화할 수 없습니다.");
 		return stampName;
@@ -491,7 +456,7 @@ ByteString GameController::StampRegion(ui::Point point1, ui::Point point2)
 
 void GameController::CopyRegion(ui::Point point1, ui::Point point2)
 {
-	GameSave * newSave = gameModel->GetSimulation()->Save(gameModel->GetIncludePressure() != gameView->ShiftBehaviour(), point1.X, point1.Y, point2.X, point2.Y);
+	auto newSave = gameModel->GetSimulation()->Save(gameModel->GetIncludePressure() != gameView->ShiftBehaviour(), point1.X, point1.Y, point2.X, point2.Y);
 	if(newSave)
 	{
 		Json::Value clipboardInfo;
@@ -502,7 +467,7 @@ void GameController::CopyRegion(ui::Point point1, ui::Point point2)
 		newSave->authors = clipboardInfo;
 
 		newSave->paused = gameModel->GetPaused();
-		gameModel->SetClipboard(newSave);
+		gameModel->SetClipboard(std::move(newSave));
 	}
 }
 
@@ -526,7 +491,7 @@ bool GameController::MouseDown(int x, int y, unsigned button)
 		ui::Point point = gameModel->AdjustZoomCoords(ui::Point(x, y));
 		x = point.X;
 		y = point.Y;
-		if (!gameModel->GetActiveTool(0) || gameModel->GetActiveTool(0)->GetIdentifier() != "DEFAULT_UI_SIGN" || button != SDL_BUTTON_LEFT) //If it's not a sign tool or you are right/middle clicking
+		if (!gameModel->GetActiveTool(0) || gameModel->GetActiveTool(0)->Identifier != "DEFAULT_UI_SIGN" || button != SDL_BUTTON_LEFT) //If it's not a sign tool or you are right/middle clicking
 		{
 			foundSignID = GetSignAt(x, y);
 			if (foundSignID != -1)
@@ -551,7 +516,7 @@ bool GameController::MouseUp(int x, int y, unsigned button, MouseupReason reason
 		ui::Point point = gameModel->AdjustZoomCoords(ui::Point(x, y));
 		x = point.X;
 		y = point.Y;
-		if (!gameModel->GetActiveTool(0) || gameModel->GetActiveTool(0)->GetIdentifier() != "DEFAULT_UI_SIGN" || button != SDL_BUTTON_LEFT) //If it's not a sign tool or you are right/middle clicking
+		if (!gameModel->GetActiveTool(0) || gameModel->GetActiveTool(0)->Identifier != "DEFAULT_UI_SIGN" || button != SDL_BUTTON_LEFT) //If it's not a sign tool or you are right/middle clicking
 		{
 			int foundSignID = GetSignAt(x, y);
 			if (foundSignID != -1)
@@ -607,7 +572,7 @@ bool GameController::TextEditing(String text)
 
 bool GameController::KeyPress(int key, int scan, bool repeat, bool shift, bool ctrl, bool alt)
 {
-	bool ret = commandInterface->HandleEvent(KeyPressEvent{ key, scan, repeat, shift, ctrl, alt });
+	bool ret = commandInterface->HandleEvent(KeyPressEvent{ { key, scan, repeat, shift, ctrl, alt } });
 	if (repeat)
 		return ret;
 	if (ret)
@@ -686,7 +651,7 @@ bool GameController::KeyPress(int key, int scan, bool repeat, bool shift, bool c
 
 bool GameController::KeyRelease(int key, int scan, bool repeat, bool shift, bool ctrl, bool alt)
 {
-	bool ret = commandInterface->HandleEvent(KeyReleaseEvent{ key, scan, repeat, shift, ctrl, alt });
+	bool ret = commandInterface->HandleEvent(KeyReleaseEvent{ { key, scan, repeat, shift, ctrl, alt } });
 	if (repeat)
 		return ret;
 	if (ret)
@@ -895,9 +860,9 @@ void GameController::Update()
 	{
 		int rightSelected = PT_DUST;
 		Tool * activeTool = gameModel->GetActiveTool(1);
-		if (activeTool->GetIdentifier().BeginsWith("DEFAULT_PT_"))
+		if (activeTool->Identifier.BeginsWith("DEFAULT_PT_"))
 		{
-			int sr = activeTool->GetToolID();
+			int sr = activeTool->ToolID;
 			if (sr && sim->IsElementOrNone(sr))
 				rightSelected = sr;
 		}
@@ -951,7 +916,8 @@ void GameController::SetToolStrength(float value)
 
 void GameController::SetZoomPosition(ui::Point position)
 {
-	ui::Point zoomPosition = position-(gameModel->GetZoomSize()/2);
+	auto zoomhalf = gameModel->GetZoomSize() / 2;
+	ui::Point zoomPosition = position - Vec2{ zoomhalf, zoomhalf };
 	if(zoomPosition.X < 0)
 			zoomPosition.X = 0;
 	if(zoomPosition.Y < 0)
@@ -1092,16 +1058,16 @@ void GameController::SetActiveTool(int toolSelection, Tool * tool)
 	gameModel->SetActiveTool(toolSelection, tool);
 	gameModel->GetRenderer()->gravityZonesEnabled = false;
 	if (toolSelection == 3)
-		gameModel->GetSimulation()->replaceModeSelected = tool->GetToolID();
+		gameModel->GetSimulation()->replaceModeSelected = tool->ToolID;
 	gameModel->SetLastTool(tool);
 	for(int i = 0; i < 3; i++)
 	{
 		if(gameModel->GetActiveTool(i) == gameModel->GetMenuList().at(SC_WALL)->GetToolList().at(WL_GRAV))
 			gameModel->GetRenderer()->gravityZonesEnabled = true;
 	}
-	if(tool->GetIdentifier() == "DEFAULT_UI_PROPERTY")
+	if(tool->Identifier == "DEFAULT_UI_PROPERTY")
 		((PropertyTool *)tool)->OpenWindow(gameModel->GetSimulation());
-	if(tool->GetIdentifier() == "DEFAULT_UI_ADDLIFE")
+	if(tool->Identifier == "DEFAULT_UI_ADDLIFE")
 	{
 		((GOLTool *)tool)->OpenWindow(gameModel->GetSimulation(), toolSelection);
 	}
@@ -1155,8 +1121,7 @@ void GameController::OpenSearch(String searchText)
 				try
 				{
 					HistorySnapshot();
-					gameModel->SetSave(search->GetLoadedSave(), gameView->ShiftBehaviour());
-					search->ReleaseLoadedSave();
+					gameModel->SetSave(search->TakeLoadedSave(), gameView->ShiftBehaviour());
 				}
 				catch(GameModelException & ex)
 				{
@@ -1172,7 +1137,7 @@ void GameController::OpenSearch(String searchText)
 void GameController::OpenLocalSaveWindow(bool asCurrent)
 {
 	Simulation * sim = gameModel->GetSimulation();
-	GameSave * gameSave = sim->Save(gameModel->GetIncludePressure() != gameView->ShiftBehaviour());
+	auto gameSave = sim->Save(gameModel->GetIncludePressure() != gameView->ShiftBehaviour());
 	if(!gameSave)
 	{
 		new ErrorMessage("오류", "세이브를 빌드할 수 없습니다.");
@@ -1181,18 +1146,18 @@ void GameController::OpenLocalSaveWindow(bool asCurrent)
 	{
 		gameSave->paused = gameModel->GetPaused();
 
-		SaveFile tempSave("");
+		auto tempSave = std::make_unique<SaveFile>("");
 		if (gameModel->GetSaveFile())
 		{
-			tempSave.SetFileName(gameModel->GetSaveFile()->GetName());
-			tempSave.SetDisplayName(gameModel->GetSaveFile()->GetDisplayName());
+			tempSave->SetFileName(gameModel->GetSaveFile()->GetName());
+			tempSave->SetDisplayName(gameModel->GetSaveFile()->GetDisplayName());
 		}
-		tempSave.SetGameSave(gameSave);
+		tempSave->SetGameSave(std::move(gameSave));
 
 		if (!asCurrent || !gameModel->GetSaveFile())
 		{
-			new LocalSaveActivity(tempSave, [this](SaveFile *file) {
-				gameModel->SetSaveFile(file, gameView->ShiftBehaviour());
+			new LocalSaveActivity(std::move(tempSave), [this](auto file) {
+				gameModel->SetSaveFile(std::move(file), gameView->ShiftBehaviour());
 			});
 		}
 		else if (gameModel->GetSaveFile())
@@ -1205,9 +1170,9 @@ void GameController::OpenLocalSaveWindow(bool asCurrent)
 			Client::Ref().SaveAuthorInfo(&localSaveInfo);
 			gameSave->authors = localSaveInfo;
 
-			gameModel->SetSaveFile(&tempSave, gameView->ShiftBehaviour());
 			Platform::MakeDirectory(LOCAL_SAVE_DIR);
 			auto [ fromNewerVersion, saveData ] = gameSave->Serialise();
+			gameModel->SetSaveFile(std::move(tempSave), gameView->ShiftBehaviour());
 			(void)fromNewerVersion;
 			if (saveData.size() == 0)
 				new ErrorMessage("오류", "게임 데이터를 시리얼화할 수 없습니다.");
@@ -1219,15 +1184,15 @@ void GameController::OpenLocalSaveWindow(bool asCurrent)
 	}
 }
 
-void GameController::LoadSaveFile(SaveFile * file)
+void GameController::LoadSaveFile(std::unique_ptr<SaveFile> file)
 {
-	gameModel->SetSaveFile(file, gameView->ShiftBehaviour());
+	gameModel->SetSaveFile(std::move(file), gameView->ShiftBehaviour());
 }
 
 
-void GameController::LoadSave(SaveInfo * save)
+void GameController::LoadSave(std::unique_ptr<SaveInfo> save)
 {
-	gameModel->SetSave(save, gameView->ShiftBehaviour());
+	gameModel->SetSave(std::move(save), gameView->ShiftBehaviour());
 }
 
 void GameController::OpenSaveDone()
@@ -1237,7 +1202,7 @@ void GameController::OpenSaveDone()
 		try
 		{
 			HistorySnapshot();
-			LoadSave(activePreview->GetSaveInfo());
+			LoadSave(activePreview->TakeSaveInfo());
 		}
 		catch(GameModelException & ex)
 		{
@@ -1263,9 +1228,9 @@ void GameController::OpenSavePreview()
 
 void GameController::OpenLocalBrowse()
 {
-	new FileBrowserActivity(ByteString::Build(LOCAL_SAVE_DIR, PATH_SEP_CHAR), [this](std::unique_ptr<SaveFile> file) {
+	new FileBrowserActivity(ByteString::Build(LOCAL_SAVE_DIR, PATH_SEP_CHAR), [this](auto file) {
 		HistorySnapshot();
-		LoadSaveFile(file.get());
+		LoadSaveFile(std::move(file));
 	});
 }
 
@@ -1335,14 +1300,14 @@ void GameController::OpenTags()
 void GameController::OpenStamps()
 {
 	localBrowser = new LocalBrowserController([this] {
-		SaveFile *file = localBrowser->GetSave();
+		auto file = localBrowser->TakeSave();
 		if (file)
 		{
 			if (file->GetError().length())
 				new ErrorMessage("스탬프를 불러오는 중 오류가 발생함", file->GetError());
 			else if (localBrowser->GetMoveToFront())
 				Client::Ref().MoveStampToFront(file->GetDisplayName().ToUtf8());
-			LoadStamp(file->GetGameSave());
+			LoadStamp(file->TakeGameSave());
 		}
 	});
 	ui::Engine::Ref().ShowWindow(localBrowser->GetView());
@@ -1383,7 +1348,7 @@ void GameController::OpenSaveWindow()
 	if(gameModel->GetUser().UserID)
 	{
 		Simulation * sim = gameModel->GetSimulation();
-		GameSave * gameSave = sim->Save(gameModel->GetIncludePressure() != gameView->ShiftBehaviour());
+		auto gameSave = sim->Save(gameModel->GetIncludePressure() != gameView->ShiftBehaviour());
 		if(!gameSave)
 		{
 			new ErrorMessage("오류", "세이브를 빌드할 수 없습니다.");
@@ -1394,22 +1359,22 @@ void GameController::OpenSaveWindow()
 
 			if(gameModel->GetSave())
 			{
-				SaveInfo tempSave(*gameModel->GetSave());
-				tempSave.SetGameSave(gameSave);
-				new ServerSaveActivity(tempSave, [this](SaveInfo &save) {
-					save.SetVote(1);
-					save.SetVotesUp(1);
-					LoadSave(&save);
+				auto tempSave = gameModel->GetSave()->CloneInfo();
+				tempSave->SetGameSave(std::move(gameSave));
+				new ServerSaveActivity(std::move(tempSave), [this](auto save) {
+					save->SetVote(1);
+					save->SetVotesUp(1);
+					LoadSave(std::move(save));
 				});
 			}
 			else
 			{
-				SaveInfo tempSave(0, 0, 0, 0, 0, gameModel->GetUser().Username, "");
-				tempSave.SetGameSave(gameSave);
-				new ServerSaveActivity(tempSave, [this](SaveInfo &save) {
-					save.SetVote(1);
-					save.SetVotesUp(1);
-					LoadSave(&save);
+				auto tempSave = std::make_unique<SaveInfo>(0, 0, 0, 0, 0, gameModel->GetUser().Username, "");
+				tempSave->SetGameSave(std::move(gameSave));
+				new ServerSaveActivity(std::move(tempSave), [this](auto save) {
+					save->SetVote(1);
+					save->SetVotesUp(1);
+					LoadSave(std::move(save));
 				});
 			}
 		}
@@ -1425,7 +1390,7 @@ void GameController::SaveAsCurrent()
 	if(gameModel->GetSave() && gameModel->GetUser().UserID && gameModel->GetUser().Username == gameModel->GetSave()->GetUserName())
 	{
 		Simulation * sim = gameModel->GetSimulation();
-		GameSave * gameSave = sim->Save(gameModel->GetIncludePressure() != gameView->ShiftBehaviour());
+		auto gameSave = sim->Save(gameModel->GetIncludePressure() != gameView->ShiftBehaviour());
 		if(!gameSave)
 		{
 			new ErrorMessage("오류", "세이브를 빌드할 수 없습니다.");
@@ -1436,15 +1401,15 @@ void GameController::SaveAsCurrent()
 
 			if(gameModel->GetSave())
 			{
-				SaveInfo tempSave(*gameModel->GetSave());
-				tempSave.SetGameSave(gameSave);
-				new ServerSaveActivity(tempSave, true, [this](SaveInfo &save) { LoadSave(&save); });
+				auto tempSave = gameModel->GetSave()->CloneInfo();
+				tempSave->SetGameSave(std::move(gameSave));
+				new ServerSaveActivity(std::move(tempSave), true, [this](auto save) { LoadSave(std::move(save)); });
 			}
 			else
 			{
-				SaveInfo tempSave(0, 0, 0, 0, 0, gameModel->GetUser().Username, "");
-				tempSave.SetGameSave(gameSave);
-				new ServerSaveActivity(tempSave, true, [this](SaveInfo &save) { LoadSave(&save); });
+				auto tempSave = std::make_unique<SaveInfo>(0, 0, 0, 0, 0, gameModel->GetUser().Username, "");
+				tempSave->SetGameSave(std::move(gameSave));
+				new ServerSaveActivity(std::move(tempSave), true, [this](auto save) { LoadSave(std::move(save)); });
 			}
 		}
 	}
@@ -1481,9 +1446,9 @@ void GameController::Vote(int direction)
 
 void GameController::ChangeBrush()
 {
-	auto prev_size = gameModel->GetBrush()->GetRadius();
+	auto prev_size = gameModel->GetBrush().GetRadius();
 	gameModel->SetBrushID(gameModel->GetBrushID()+1);
-	gameModel->GetBrush()->SetRadius(prev_size);
+	gameModel->GetBrush().SetRadius(prev_size);
 }
 
 void GameController::ClearSim()
@@ -1519,12 +1484,12 @@ void GameController::ReloadSim()
 	if(gameModel->GetSave() && gameModel->GetSave()->GetGameSave())
 	{
 		HistorySnapshot();
-		gameModel->SetSave(gameModel->GetSave(), gameView->ShiftBehaviour());
+		gameModel->SetSave(gameModel->TakeSave(), gameView->ShiftBehaviour());
 	}
 	else if(gameModel->GetSaveFile() && gameModel->GetSaveFile()->GetGameSave())
 	{
 		HistorySnapshot();
-		gameModel->SetSaveFile(gameModel->GetSaveFile(), gameView->ShiftBehaviour());
+		gameModel->SetSaveFile(gameModel->TakeSaveFile(), gameView->ShiftBehaviour());
 	}
 }
 
@@ -1594,7 +1559,7 @@ void GameController::NotifyUpdateAvailable(Client * sender)
 			StringBuilder updateMessage;
 			if (Platform::CanUpdate())
 			{
-				updateMessage << "업데이터를 실행하시겠습니까? 업데이트하려면 변경 사항을 저장하세요.\n\n현재 버전:\n ";
+				updateMessage << "업데이터를 실행하시겠습니까? 업데이트하려면 변경 사항을 저장하십시오.\n\n현재 버전:\n ";
 			}
 			else
 			{
@@ -1651,18 +1616,18 @@ void GameController::NotifyUpdateAvailable(Client * sender)
 		case UpdateInfo::Snapshot:
 			if constexpr (MOD)
 			{
-				gameModel->AddNotification(new UpdateNotification(this, "새 모드 업데이트를 사용할 수 있습니다. 여기를 클릭하여 업데이트하세요."));
+				gameModel->AddNotification(new UpdateNotification(this, "새 모드 업데이트를 사용할 수 있습니다. 여기를 클릭하여 업데이트하십시오."));
 			}
 			else
 			{
-				gameModel->AddNotification(new UpdateNotification(this, "새 스냅숏을 사용할 수 있습니다. 여기를 클릭하여 업데이트하세요."));
+				gameModel->AddNotification(new UpdateNotification(this, "새 스냅숏을 사용할 수 있습니다. 여기를 클릭하여 업데이트하십시오."));
 			}
 			break;
 		case UpdateInfo::Stable:
-			gameModel->AddNotification(new UpdateNotification(this, "새 버전을 사용할 수 있습니다. 여기를 클릭하여 업데이트하세요."));
+			gameModel->AddNotification(new UpdateNotification(this, "새 버전을 사용할 수 있습니다. 여기를 클릭하여 업데이트하십시오."));
 			break;
 		case UpdateInfo::Beta:
-			gameModel->AddNotification(new UpdateNotification(this, "새 베타 버전을 사용할 수 있습니다. 여기를 클릭하여 업데이트하세요."));
+			gameModel->AddNotification(new UpdateNotification(this, "새 베타 버전을 사용할 수 있습니다. 여기를 클릭하여 업데이트하십시오."));
 			break;
 	}
 }

@@ -19,28 +19,36 @@
 
 class GOLWindow: public ui::Window
 {
-	void UpdateGradient();
-
-public:
 	ui::Colour highColour, lowColour;
 	ui::Button *highColourButton, *lowColourButton;
 	ui::Textbox *nameField, *ruleField;
-	GameModel * gameModel;
+	GameModel &gameModel;
 	Simulation *sim;
 	int toolSelection;
-	GOLWindow(GameModel *gameModel, Simulation *sim, int toolSelection, int rule, int colour1, int colour2);
-	void Validate();
+
+	void updateGradient();
+	void validate();
+
+public:
+	GOLWindow(GameModel &gameModel, Simulation *sim, int toolSelection, int rule, RGB<uint8_t> colour1, RGB<uint8_t> colour2);
+
+	virtual ~GOLWindow()
+	{}
+
 	void OnDraw() override;
 	void OnTryExit(ExitMethod method) override;
-	virtual ~GOLWindow() {}
 };
 
-GOLWindow::GOLWindow(GameModel * gameModel_, Simulation *sim_, int toolSelection, int rule, int colour1, int colour2):
-ui::Window(ui::Point(-1, -1), ui::Point(200, 108)),
-gameModel(gameModel_),
-sim(sim_),
-toolSelection(toolSelection)
+GOLWindow::GOLWindow(GameModel &gameModel_, Simulation *sim_, int toolSelection, int rule, RGB<uint8_t> colour1, RGB<uint8_t> colour2):
+	ui::Window(ui::Point(-1, -1), ui::Point(200, 108)),
+	highColour(colour1.WithAlpha(0xFF)),
+	lowColour(colour2.WithAlpha(0xFF)),
+	gameModel(gameModel_),
+	sim(sim_),
+	toolSelection(toolSelection)
 {
+	highColour.Alpha = 255;
+	lowColour.Alpha = 255;
 	ui::Label * messageLabel = new ui::Label(ui::Point(4, 5), ui::Point(Size.X-8, 14), "사용자 지정 생명 게임 편집");
 	messageLabel->SetTextColour(style::Colour::InformationTitle);
 	messageLabel->Appearance.HorizontalAlign = ui::Appearance::AlignLeft;
@@ -55,7 +63,7 @@ toolSelection(toolSelection)
 		if (nameField->GetText().length() && ruleField->GetText().length())
 		{
 			CloseActiveWindow();
-			Validate();
+			validate();
 			SelfDestruct();
 		}
 	} });
@@ -79,7 +87,7 @@ toolSelection(toolSelection)
 	highColourButton->SetActionCallback({ [this] {
 		new ColourPickerActivity(highColour, [this](ui::Colour colour) {
 			highColour = colour;
-			UpdateGradient();
+			updateGradient();
 		});
 	} });
 	AddComponent(highColourButton);
@@ -88,7 +96,7 @@ toolSelection(toolSelection)
 	lowColourButton->SetActionCallback({ [this] {
 		new ColourPickerActivity(lowColour, [this](ui::Colour colour) {
 			lowColour = colour;
-			UpdateGradient();
+			updateGradient();
 		});
 	} });
 	AddComponent(lowColourButton);
@@ -97,33 +105,27 @@ toolSelection(toolSelection)
 	{
 		ruleField->SetText(SerialiseGOLRule(rule));
 		nameField->SetText("");
-		highColour.Red = PIXR(colour1);
-		highColour.Green = PIXG(colour1);
-		highColour.Blue = PIXB(colour1);
-		lowColour.Red = PIXR(colour2);
-		lowColour.Green = PIXG(colour2);
-		lowColour.Blue = PIXB(colour2);
 	}
 	else
 	{
 		auto &prefs = GlobalPrefs::Ref();
 		ruleField->SetText(prefs.Get("CustomGOL.Rule", String("B3/S23")));
 		nameField->SetText(prefs.Get("CustomGOL.Name", String("CGOL")));
-		highColour.Red = RNG::Ref().between(0x80, 0xFF);
-		highColour.Green = RNG::Ref().between(0x80, 0xFF);
-		highColour.Blue = RNG::Ref().between(0x80, 0xFF);
-		lowColour.Red = RNG::Ref().between(0x00, 0x7F);
-		lowColour.Green = RNG::Ref().between(0x00, 0x7F);
-		lowColour.Blue = RNG::Ref().between(0x00, 0x7F);
+		highColour.Red = interfaceRng.between(0x80, 0xFF);
+		highColour.Green = interfaceRng.between(0x80, 0xFF);
+		highColour.Blue = interfaceRng.between(0x80, 0xFF);
+		highColour.Alpha = 0xFF;
+		lowColour.Red = interfaceRng.between(0x00, 0x7F);
+		lowColour.Green = interfaceRng.between(0x00, 0x7F);
+		lowColour.Blue = interfaceRng.between(0x00, 0x7F);
+		lowColour.Alpha = 0xFF;
 	}
-	highColour.Alpha = 255;
-	lowColour.Alpha = 255;
-	UpdateGradient();
+	updateGradient();
 
 	MakeActiveWindow();
 }
 
-void GOLWindow::UpdateGradient()
+void GOLWindow::updateGradient()
 {
 	highColourButton->Appearance.BackgroundInactive = highColour;
 	highColourButton->Appearance.BackgroundHover = highColour;
@@ -131,7 +133,7 @@ void GOLWindow::UpdateGradient()
 	lowColourButton->Appearance.BackgroundHover = lowColour;
 }
 
-void GOLWindow::Validate()
+void GOLWindow::validate()
 {
 	auto nameString = nameField->GetText();
 	auto ruleString = ruleField->GetText();
@@ -169,8 +171,8 @@ void GOLWindow::Validate()
 		return;
 	}
 
-	gameModel->SelectNextIdentifier = "DEFAULT_PT_LIFECUST_" + nameString.ToAscii();
-	gameModel->SelectNextTool = toolSelection;
+	gameModel.SelectNextIdentifier = "DEFAULT_PT_LIFECUST_" + nameString.ToAscii();
+	gameModel.SelectNextTool = toolSelection;
 }
 
 void GOLWindow::OnTryExit(ExitMethod method)
@@ -183,8 +185,8 @@ void GOLWindow::OnDraw()
 {
 	Graphics * g = GetGraphics();
 
-	g->clearrect(Position.X-2, Position.Y-2, Size.X+3, Size.Y+3);
-	g->drawrect(Position.X, Position.Y, Size.X, Size.Y, 200, 200, 200, 255);
+	g->DrawFilledRect(RectSized(Position - Vec2{ 1, 1 }, Size + Vec2{ 2, 2 }), 0x000000_rgb);
+	g->DrawRect(RectSized(Position, Size), 0xC8C8C8_rgb);
 
 	int width = Size.X - 60;
 	for (int xx = 0; xx < width; ++xx)
@@ -195,12 +197,12 @@ void GOLWindow::OnDraw()
 			auto rr = int(highColour.Red * (1.f - f) + lowColour.Red * f);
 			auto gg = int(highColour.Green * (1.f - f) + lowColour.Green * f);
 			auto bb = int(highColour.Blue * (1.f - f) + lowColour.Blue * f);
-			g->blendpixel(Position.X + xx + 30, Position.Y + yy + 67, rr, gg, bb, 255);
+			g->DrawPixel(Position + Vec2{ xx + 30, yy + 67 }, RGB<uint8_t>(rr, gg, bb));
 		}
 	}
 }
 
-void GOLTool::OpenWindow(Simulation *sim, int toolSelection, int rule, int colour1, int colour2)
+void GOLTool::OpenWindow(Simulation *sim, int toolSelection, int rule, RGB<uint8_t> colour1, RGB<uint8_t> colour2)
 {
 	new GOLWindow(gameModel, sim, toolSelection, rule, colour1, colour2);
 }
