@@ -19,21 +19,11 @@ extern int Element_LOLZ_lolz[XRES/9][YRES/9];
 extern int Element_LOVE_RuleTable[9][9];
 extern int Element_LOVE_love[XRES/9][YRES/9];
 
-int Simulation::Load(const GameSave * save, bool includePressure)
+void Simulation::Load(const GameSave *originalSave, bool includePressure, Vec2<int> blockP)
 {
-	return Load(save, includePressure, 0, 0);
-}
-
-int Simulation::Load(const GameSave * originalSave, bool includePressure, int fullX, int fullY)
-{
-	if (!originalSave)
-		return 1;
 	auto save = std::unique_ptr<GameSave>(new GameSave(*originalSave));
 
-	//Align to blockMap
-	auto blockP = Vec2{ (fullX + CELL / 2) / CELL, (fullY + CELL / 2) / CELL };
-	fullX = blockP.X * CELL;
-	fullY = blockP.Y * CELL;
+	auto partP = blockP * CELL;
 	unsigned int pmapmask = (1<<save->pmapbits)-1;
 
 	int partMap[PT_NUM];
@@ -71,8 +61,8 @@ int Simulation::Load(const GameSave * originalSave, bool includePressure, int fu
 	for (int n = 0; n < NPART && n < save->particlesCount; n++)
 	{
 		Particle *tempPart = &save->particles[n];
-		tempPart->x += (float)fullX;
-		tempPart->y += (float)fullY;
+		tempPart->x += (float)partP.X;
+		tempPart->y += (float)partP.Y;
 		int x = int(tempPart->x + 0.5f);
 		int y = int(tempPart->y + 0.5f);
 
@@ -170,6 +160,14 @@ int Simulation::Load(const GameSave * originalSave, bool includePressure, int fu
 	for (int n = 0; n < NPART && n < save->particlesCount; n++)
 	{
 		Particle tempPart = save->particles[n];
+
+		if (elements[tempPart.type].CreateAllowed)
+		{
+			if (!(*(elements[tempPart.type].CreateAllowed))(this, -3, int(tempPart.x + 0.5f), int(tempPart.y + 0.5f), tempPart.type))
+			{
+				continue;
+			}
+		}
 
 		// Allocate particle (this location is guaranteed to be empty due to "full scan" logic above)
 		if (pfree == -1)
@@ -299,8 +297,8 @@ int Simulation::Load(const GameSave * originalSave, bool includePressure, int fu
 		if (save->signs[i].text[0])
 		{
 			sign tempSign = save->signs[i];
-			tempSign.x += fullX;
-			tempSign.y += fullY;
+			tempSign.x += partP.X;
+			tempSign.y += partP.Y;
 			signs.push_back(tempSign);
 		}
 	}
@@ -335,38 +333,14 @@ int Simulation::Load(const GameSave * originalSave, bool includePressure, int fu
 	{
 		air->ApproximateBlockAirMaps();
 	}
-
-	return 0;
 }
 
-std::unique_ptr<GameSave> Simulation::Save(bool includePressure)
+std::unique_ptr<GameSave> Simulation::Save(bool includePressure, Rect<int> blockR)
 {
-	return Save(includePressure, 0, 0, XRES-1, YRES-1);
-}
+	auto blockP = blockR.TopLeft;
+	auto partR = RectSized(blockR.TopLeft * CELL, blockR.Size() * CELL);
 
-std::unique_ptr<GameSave> Simulation::Save(bool includePressure, int fullX, int fullY, int fullX2, int fullY2)
-{
-	//Normalise incoming coords
-	int swapTemp;
-	if(fullY>fullY2)
-	{
-		swapTemp = fullY;
-		fullY = fullY2;
-		fullY2 = swapTemp;
-	}
-	if(fullX>fullX2)
-	{
-		swapTemp = fullX;
-		fullX = fullX2;
-		fullX2 = swapTemp;
-	}
-
-	//Align coords to blockMap
-	auto blockP = Vec2{ fullX / CELL, fullY / CELL };
-	auto blockP2 = Vec2{ (fullX2 + CELL) / CELL, (fullY2 + CELL) / CELL };
-	auto blockS = blockP2 - blockP;
-
-	auto newSave = std::make_unique<GameSave>(blockS);
+	auto newSave = std::make_unique<GameSave>(blockR.Size());
 	auto &possiblyCarriesType = Particle::PossiblyCarriesType();
 	auto &properties = Particle::GetProperties();
 	newSave->frameCount = frameCount;
@@ -384,7 +358,7 @@ std::unique_ptr<GameSave> Simulation::Save(bool includePressure, int fullX, int 
 		int x, y;
 		x = int(parts[i].x + 0.5f);
 		y = int(parts[i].y + 0.5f);
-		if (parts[i].type && x >= fullX && y >= fullY && x <= fullX2 && y <= fullY2)
+		if (parts[i].type && partR.Contains({ x, y }))
 		{
 			Particle tempPart = parts[i];
 			tempPart.x -= blockP.X * CELL;
@@ -448,7 +422,7 @@ std::unique_ptr<GameSave> Simulation::Save(bool includePressure, int fullX, int 
 
 	for (size_t i = 0; i < MAXSIGNS && i < signs.size(); i++)
 	{
-		if(signs[i].text.length() && signs[i].x >= fullX && signs[i].y >= fullY && signs[i].x <= fullX2 && signs[i].y <= fullY2)
+		if (signs[i].text.length() && partR.Contains({ signs[i].x, signs[i].y }))
 		{
 			sign tempSign = signs[i];
 			tempSign.x -= blockP.X * CELL;
@@ -1761,35 +1735,6 @@ void Simulation::photoelectric_effect(int nx, int ny)//create sparks from PHOT w
 	}
 }
 
-unsigned Simulation::direction_to_map(float dx, float dy, int t)
-{
-	// TODO:
-	// Adding extra directions causes some inaccuracies.
-	// Not adding them causes problems with some diagonal surfaces (photons absorbed instead of reflected).
-	// For now, don't add them.
-	// Solution may involve more intelligent setting of initial i0 value in find_next_boundary?
-	// or rewriting normal/boundary finding code
-
-	return (dx >= 0) |
-	       (((dx + dy) >= 0) << 1) |     /*  567  */
-	       ((dy >= 0) << 2) |            /*  4+0  */
-	       (((dy - dx) >= 0) << 3) |     /*  321  */
-	       ((dx <= 0) << 4) |
-	       (((dx + dy) <= 0) << 5) |
-	       ((dy <= 0) << 6) |
-	       (((dy - dx) <= 0) << 7);
-	/*
-	return (dx >= -0.001) |
-	       (((dx + dy) >= -0.001) << 1) |     //  567
-	       ((dy >= -0.001) << 2) |            //  4+0
-	       (((dy - dx) >= -0.001) << 3) |     //  321
-	       ((dx <= 0.001) << 4) |
-	       (((dx + dy) <= 0.001) << 5) |
-	       ((dy <= 0.001) << 6) |
-	       (((dy - dx) <= 0.001) << 7);
-	}*/
-}
-
 int Simulation::is_blocking(int t, int x, int y)
 {
 	if (t & REFRACT) {
@@ -1831,7 +1776,7 @@ int Simulation::find_next_boundary(int pt, int *x, int *y, int dm, int *em, bool
 	unsigned int mask = 0;
 	for (int i = 0; i < 8; ++i)
 	{
-		if ((dm & (1U << i)) && is_blocking(pt, *x + dx[i], *y + dy[i]))
+		if (is_blocking(pt, *x + dx[i], *y + dy[i]))
 		{
 			mask |= (1U << i);
 		}
@@ -1839,7 +1784,7 @@ int Simulation::find_next_boundary(int pt, int *x, int *y, int dm, int *em, bool
 	for (int i = 0; i < 8; ++i)
 	{
 		int n = (i + (reverse ? 1 : -1)) & 7;
-		if (((mask & (1U << i))) && !(mask & (1U << n)))
+		if (((dm & mask & (1U << i))) && !(mask & (1U << n)))
 		{
 			*x += dx[i];
 			*y += dy[i];
@@ -1864,8 +1809,8 @@ int Simulation::get_normal(int pt, int x, int y, float dx, float dy, float *nx, 
 	if (!is_boundary(pt, x, y))
 		return 0;
 
-	ldm = direction_to_map(-dy, dx, pt);
-	rdm = direction_to_map(dy, -dx, pt);
+	ldm = 0xFF;
+	rdm = 0xFF;
 	lx = rx = x;
 	ly = ry = y;
 	lv = rv = 1;
@@ -3102,10 +3047,10 @@ killed:
 							}
 							nn = GLASS_IOR - GLASS_DISP*(r-30)/30.0f;
 							nn *= nn;
-							nrx = -nrx;
-							nry = -nry;
-							if (rt_glas && !lt_glas)
-								nn = 1.0f/nn;
+							auto enter = rt_glas && !lt_glas;
+							nrx = enter ? -nrx : nrx;
+							nry = enter ? -nry : nry;
+							nn = enter ? 1.0f/nn : nn;
 							ct1 = parts[i].vx*nrx + parts[i].vy*nry;
 							ct2 = 1.0f - (nn*nn)*(1.0f-(ct1*ct1));
 							if (ct2 < 0.0f) {

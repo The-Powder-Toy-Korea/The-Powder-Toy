@@ -33,9 +33,8 @@
 # undef GetUserName // dammit windows
 #endif
 
-PreviewView::PreviewView():
+PreviewView::PreviewView(std::unique_ptr<VideoBuffer> newSavePreview):
 	ui::Window(ui::Point(-1, -1), ui::Point((XRES/2)+210, (YRES/2)+150)),
-	savePreview(nullptr),
 	submitCommentButton(NULL),
 	addCommentBox(NULL),
 	commentWarningLabel(NULL),
@@ -48,6 +47,11 @@ PreviewView::PreviewView():
 	commentBoxHeight(20),
 	commentHelpText(false)
 {
+	if (newSavePreview)
+	{
+		newSavePreview->Resize(RES / 2, true);
+		savePreview = std::move(newSavePreview);
+	}
 	showAvatars = ui::Engine::Ref().ShowAvatars;
 
 	favButton = new ui::Button(ui::Point(45, Size.Y-19), ui::Point(108, 19), "즐겨찾기");
@@ -312,10 +316,10 @@ void PreviewView::OnDraw()
 		nyu = nyu>50?50:nyu;
 		nyd = nyd>50?50:nyd;
 
-		g->DrawFilledRect(RectSized(Position + RES / 2 + Vec2{ -55, 3 }, Vec2{ 53, 7 }), 0x006B0A_rgb);
-		g->DrawFilledRect(RectSized(Position + RES / 2 + Vec2{ -55, 9 }, Vec2{ 53, 7 }), 0x6B0A00_rgb);
-		g->DrawRect(RectSized(Position + Vec2{ (XRES/2)-55, (YRES/2)+3 }, { 53, 7 }), 0x808080_rgb);
-		g->DrawRect(RectSized(Position + Vec2{ (XRES/2)-55, (YRES/2)+9 }, { 53, 7 }), 0x808080_rgb);
+		g->DrawFilledRect(RectSized(Position + RES / 2 + Vec2{ -56, 3 }, Vec2{ 54, 7 }), 0x006B0A_rgb);
+		g->DrawFilledRect(RectSized(Position + RES / 2 + Vec2{ -56, 9 }, Vec2{ 54, 7 }), 0x6B0A00_rgb);
+		g->DrawRect(RectSized(Position + Vec2{ (XRES/2)-56, (YRES/2)+3 }, { 54, 7 }), 0x808080_rgb);
+		g->DrawRect(RectSized(Position + Vec2{ (XRES/2)-56, (YRES/2)+9 }, { 54, 7 }), 0x808080_rgb);
 
 		g->DrawFilledRect(RectSized(Position + RES / 2 + Vec2{ -4-nyu, 5 }, Vec2{ nyu, 3 }), 0x39BB39_rgb);
 		g->DrawFilledRect(RectSized(Position + RES / 2 + Vec2{ -4-nyd, 11 }, Vec2{ nyd, 3 }), 0xBB3939_rgb);
@@ -416,7 +420,6 @@ void PreviewView::OnKeyPress(int key, int scan, bool repeat, bool shift, bool ct
 void PreviewView::NotifySaveChanged(PreviewModel * sender)
 {
 	auto *save = sender->GetSaveInfo();
-	savePreview = nullptr;
 	if(save)
 	{
 		votesUp = save->votesUp;

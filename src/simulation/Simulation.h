@@ -121,10 +121,8 @@ public:
 	uint64_t frameCount;
 	bool ensureDeterminism;
 
-	int Load(const GameSave * save, bool includePressure);
-	int Load(const GameSave * save, bool includePressure, int x, int y);
-	std::unique_ptr<GameSave> Save(bool includePressure);
-	std::unique_ptr<GameSave> Save(bool includePressure, int x1, int y1, int x2, int y2);
+	void Load(const GameSave *save, bool includePressure, Vec2<int> blockP);
+	std::unique_ptr<GameSave> Save(bool includePressure, Rect<int> blockR);
 	void SaveSimOptions(GameSave &gameSave);
 	SimulationSample GetSample(int x, int y);
 
@@ -135,7 +133,6 @@ public:
 	int is_boundary(int pt, int x, int y);
 	int find_next_boundary(int pt, int *x, int *y, int dm, int *em, bool reverse);
 	void photoelectric_effect(int nx, int ny);
-	unsigned direction_to_map(float dx, float dy, int t);
 	int do_move(int i, int x, int y, float nxf, float nyf);
 	bool move(int i, int x, int y, float nxf, float nyf);
 	int try_move(int i, int x, int y, int nx, int ny);

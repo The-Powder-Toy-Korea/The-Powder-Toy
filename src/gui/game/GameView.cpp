@@ -1181,6 +1181,11 @@ void GameView::OnMouseDown(int x, int y, unsigned button)
 	}
 }
 
+Vec2<int> GameView::PlaceSavePos() const
+{
+	return c->NormaliseBlockCoord(selectPoint2 + placeSaveOffset * CELL + Vec2(1, 1) * CELL / 2).Clamp(RectBetween(Vec2<int>::Zero, RES - placeSaveThumb->Size()));
+}
+
 void GameView::OnMouseUp(int x, int y, unsigned button)
 {
 	currentMouse = ui::Point(x, y);
@@ -1201,9 +1206,7 @@ void GameView::OnMouseUp(int x, int y, unsigned button)
 				{
 					if (placeSaveThumb && y <= WINDOWH-BARSIZE)
 					{
-						auto thumb = selectPoint2 + placeSaveOffset;
-						thumb = thumb.Clamp(RectBetween(Vec2<int>::Zero, RES - placeSaveThumb->Size()));
-						c->PlaceSave(thumb);
+						c->PlaceSave(PlaceSavePos() / CELL);
 					}
 				}
 				else
@@ -1956,10 +1959,10 @@ void GameView::NotifyTransformedPlaceSaveChanged(GameModel *sender)
 		placeSaveThumb = SaveRenderer::Ref().Render(sender->GetTransformedPlaceSave(), true, true, sender->GetRenderer());
 		auto [ quoX, remX ] = floorDiv(placeSaveTranslate.X, CELL);
 		auto [ quoY, remY ] = floorDiv(placeSaveTranslate.Y, CELL);
-		placeSaveOffset = Vec2{ quoX, quoY } * CELL;
-		auto usefulSize = placeSaveThumb->Size();
-		if (remX) usefulSize.X -= CELL;
-		if (remY) usefulSize.Y -= CELL;
+		placeSaveOffset = Vec2{ quoX, quoY };
+		auto usefulSize = placeSaveThumb->Size() / CELL;
+		if (remX) usefulSize.X -= 1;
+		if (remY) usefulSize.Y -= 1;
 		placeSaveOffset -= usefulSize / 2;
 		selectMode = PlaceSave;
 		selectPoint2 = mousePosition;
@@ -2176,9 +2179,7 @@ void GameView::OnDraw()
 			{
 				if(placeSaveThumb && selectPoint2.X!=-1)
 				{
-					auto thumb = selectPoint2 + placeSaveOffset + Vec2(1, 1) * CELL / 2;
-					thumb = c->NormaliseBlockCoord(thumb).Clamp(RectBetween(Vec2<int>::Zero, RES - placeSaveThumb->Size()));
-					auto rect = RectSized(thumb, placeSaveThumb->Size());
+					auto rect = RectSized(PlaceSavePos(), placeSaveThumb->Size());
 					ren->BlendImage(placeSaveThumb->Data(), 0x80, rect);
 					ren->XorDottedRect(rect);
 				}
