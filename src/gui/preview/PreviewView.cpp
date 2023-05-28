@@ -153,8 +153,8 @@ void PreviewView::AttachController(PreviewController * controller)
 {
 	c = controller;
 
-	int textWidth = Graphics::TextSize("세이브 ID를 복사하려면 아래의 상자를 클릭하세요").X - 1;
-	saveIDLabel = new ui::Label(ui::Point((Size.X-textWidth-20)/2, Size.Y+5), ui::Point(textWidth+20, 16), "세이브 ID를 복사하려면 아래의 상자를 클릭하세요");
+	int textWidth = Graphics::TextSize("세이브 ID를 복사하려면 아래의 상자를 클릭하십시오").X - 1;
+	saveIDLabel = new ui::Label(ui::Point((Size.X-textWidth-20)/2, Size.Y+5), ui::Point(textWidth+20, 16), "세이브 ID를 복사하려면 아래의 상자를 클릭하십시오");
 	saveIDLabel->SetTextColour(ui::Colour(150, 150, 150));
 	saveIDLabel->Appearance.HorizontalAlign = ui::Appearance::AlignCentre;
 	AddComponent(saveIDLabel);

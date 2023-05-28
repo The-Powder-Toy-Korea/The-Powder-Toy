@@ -40,7 +40,7 @@ TPT를 빌드하려면 [The Powder Toy 공식 위키](https://powdertoy.co.uk/Wi
 번역자
 ===========================================================================
 
-* 피어 (The Xphere, xphere07)
+* 피어 (Perssphere)
 * 뭐지What (NeuroWhAI)
 * 파토매니아
 * Hopz
