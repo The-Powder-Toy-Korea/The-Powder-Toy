@@ -61,12 +61,17 @@ void Simulation::Load(const GameSave *originalSave, bool includePressure, Vec2<i
 	for (int n = 0; n < NPART && n < save->particlesCount; n++)
 	{
 		Particle *tempPart = &save->particles[n];
+		auto &type = tempPart->type;
+		if (!type)
+		{
+			continue;
+		}
+
 		tempPart->x += (float)partP.X;
 		tempPart->y += (float)partP.Y;
 		int x = int(tempPart->x + 0.5f);
 		int y = int(tempPart->y + 0.5f);
 
-		auto &type = tempPart->type;
 
 		// Check various scenarios where we are unable to spawn the element, and set type to 0 to block spawning later
 		if (!InBounds(x, y))
@@ -160,6 +165,10 @@ void Simulation::Load(const GameSave *originalSave, bool includePressure, Vec2<i
 	for (int n = 0; n < NPART && n < save->particlesCount; n++)
 	{
 		Particle tempPart = save->particles[n];
+		if (!tempPart.type)
+		{
+			continue;
+		}
 
 		if (elements[tempPart.type].CreateAllowed)
 		{
@@ -294,36 +303,43 @@ void Simulation::Load(const GameSave *originalSave, bool includePressure, Vec2<i
 
 	for (size_t i = 0; i < save->signs.size() && signs.size() < MAXSIGNS; i++)
 	{
-		if (save->signs[i].text[0])
+		if (save->signs[i].text.length())
 		{
 			sign tempSign = save->signs[i];
 			tempSign.x += partP.X;
 			tempSign.y += partP.Y;
+			if (!InBounds(tempSign.x, tempSign.y))
+			{
+				continue;
+			}
 			signs.push_back(tempSign);
 		}
 	}
-	for (auto bpos : save->blockSize.OriginRect())
+	for (auto bpos : RectSized(blockP, save->blockSize) & CELLS.OriginRect())
 	{
-		if(save->blockMap[bpos])
+		auto spos = bpos - blockP;
+		if (save->blockMap[spos])
 		{
-			bmap[blockP.Y + bpos.Y][blockP.X + bpos.X] = save->blockMap[bpos];
-			fvx[blockP.Y + bpos.Y][blockP.X + bpos.X] = save->fanVelX[bpos];
-			fvy[blockP.Y + bpos.Y][blockP.X + bpos.X] = save->fanVelY[bpos];
+			bmap[bpos.Y][bpos.X] = save->blockMap[spos];
+			fvx[bpos.Y][bpos.X] = save->fanVelX[spos];
+			fvy[bpos.Y][bpos.X] = save->fanVelY[spos];
 		}
 		if (includePressure)
 		{
 			if (save->hasPressure)
 			{
-				pv[blockP.Y + bpos.Y][blockP.X + bpos.X] = save->pressure[bpos];
-				vx[blockP.Y + bpos.Y][blockP.X + bpos.X] = save->velocityX[bpos];
-				vy[blockP.Y + bpos.Y][blockP.X + bpos.X] = save->velocityY[bpos];
+				pv[bpos.Y][bpos.X] = save->pressure[spos];
+				vx[bpos.Y][bpos.X] = save->velocityX[spos];
+				vy[bpos.Y][bpos.X] = save->velocityY[spos];
 			}
 			if (save->hasAmbientHeat)
-				hv[blockP.Y + bpos.Y][blockP.X + bpos.X] = save->ambientHeat[bpos];
+			{
+				hv[bpos.Y][bpos.X] = save->ambientHeat[spos];
+			}
 			if (save->hasBlockAirMaps)
 			{
-				air->bmap_blockair[blockP.Y + bpos.Y][blockP.X + bpos.X] = save->blockAir[bpos];
-				air->bmap_blockairh[blockP.Y + bpos.Y][blockP.X + bpos.X] = save->blockAirh[bpos];
+				air->bmap_blockair[bpos.Y][bpos.X] = save->blockAir[spos];
+				air->bmap_blockairh[bpos.Y][bpos.X] = save->blockAirh[spos];
 			}
 		}
 	}
@@ -4083,11 +4099,6 @@ String Simulation::BasicParticleInfo(Particle const &sample_part) const
 		sampleInfo << ElementResolve(type, ctype);
 	}
 	return sampleInfo.Build();
-}
-
-bool Simulation::InBounds(int x, int y)
-{
-	return (x>=0 && y>=0 && x<XRES && y<YRES);
 }
 
 int Simulation::remainder_p(int x, int y)

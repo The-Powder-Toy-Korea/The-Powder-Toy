@@ -63,6 +63,7 @@
 
 #include "Config.h"
 #include <SDL.h>
+#include <iostream>
 
 #ifdef GetUserName
 # undef GetUserName // dammit windows
@@ -699,6 +700,7 @@ bool GameController::KeyRelease(int key, int scan, bool repeat, bool shift, bool
 
 void GameController::Tick()
 {
+	gameModel->Tick();
 	if(firstTick)
 	{
 		commandInterface->Init();
@@ -1440,16 +1442,9 @@ void GameController::FrameStep()
 
 void GameController::Vote(int direction)
 {
-	if(gameModel->GetSave() && gameModel->GetUser().UserID && gameModel->GetSave()->GetID())
+	if (gameModel->GetSave() && gameModel->GetUser().UserID && gameModel->GetSave()->GetID())
 	{
-		try
-		{
-			gameModel->SetVote(direction);
-		}
-		catch(GameModelException & ex)
-		{
-			new ErrorMessage("투표하는 중에 오류가 발생함", ByteString(ex.what()).FromUtf8());
-		}
+		gameModel->SetVote(direction);
 	}
 }
 
@@ -1536,7 +1531,7 @@ void GameController::NotifyAuthUserChanged(Client * sender)
 	gameModel->SetUser(newUser);
 }
 
-void GameController::NotifyNewNotification(Client * sender, std::pair<String, ByteString> notification)
+void GameController::NotifyNewNotification(Client * sender, ServerNotification notification)
 {
 	class LinkNotification : public Notification
 	{
@@ -1550,7 +1545,7 @@ void GameController::NotifyNewNotification(Client * sender, std::pair<String, By
 			Platform::OpenURI(link);
 		}
 	};
-	gameModel->AddNotification(new LinkNotification(notification.second, notification.first));
+	gameModel->AddNotification(new LinkNotification(notification.link, notification.text));
 }
 
 void GameController::NotifyUpdateAvailable(Client * sender)
@@ -1564,7 +1559,13 @@ void GameController::NotifyUpdateAvailable(Client * sender)
 
 		void Action() override
 		{
-			UpdateInfo info = Client::Ref().GetUpdateInfo();
+			auto optinfo = Client::Ref().GetUpdateInfo();
+			if (!optinfo.has_value())
+			{
+				std::cerr << "odd, the update has disappeared" << std::endl;
+				return;
+			}
+			UpdateInfo info = optinfo.value();
 			StringBuilder updateMessage;
 			if (Platform::CanUpdate())
 			{
@@ -1572,7 +1573,7 @@ void GameController::NotifyUpdateAvailable(Client * sender)
 			}
 			else
 			{
-				updateMessage << "\"계속\"을 클릭하여 웹 사이트에서 최신 버전을 내려받습니다. \n\n현재 버전:\n ";
+				updateMessage << "\"계속\"을 눌러 웹 사이트에서 최신 버전을 내려받습니다. \n\n현재 버전:\n ";
 			}
 
 			if constexpr (SNAPSHOT)
@@ -1593,50 +1594,55 @@ void GameController::NotifyUpdateAvailable(Client * sender)
 			}
 
 			updateMessage << "\n새 버전:\n ";
-			if (info.Type == UpdateInfo::Beta)
+			if (info.channel == UpdateInfo::channelBeta)
 			{
-				updateMessage << info.Major << "." << info.Minor << " 베타, 빌드 " << info.Build;
+				updateMessage << info.major << "." << info.minor << " 베타, 빌드 " << info.build;
 			}
-			else if (info.Type == UpdateInfo::Snapshot)
+			else if (info.channel == UpdateInfo::channelSnapshot)
 			{
 				if constexpr (MOD)
 				{
-					updateMessage << "모드 버전 " << info.Time;
+					updateMessage << "모드 버전 " << info.build;
 				}
 				else
 				{
-					updateMessage << "스냅숏 " << info.Time;
+					updateMessage << "스냅숏 " << info.build;
 				}
 			}
-			else if(info.Type == UpdateInfo::Stable)
+			else if(info.channel == UpdateInfo::channelStable)
 			{
-				updateMessage << info.Major << "." << info.Minor << " 안정화, 빌드 " << info.Build;
+				updateMessage << info.major << "." << info.minor << " 안정화, 빌드 " << info.build;
 			}
 
-			if (info.Changelog.length())
-				updateMessage << "\n\n변경 사항:\n" << info.Changelog;
+			if (info.changeLog.length())
+				updateMessage << "n\n변경 사항:\n" << info.changeLog;
 
-			new ConfirmPrompt("업데이터 실행", updateMessage.Build(), { [this] { c->RunUpdater(); } });
+			new ConfirmPrompt("업데이터 실행", updateMessage.Build(), { [this, info] { c->RunUpdater(info); } });
 		}
 	};
 
-	switch(sender->GetUpdateInfo().Type)
+	auto optinfo = sender->GetUpdateInfo();
+	if (!optinfo.has_value())
 	{
-		case UpdateInfo::Snapshot:
+		return;
+	}
+	switch(optinfo.value().channel)
+	{
+		case UpdateInfo::channelSnapshot:
 			if constexpr (MOD)
 			{
-				gameModel->AddNotification(new UpdateNotification(this, "새 모드 업데이트를 사용할 수 있습니다. 여기를 클릭하여 업데이트하십시오."));
+				gameModel->AddNotification(new UpdateNotification(this, "새 모드 업데이트를 사용할 수 있습니다. 여기를 눌러 업데이트하십시오."));
 			}
 			else
 			{
-				gameModel->AddNotification(new UpdateNotification(this, "새 스냅숏을 사용할 수 있습니다. 여기를 클릭하여 업데이트하십시오."));
+				gameModel->AddNotification(new UpdateNotification(this, "새 스냅숏을 사용할 수 있습니다. 여기를 눌러 업데이트하십시오."));
 			}
 			break;
-		case UpdateInfo::Stable:
-			gameModel->AddNotification(new UpdateNotification(this, "새 버전을 사용할 수 있습니다. 여기를 클릭하여 업데이트하십시오."));
+		case UpdateInfo::channelStable:
+			gameModel->AddNotification(new UpdateNotification(this, "새 버전을 사용할 수 있습니다. 여기를 눌러 업데이트하십시오."));
 			break;
-		case UpdateInfo::Beta:
-			gameModel->AddNotification(new UpdateNotification(this, "새 베타 버전을 사용할 수 있습니다. 여기를 클릭하여 업데이트하십시오."));
+		case UpdateInfo::channelBeta:
+			gameModel->AddNotification(new UpdateNotification(this, "새 베타 버전을 사용할 수 있습니다. 여기를 눌러 업데이트하십시오."));
 			break;
 	}
 }
@@ -1646,25 +1652,16 @@ void GameController::RemoveNotification(Notification * notification)
 	gameModel->RemoveNotification(notification);
 }
 
-void GameController::RunUpdater()
+void GameController::RunUpdater(UpdateInfo info)
 {
 	if (Platform::CanUpdate())
 	{
 		Exit();
-		new UpdateActivity();
+		new UpdateActivity(info);
 	}
 	else
 	{
-		ByteString file;
-		if constexpr (USE_UPDATESERVER)
-		{
-			file = ByteString::Build(SCHEME, UPDATESERVER, Client::Ref().GetUpdateInfo().File);
-		}
-		else
-		{
-			file = ByteString::Build(SCHEME, SERVER, Client::Ref().GetUpdateInfo().File);
-		}
-		Platform::OpenURI(file);
+		Platform::OpenURI(info.file);
 	}
 }
 

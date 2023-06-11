@@ -366,7 +366,7 @@ OptionsView::OptionsView():
 	scrollPanel->AddChild(mouseClickRequired);
 
 	currentY+=20;
-	includePressure = new ui::Checkbox(ui::Point(8, currentY), ui::Point(1, 16), "저장 시 압력 포함", "");
+	includePressure = new ui::Checkbox(ui::Point(8, currentY), ui::Point(1, 16), "압력 포함 저장", "");
 	autowidth(includePressure);
 	includePressure->SetActionCallback({ [this] { c->SetIncludePressure(includePressure->GetChecked()); } });
 	tempLabel = new ui::Label(ui::Point(includePressure->Position.X+Graphics::TextSize(includePressure->GetText()).X+19, currentY), ui::Point(1, 16), "\bg- 복사하거나 저장할 때 압력을 포함합니다.");

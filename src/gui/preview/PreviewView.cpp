@@ -4,6 +4,8 @@
 
 #include "client/Client.h"
 #include "client/SaveInfo.h"
+#include "client/http/AddCommentRequest.h"
+#include "client/http/ReportSaveRequest.h"
 
 #include "gui/dialogues/TextPrompt.h"
 #include "gui/profile/ProfileActivity.h"
@@ -17,12 +19,12 @@
 #include "gui/interface/Textbox.h"
 #include "gui/interface/Engine.h"
 #include "gui/dialogues/ErrorMessage.h"
+#include "gui/dialogues/InformationMessage.h"
 #include "gui/interface/Point.h"
 #include "gui/interface/Window.h"
 #include "gui/Style.h"
 
 #include "common/tpt-rand.h"
-#include "Comment.h"
 #include "Format.h"
 #include "Misc.h"
 
@@ -54,27 +56,33 @@ PreviewView::PreviewView(std::unique_ptr<VideoBuffer> newSavePreview):
 	}
 	showAvatars = ui::Engine::Ref().ShowAvatars;
 
-	favButton = new ui::Button(ui::Point(45, Size.Y-19), ui::Point(108, 19), "즐겨찾기");
+	favButton = new ui::Button(ui::Point(50, Size.Y-19), ui::Point(71, 19), "즐겨찾기");
 	favButton->Appearance.HorizontalAlign = ui::Appearance::AlignLeft;
 	favButton->Appearance.VerticalAlign = ui::Appearance::AlignMiddle;
+	favButton->SetTogglable(true);
 	favButton->SetIcon(IconFavourite);
 	favButton->SetActionCallback({ [this] { c->FavouriteSave(); } });
 	favButton->Enabled = Client::Ref().GetAuthUser().UserID?true:false;
 	AddComponent(favButton);
 
-	reportButton = new ui::Button(ui::Point(152, Size.Y-19), ui::Point(46, 19), "신고");
+	reportButton = new ui::Button(ui::Point(120, Size.Y-19), ui::Point(51, 19), "신고");
 	reportButton->Appearance.HorizontalAlign = ui::Appearance::AlignLeft;
 	reportButton->Appearance.VerticalAlign = ui::Appearance::AlignMiddle;
 	reportButton->SetIcon(IconReport);
 	reportButton->SetActionCallback({ [this] {
 		new TextPrompt("세이브 신고하기", "신고를 할 때에는 신중하십시오:\n\bw1)\bg 베껴진 세이브를 신고할 때에는 원본 세이브의 ID를 포함하여 신고하십시오.\n\bw2)\bg 규칙이 위반되지 않았다면 세이브를 프론트페이지에서 제거하도록 요청하지 마십시오.\n\bw3)\bg 댓글이나 태그에 대한 신고도 이곳에서 할 수 있습니다(귀하의 세이브도 포함됩니다).", "", "신고 사유", true, { [this](String const &resultText) {
-			c->Report(resultText);
+			if (reportSaveRequest)
+			{
+				return;
+			}
+			reportSaveRequest = std::make_unique<http::ReportSaveRequest>(c->SaveID(), resultText);
+			reportSaveRequest->Start();
 		} });
 	} });
 	reportButton->Enabled = Client::Ref().GetAuthUser().UserID?true:false;
 	AddComponent(reportButton);
 
-	openButton = new ui::Button(ui::Point(0, Size.Y-19), ui::Point(46, 19), "열기");
+	openButton = new ui::Button(ui::Point(0, Size.Y-19), ui::Point(51, 19), "열기");
 	openButton->Appearance.HorizontalAlign = ui::Appearance::AlignLeft;
 	openButton->Appearance.VerticalAlign = ui::Appearance::AlignMiddle;
 	openButton->SetIcon(IconOpen);
@@ -153,8 +161,8 @@ void PreviewView::AttachController(PreviewController * controller)
 {
 	c = controller;
 
-	int textWidth = Graphics::TextSize("세이브 ID를 복사하려면 아래의 상자를 클릭하십시오").X - 1;
-	saveIDLabel = new ui::Label(ui::Point((Size.X-textWidth-20)/2, Size.Y+5), ui::Point(textWidth+20, 16), "세이브 ID를 복사하려면 아래의 상자를 클릭하십시오");
+	int textWidth = Graphics::TextSize("세이브 ID를 복사하려면 아래의 상자를 누르십시오").X - 1;
+	saveIDLabel = new ui::Label(ui::Point((Size.X-textWidth-20)/2, Size.Y+5), ui::Point(textWidth+20, 16), "세이브 ID를 복사하려면 아래의 상자를 누르십시오");
 	saveIDLabel->SetTextColour(ui::Colour(150, 150, 150));
 	saveIDLabel->Appearance.HorizontalAlign = ui::Appearance::AlignCentre;
 	AddComponent(saveIDLabel);
@@ -222,7 +230,12 @@ void PreviewView::CheckComment()
 	if (!commentWarningLabel)
 		return;
 	String text = addCommentBox->GetText().ToLower();
-	if (!userIsAuthor && (text.Contains("stolen") || text.Contains("copied")))
+	if (addCommentRequest)
+	{
+		commentWarningLabel->SetText("댓글을 게시하는 중...");
+		commentHelpText = true;
+	}
+	else if (!userIsAuthor && (text.Contains("stolen") || text.Contains("copied")))
 	{
 		if (!commentHelpText)
 		{
@@ -375,6 +388,37 @@ void PreviewView::OnTick(float dt)
 		ErrorMessage::Blocking("세이브 불러오기 오류", doErrorMessage);
 		c->Exit();
 	}
+
+	if (reportSaveRequest && reportSaveRequest->CheckDone())
+	{
+		try
+		{
+			reportSaveRequest->Finish();
+			c->Exit();
+			new InformationMessage("안내", "신고가 전송됨", false);
+		}
+		catch (const http::RequestError &ex)
+		{
+			new ErrorMessage("오류", "신고를 전송할 수 없음: " + ByteString(ex.what()).FromUtf8());
+		}
+		reportSaveRequest.reset();
+	}
+	if (addCommentRequest && addCommentRequest->CheckDone())
+	{
+		try
+		{
+			addCommentBox->SetText("");
+			c->CommentAdded();
+		}
+		catch (const http::RequestError &ex)
+		{
+			new ErrorMessage("댓글을 게시하는 데 오류가 발생함", ByteString(ex.what()).FromUtf8());
+		}
+		submitCommentButton->Enabled = true;
+		commentBoxAutoHeight();
+		addCommentRequest.reset();
+		CheckComment();
+	}
 }
 
 void PreviewView::OnTryExit(ExitMethod method)
@@ -448,16 +492,16 @@ void PreviewView::NotifySaveChanged(PreviewModel * sender)
 		if(save->Favourite)
 		{
 			favButton->Enabled = true;
-			favButton->SetText("즐겨찾기에서 해제");
+			favButton->SetToggleState(true);
 		}
 		else if(Client::Ref().GetAuthUser().UserID)
 		{
 			favButton->Enabled = true;
-			favButton->SetText("즐겨찾기에 등록");
+			favButton->SetToggleState(false);
 		}
 		else
 		{
-			favButton->SetText("즐겨찾기에 등록");
+			favButton->SetToggleState(false);
 			favButton->Enabled = false;
 		}
 
@@ -477,6 +521,7 @@ void PreviewView::NotifySaveChanged(PreviewModel * sender)
 		saveNameLabel->SetText("");
 		authorDateLabel->SetText("");
 		saveDescriptionLabel->SetText("");
+		favButton->SetToggleState(false);
 		favButton->Enabled = false;
 		if (!sender->GetCanOpen())
 			openButton->Enabled = false;
@@ -485,21 +530,22 @@ void PreviewView::NotifySaveChanged(PreviewModel * sender)
 
 void PreviewView::submitComment()
 {
-	if(addCommentBox)
+	if (addCommentBox)
 	{
 		String comment = addCommentBox->GetText();
+		if (comment.length() < 4)
+		{
+			new ErrorMessage("오류", "댓글이 너무 짧습니다.");
+			return;
+		}
+
 		submitCommentButton->Enabled = false;
-		addCommentBox->SetText("");
-		addCommentBox->SetPlaceholder("댓글을 게시하는 중"); // This doesn't appear to ever show since no separate thread is created
 		FocusComponent(NULL);
 
-		if (!c->SubmitComment(comment))
-			addCommentBox->SetText(comment);
+		addCommentRequest = std::make_unique<http::AddCommentRequest>(c->SaveID(), comment);
+		addCommentRequest->Start();
 
-		addCommentBox->SetPlaceholder("새 댓글 게시");
-		submitCommentButton->Enabled = true;
-
-		commentBoxAutoHeight();
+		CheckComment();
 	}
 }
 
@@ -564,7 +610,7 @@ void PreviewView::NotifyCommentsPageChanged(PreviewModel * sender)
 
 void PreviewView::NotifyCommentsChanged(PreviewModel * sender)
 {
-	std::vector<SaveComment*> * comments = sender->GetComments();
+	auto commentsPtr = sender->GetComments();
 
 	for (size_t i = 0; i < commentComponents.size(); i++)
 	{
@@ -575,8 +621,9 @@ void PreviewView::NotifyCommentsChanged(PreviewModel * sender)
 	commentTextComponents.clear();
 	commentsPanel->InnerSize = ui::Point(0, 0);
 
-	if (comments)
+	if (commentsPtr)
 	{
+		auto &comments = *commentsPtr;
 		for (size_t i = 0; i < commentComponents.size(); i++)
 		{
 			commentsPanel->RemoveChild(commentComponents[i]);
@@ -589,11 +636,11 @@ void PreviewView::NotifyCommentsChanged(PreviewModel * sender)
 		ui::Label * tempUsername;
 		ui::Label * tempComment;
 		ui::AvatarButton * tempAvatar;
-		for (size_t i = 0; i < comments->size(); i++)
+		for (size_t i = 0; i < comments.size(); i++)
 		{
 			if (showAvatars)
 			{
-				tempAvatar = new ui::AvatarButton(ui::Point(2, currentY+7), ui::Point(26, 26), comments->at(i)->authorName);
+				tempAvatar = new ui::AvatarButton(ui::Point(2, currentY+7), ui::Point(26, 26), comments[i].authorName);
 				tempAvatar->SetActionCallback({ [tempAvatar] {
 					if (tempAvatar->GetUsername().size() > 0)
 					{
@@ -604,25 +651,38 @@ void PreviewView::NotifyCommentsChanged(PreviewModel * sender)
 				commentsPanel->AddChild(tempAvatar);
 			}
 
+			auto authorNameFormatted = comments[i].authorName.FromUtf8();
+			if (comments[i].authorElevation != User::ElevationNone || comments[i].authorName == "jacobot")
+			{
+				authorNameFormatted = "\bt" + authorNameFormatted;
+			}
+			else if (comments[i].authorIsBanned)
+			{
+				authorNameFormatted = "\bg" + authorNameFormatted;
+			}
+			else if (Client::Ref().GetAuthUser().UserID && Client::Ref().GetAuthUser().Username == comments[i].authorName)
+			{
+				authorNameFormatted = "\bo" + authorNameFormatted;
+			}
+			else if (sender->GetSaveInfo() && sender->GetSaveInfo()->GetUserName() == comments[i].authorName)
+			{
+				authorNameFormatted = "\bl" + authorNameFormatted;
+			}
 			if (showAvatars)
-				tempUsername = new ui::Label(ui::Point(31, currentY+3), ui::Point(Size.X-((XRES/2) + 13 + 26), 16), comments->at(i)->authorNameFormatted.FromUtf8());
+				tempUsername = new ui::Label(ui::Point(31, currentY+3), ui::Point(Size.X-((XRES/2) + 13 + 26), 16), authorNameFormatted);
 			else
-				tempUsername = new ui::Label(ui::Point(5, currentY+3), ui::Point(Size.X-((XRES/2) + 13), 16), comments->at(i)->authorNameFormatted.FromUtf8());
+				tempUsername = new ui::Label(ui::Point(5, currentY+3), ui::Point(Size.X-((XRES/2) + 13), 16), authorNameFormatted);
 			tempUsername->Appearance.HorizontalAlign = ui::Appearance::AlignLeft;
 			tempUsername->Appearance.VerticalAlign = ui::Appearance::AlignBottom;
-			if (Client::Ref().GetAuthUser().UserID && Client::Ref().GetAuthUser().Username == comments->at(i)->authorName)
-				tempUsername->SetTextColour(ui::Colour(255, 255, 100));
-			else if (sender->GetSaveInfo() && sender->GetSaveInfo()->GetUserName() == comments->at(i)->authorName)
-				tempUsername->SetTextColour(ui::Colour(255, 100, 100));
 			currentY += 16;
 
 			commentComponents.push_back(tempUsername);
 			commentsPanel->AddChild(tempUsername);
 
 			if (showAvatars)
-				tempComment = new ui::Label(ui::Point(31, currentY+5), ui::Point(Size.X-((XRES/2) + 13 + 26), -1), comments->at(i)->comment);
+				tempComment = new ui::Label(ui::Point(31, currentY+5), ui::Point(Size.X-((XRES/2) + 13 + 26), -1), comments[i].content);
 			else
-				tempComment = new ui::Label(ui::Point(5, currentY+5), ui::Point(Size.X-((XRES/2) + 13), -1), comments->at(i)->comment);
+				tempComment = new ui::Label(ui::Point(5, currentY+5), ui::Point(Size.X-((XRES/2) + 13), -1), comments[i].content);
 			tempComment->SetMultiline(true);
 			tempComment->Appearance.HorizontalAlign = ui::Appearance::AlignLeft;
 			tempComment->Appearance.VerticalAlign = ui::Appearance::AlignTop;

@@ -6,6 +6,10 @@
 #include "client/Client.h"
 #include "client/SaveInfo.h"
 #include "client/GameSave.h"
+#include "client/http/GetSaveRequest.h"
+#include "client/http/GetSaveDataRequest.h"
+#include "client/http/GetCommentsRequest.h"
+#include "client/http/FavouriteSaveRequest.h"
 #include "common/platform/Platform.h"
 #include "graphics/Graphics.h"
 #include "gui/dialogues/ErrorMessage.h"
@@ -51,30 +55,6 @@ void PreviewController::Update()
 	}
 }
 
-bool PreviewController::SubmitComment(String comment)
-{
-	if(comment.length() < 4)
-	{
-		new ErrorMessage("오류", "댓글이 너무 짧습니다.");
-		return false;
-	}
-	else
-	{
-		RequestStatus status = Client::Ref().AddComment(saveId, comment);
-		if(status != RequestOkay)
-		{
-			new ErrorMessage("댓글을 게시하는 데 오류가 발생함", Client::Ref().GetLastError());
-			return false;
-		}
-		else
-		{
-			previewModel->CommentAdded();
-			previewModel->UpdateComments(1);
-		}
-	}
-	return true;
-}
-
 void PreviewController::ShowLogin()
 {
 	loginWindow = new LoginController();
@@ -106,32 +86,11 @@ void PreviewController::DoOpen()
 	previewModel->SetDoOpen(true);
 }
 
-void PreviewController::Report(String message)
-{
-	if(Client::Ref().ReportSave(saveId, message) == RequestOkay)
-	{
-		Exit();
-		new InformationMessage("안내", "신고가 전송됨", false);
-	}
-	else
-		new ErrorMessage("오류", "신고를 전송할 수 없음: " + Client::Ref().GetLastError());
-}
-
 void PreviewController::FavouriteSave()
 {
-	if(previewModel->GetSaveInfo() && Client::Ref().GetAuthUser().UserID)
+	if (previewModel->GetSaveInfo() && Client::Ref().GetAuthUser().UserID)
 	{
-		try
-		{
-			if(previewModel->GetSaveInfo()->Favourite)
-				previewModel->SetFavourite(false);
-			else
-				previewModel->SetFavourite(true);
-		}
-		catch (PreviewModelException & e)
-		{
-			new ErrorMessage("오류", ByteString(e.what()).FromUtf8());
-		}
+		previewModel->SetFavourite(!previewModel->GetSaveInfo()->Favourite);
 	}
 }
 
@@ -161,6 +120,12 @@ bool PreviewController::PrevCommentPage()
 	return false;
 }
 
+void PreviewController::CommentAdded()
+{
+	previewModel->CommentAdded();
+	previewModel->UpdateComments(1);
+}
+
 void PreviewController::Exit()
 {
 	previewView->CloseActiveWindow();
@@ -171,8 +136,10 @@ void PreviewController::Exit()
 
 PreviewController::~PreviewController()
 {
-	previewView->CloseActiveWindow();
 	Client::Ref().RemoveListener(this);
 	delete previewModel;
-	delete previewView;
+	if (previewView->CloseActiveWindow())
+	{
+		delete previewView;
+	}
 }

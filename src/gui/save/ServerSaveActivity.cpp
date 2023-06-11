@@ -1,7 +1,5 @@
 #include "ServerSaveActivity.h"
-
 #include "graphics/Graphics.h"
-
 #include "gui/interface/Label.h"
 #include "gui/interface/Textbox.h"
 #include "gui/interface/Button.h"
@@ -10,13 +8,11 @@
 #include "gui/dialogues/SaveIDMessage.h"
 #include "gui/dialogues/ConfirmPrompt.h"
 #include "gui/dialogues/InformationMessage.h"
-
 #include "client/Client.h"
 #include "client/ThumbnailRendererTask.h"
 #include "client/GameSave.h"
-
+#include "client/http/UploadSaveRequest.h"
 #include "tasks/Task.h"
-
 #include "gui/Style.h"
 
 class SaveUploadTask: public Task
@@ -36,7 +32,19 @@ class SaveUploadTask: public Task
 	bool doWork() override
 	{
 		notifyProgress(-1);
-		return Client::Ref().UploadSave(save) == RequestOkay;
+		auto uploadSaveRequest = std::make_unique<http::UploadSaveRequest>(save);
+		uploadSaveRequest->Start();
+		uploadSaveRequest->Wait();
+		try
+		{
+			save.SetID(uploadSaveRequest->Finish());
+		}
+		catch (const http::RequestError &ex)
+		{
+			notifyError(ByteString(ex.what()).FromUtf8());
+			return false;
+		}
+		return true;
 	}
 
 public:
@@ -168,7 +176,7 @@ void ServerSaveActivity::NotifyDone(Task * task)
 	if(!task->GetSuccess())
 	{
 		Exit();
-		new ErrorMessage("오류", Client::Ref().GetLastError());
+		new ErrorMessage("오류", task->GetError());
 	}
 	else
 	{
@@ -182,24 +190,20 @@ void ServerSaveActivity::NotifyDone(Task * task)
 
 void ServerSaveActivity::Save()
 {
-	if(nameField->GetText().length())
+	if (!nameField->GetText().length())
 	{
-		if(Client::Ref().GetAuthUser().Username != save->GetUserName() && publishedCheckbox->GetChecked())
-		{
-			new ConfirmPrompt("게시", "이 세이브는 " + save->GetUserName().FromUtf8() + "에 의해 제작되었으며, 귀하가 이것을 귀하의 이름으로 게시하려 하고 있습니다. 게시자의 허가가 있지 않다면 게시 확인 상자를 해제하십시오. 게시자의 허가가 있다면 게시해도 됩니다.", { [this] {
-				Exit();
-				saveUpload();
-			} });
-		}
-		else
-		{
-			Exit();
+		new ErrorMessage("오류", "파일 이름을 입력해야 합니다.");
+		return;
+	}
+	if(Client::Ref().GetAuthUser().Username != save->GetUserName() && publishedCheckbox->GetChecked())
+	{
+		new ConfirmPrompt("게시", "이 세이브는 " + save->GetUserName().FromUtf8() + "에 의해 제작되었으며, 귀하가 이것을 귀하의 이름으로 게시하려 하고 있습니다. 게시자의 허가가 있지 않다면 게시 확인 상자를 해제하십시오. 게시자의 허가가 있다면 게시해도 됩니다.", { [this] {
 			saveUpload();
-		}
+		} });
 	}
 	else
 	{
-		new ErrorMessage("오류", "파일 이름을 입력해야 합니다.");
+		saveUpload();
 	}
 }
 
@@ -223,6 +227,7 @@ void ServerSaveActivity::AddAuthorInfo()
 
 void ServerSaveActivity::saveUpload()
 {
+	okayButton->Enabled = false;
 	save->SetName(nameField->GetText());
 	save->SetDescription(descriptionField->GetText());
 	save->SetPublished(publishedCheckbox->GetChecked());
@@ -234,16 +239,8 @@ void ServerSaveActivity::saveUpload()
 		save->SetGameSave(std::move(gameSave));
 	}
 	AddAuthorInfo();
-
-	if(Client::Ref().UploadSave(*save) != RequestOkay)
-	{
-		new ErrorMessage("오류", "업로드에 실패하였습니다. 오류:\n"+Client::Ref().GetLastError());
-	}
-	else if (onUploaded)
-	{
-		new SaveIDMessage(save->GetID());
-		onUploaded(std::move(save));
-	}
+	uploadSaveRequest = std::make_unique<http::UploadSaveRequest>(*save);
+	uploadSaveRequest->Start();
 }
 
 void ServerSaveActivity::Exit()
@@ -362,6 +359,26 @@ void ServerSaveActivity::OnTick(float dt)
 			thumbnail = thumbnailRenderer->Finish();
 			thumbnailRenderer = nullptr;
 		}
+	}
+
+	if (uploadSaveRequest && uploadSaveRequest->CheckDone())
+	{
+		okayButton->Enabled = true;
+		try
+		{
+			save->SetID(uploadSaveRequest->Finish());
+			Exit();
+			new SaveIDMessage(save->GetID());
+			if (onUploaded)
+			{
+				onUploaded(std::move(save));
+			}
+		}
+		catch (const http::RequestError &ex)
+		{
+			new ErrorMessage("오류", "업로드에 실패하였습니다. 오류:\n" + ByteString(ex.what()).FromUtf8());
+		}
+		uploadSaveRequest.reset();
 	}
 
 	if(saveUploadTask)
