@@ -23,20 +23,20 @@
 #include <cmath>
 #include <SDL.h>
 
-OptionsView::OptionsView():
-	ui::Window(ui::Point(-1, -1), ui::Point(320, 340))
-	{
-
-	auto autowidth = [this](ui::Component *c) {
-		c->Size.X = Size.X - c->Position.X - 12;
+OptionsView::OptionsView() : ui::Window(ui::Point(-1, -1), ui::Point(320, 340))
+{
+	auto autoWidth = [this](ui::Component *c, int extra) {
+		c->Size.X = Size.X - c->Position.X - 12 - extra;
 	};
 	
-	ui::Label * tempLabel = new ui::Label(ui::Point(4, 1), ui::Point(Size.X-8, 22), "시뮬레이션 설정");
-	tempLabel->SetTextColour(style::Colour::InformationTitle);
-	tempLabel->Appearance.HorizontalAlign = ui::Appearance::AlignLeft;
-	tempLabel->Appearance.VerticalAlign = ui::Appearance::AlignMiddle;
-	autowidth(tempLabel);
-	AddComponent(tempLabel);
+	{
+		auto *label = new ui::Label(ui::Point(4, 1), ui::Point(Size.X-8, 22), "시뮬레이션 설정");
+		label->SetTextColour(style::Colour::InformationTitle);
+		label->Appearance.HorizontalAlign = ui::Appearance::AlignLeft;
+		label->Appearance.VerticalAlign = ui::Appearance::AlignMiddle;
+		autoWidth(label, 0);
+		AddComponent(label);
+	}
 
 	class Separator : public ui::Component
 	{
@@ -53,99 +53,90 @@ OptionsView::OptionsView():
 	Separator *tmpSeparator = new Separator(ui::Point(0, 22), ui::Point(Size.X, 1));
 	AddComponent(tmpSeparator);
 
-	int currentY = 6;
 	scrollPanel = new ui::ScrollPanel(ui::Point(1, 23), ui::Point(Size.X-2, Size.Y-39));
 	
 	AddComponent(scrollPanel);
 
-	heatSimulation = new ui::Checkbox(ui::Point(8, currentY), ui::Point(1, 16), "열 시뮬레이션 \bg버전 34 이상", "");
-	autowidth(heatSimulation);
-	heatSimulation->SetActionCallback({ [this] { c->SetHeatSimulation(heatSimulation->GetChecked()); } });
-	scrollPanel->AddChild(heatSimulation);
-	currentY+=14;
-	tempLabel = new ui::Label(ui::Point(24, currentY), ui::Point(1, 16), "\bg비활성화 시 정상적이지 않은 동작을 유발할 수 있음");
-	autowidth(tempLabel);
-	tempLabel->Appearance.HorizontalAlign = ui::Appearance::AlignLeft;
-	tempLabel->Appearance.VerticalAlign = ui::Appearance::AlignMiddle;
-	scrollPanel->AddChild(tempLabel);
+	int currentY = 8;
+	auto addCheckbox = [this, &currentY, &autoWidth](int indent, String text, String info, std::function<void ()> action) {
+		auto *checkbox = new ui::Checkbox(ui::Point(8 + indent * 15, currentY), ui::Point(1, 16), text, "");
+		autoWidth(checkbox, 0);
+		checkbox->SetActionCallback({ action });
+		scrollPanel->AddChild(checkbox);
+		currentY += 14;
+		if (info.size())
+		{
+			auto *label = new ui::Label(ui::Point(22 + indent * 15, currentY), ui::Point(1, 16), "\bg" + info);
+			autoWidth(label, 0);
+			label->Appearance.HorizontalAlign = ui::Appearance::AlignLeft;
+			label->Appearance.VerticalAlign = ui::Appearance::AlignMiddle;
+			scrollPanel->AddChild(label);
+			currentY += 14;
+		}
+		currentY += 4;
+		return checkbox;
+	};
+	auto addDropDown = [this, &currentY, &autoWidth](String info, std::vector<std::pair<String, int>> options, std::function<void ()> action) {
+		auto *dropDown = new ui::DropDown(ui::Point(Size.X - 95, currentY), ui::Point(80, 16));
+		scrollPanel->AddChild(dropDown);
+		for (auto &option : options)
+		{
+			dropDown->AddOption(option);
+		}
+		dropDown->SetActionCallback({ action });
+		auto *label = new ui::Label(ui::Point(8, currentY), ui::Point(Size.X - 96, 16), info);
+		label->Appearance.HorizontalAlign = ui::Appearance::AlignLeft;
+		label->Appearance.VerticalAlign = ui::Appearance::AlignMiddle;
+		scrollPanel->AddChild(label);
+		autoWidth(label, 85);
+		currentY += 20;
+		return dropDown;
+	};
+	auto addSeparator = [this, &currentY]() {
+		currentY += 6;
+		auto *separator = new Separator(ui::Point(0, currentY), ui::Point(Size.X, 1));
+		scrollPanel->AddChild(separator);
+		currentY += 11;
+	};
 
-	currentY+=16;
-	ambientHeatSimulation = new ui::Checkbox(ui::Point(8, currentY), ui::Point(1, 16), "복사열 시뮬레이션 \bg버전 50 이상", "");
-	autowidth(ambientHeatSimulation);
-	ambientHeatSimulation->SetActionCallback({ [this] { c->SetAmbientHeatSimulation(ambientHeatSimulation->GetChecked()); } });
-	scrollPanel->AddChild(ambientHeatSimulation);
-	currentY+=14;
-	tempLabel = new ui::Label(ui::Point(24, currentY), ui::Point(1, 16), "\bg활성화 시 일부 세이브와 충돌을 일으킬 수 있음");
-	autowidth(tempLabel);
-	tempLabel->Appearance.HorizontalAlign = ui::Appearance::AlignLeft;
-	tempLabel->Appearance.VerticalAlign = ui::Appearance::AlignMiddle;
-	scrollPanel->AddChild(tempLabel);
-
-	currentY+=16;
-	newtonianGravity = new ui::Checkbox(ui::Point(8, currentY), ui::Point(1, 16), "뉴턴 중력 시뮬레이션 \bg버전 48 이상", "");
-	autowidth(newtonianGravity);
-	newtonianGravity->SetActionCallback({ [this] { c->SetNewtonianGravity(newtonianGravity->GetChecked()); } });
-	scrollPanel->AddChild(newtonianGravity);
-	currentY+=14;
-	tempLabel = new ui::Label(ui::Point(24, currentY), ui::Point(1, 16), "\bg일정 성능 이하의 컴퓨터에서 성능 저하를 일으킬 수 있음");
-	autowidth(tempLabel);
-	tempLabel->Appearance.HorizontalAlign = ui::Appearance::AlignLeft;
-	tempLabel->Appearance.VerticalAlign = ui::Appearance::AlignMiddle;
-	scrollPanel->AddChild(tempLabel);
-
-	currentY+=16;
-	waterEqualisation = new ui::Checkbox(ui::Point(8, currentY), ui::Point(1, 16), "액체 높이 균등화 \bg버전 61 이상", "");
-	autowidth(waterEqualisation);
-	waterEqualisation->SetActionCallback({ [this] { c->SetWaterEqualisation(waterEqualisation->GetChecked()); } });
-	scrollPanel->AddChild(waterEqualisation);
-	currentY+=14;
-	tempLabel = new ui::Label(ui::Point(24, currentY), ui::Point(1, 16), "\bg다량의 액체가 있을 시 성능 저하를 일으킬 수 있음");
-	autowidth(tempLabel);
-	tempLabel->Appearance.HorizontalAlign = ui::Appearance::AlignLeft;
-	tempLabel->Appearance.VerticalAlign = ui::Appearance::AlignMiddle;
-	scrollPanel->AddChild(tempLabel);
-
-	currentY+=19;
-	airMode = new ui::DropDown(ui::Point(Size.X-95, currentY), ui::Point(80, 16));
-	scrollPanel->AddChild(airMode);
-	airMode->AddOption(std::pair<String, int>("켜기", 0));
-	airMode->AddOption(std::pair<String, int>("압력 끄기", 1));
-	airMode->AddOption(std::pair<String, int>("바람 끄기", 2));
-	airMode->AddOption(std::pair<String, int>("끄기", 3));
-	airMode->AddOption(std::pair<String, int>("고정", 4));
-	airMode->SetActionCallback({ [this] { c->SetAirMode(airMode->GetOption().second); } });
-
-	tempLabel = new ui::Label(ui::Point(8, currentY), ui::Point(Size.X-96, 16), "공기 시뮬레이션 모드");
-	tempLabel->Appearance.HorizontalAlign = ui::Appearance::AlignLeft;
-	tempLabel->Appearance.VerticalAlign = ui::Appearance::AlignMiddle;
-	scrollPanel->AddChild(tempLabel);
-
-	currentY+=20;
-	ambientAirTemp = new ui::Textbox(ui::Point(Size.X-95, currentY), ui::Point(60, 16));
-	ambientAirTemp->SetActionCallback({ [this] {
-		UpdateAirTemp(ambientAirTemp->GetText(), false);
-	} });
-	ambientAirTemp->SetDefocusCallback({ [this] {
-		UpdateAirTemp(ambientAirTemp->GetText(), true);
-	}});
-	scrollPanel->AddChild(ambientAirTemp);
-
-	ambientAirTempPreview = new ui::Button(ui::Point(Size.X-31, currentY), ui::Point(16, 16), "", "Preview");
-	scrollPanel->AddChild(ambientAirTempPreview);
-
-	tempLabel = new ui::Label(ui::Point(8, currentY), ui::Point(Size.X-96, 16), "기본 복사열 온도");
-	tempLabel->Appearance.HorizontalAlign = ui::Appearance::AlignLeft;
-	tempLabel->Appearance.VerticalAlign = ui::Appearance::AlignMiddle;
-	scrollPanel->AddChild(tempLabel);
-
-	currentY+=20;
-	gravityMode = new ui::DropDown(ui::Point(Size.X-95, currentY), ui::Point(80, 16));
-	scrollPanel->AddChild(gravityMode);
-	gravityMode->AddOption(std::pair<String, int>("수직", 0));
-	gravityMode->AddOption(std::pair<String, int>("끄기", 1));
-	gravityMode->AddOption(std::pair<String, int>("중심", 2));
-		gravityMode->AddOption(std::pair<String, int>("사용자 지정", 3));
-
+	heatSimulation = addCheckbox(0, "열 시뮬레이션 \bg버전 34 이상", "\bg비활성화 시 정상적이지 않은 동작을 유발할 수 있음", [this] {
+		c->SetHeatSimulation(heatSimulation->GetChecked());
+	});
+	newtonianGravity = addCheckbox(0, "뉴턴 중력 시뮬레이션 \bg버전 48 이상", "\bg일정 성능 이하의 컴퓨터에서 성능 저하를 일으킬 수 있음", [this] {
+		c->SetNewtonianGravity(newtonianGravity->GetChecked());
+	});
+	ambientHeatSimulation = addCheckbox(0, "복사열 시뮬레이션 \bg버전 50 이상", "\bg활성화 시 일부 세이브와 충돌을 일으킬 수 있음", [this] {
+		c->SetAmbientHeatSimulation(ambientHeatSimulation->GetChecked());
+	});
+	waterEqualisation = addCheckbox(0, "액체 높이 균등화 \bg버전 61 이상", "\bg다량의 액체가 있을 시 성능 저하를 일으킬 수 있음", [this] {
+		c->SetWaterEqualisation(waterEqualisation->GetChecked());
+	});
+	airMode = addDropDown("공기 시뮬레이션 모드", {
+		{ "켜기", 0 },
+		{ "압력 끄기", 1 },
+		{ "바람 끄기", 2 },
+		{ "끄기", 3 },
+		{ "고정", 4 },
+	}, [this] {
+		c->SetAirMode(airMode->GetOption().second);
+	});
+	{
+		ambientAirTemp = new ui::Textbox(ui::Point(Size.X-95, currentY), ui::Point(60, 16));
+		ambientAirTemp->SetActionCallback({ [this] {
+			UpdateAirTemp(ambientAirTemp->GetText(), false);
+		} });
+		ambientAirTemp->SetDefocusCallback({ [this] {
+			UpdateAirTemp(ambientAirTemp->GetText(), true);
+		}});
+		scrollPanel->AddChild(ambientAirTemp);
+		ambientAirTempPreview = new ui::Button(ui::Point(Size.X-31, currentY), ui::Point(16, 16), "", "Preview");
+		scrollPanel->AddChild(ambientAirTempPreview);
+		auto *label = new ui::Label(ui::Point(8, currentY), ui::Point(Size.X-96, 16), "기본 복사열 온도");
+		label->Appearance.HorizontalAlign = ui::Appearance::AlignLeft;
+		label->Appearance.VerticalAlign = ui::Appearance::AlignMiddle;
+		scrollPanel->AddChild(label);
+		currentY += 20;
+	}
 	class GravityWindow : public ui::Window
 	{
 		void OnTryExit(ExitMethod method) override
@@ -210,226 +201,135 @@ OptionsView::OptionsView():
 				MakeActiveWindow();
 			}
 	};
-
-	gravityMode->SetActionCallback({ [this] {
+	gravityMode = addDropDown("중력 방향", {
+		{ "수직", 0 },
+		{ "끄기", 1 },
+		{ "중심", 2 },
+		{ "사용자 지정", 3 },
+	}, [this] {
 		c->SetGravityMode(gravityMode->GetOption().second);
 		if (gravityMode->GetOption().second == 3)
+		{
 			new GravityWindow(ui::Point(-1, -1), 0.05f, 40, customGravityX, customGravityY, c);
-	} });
-
-	tempLabel = new ui::Label(ui::Point(8, currentY), ui::Point(Size.X-96, 16), "중력 방향");
-	tempLabel->Appearance.HorizontalAlign = ui::Appearance::AlignLeft;
-	tempLabel->Appearance.VerticalAlign = ui::Appearance::AlignMiddle;
-	scrollPanel->AddChild(tempLabel);
-
-	currentY+=20;
-	edgeMode = new ui::DropDown(ui::Point(Size.X-95, currentY), ui::Point(80, 16));
-	scrollPanel->AddChild(edgeMode);
-	edgeMode->AddOption(std::pair<String, int>("공허", 0));
-	edgeMode->AddOption(std::pair<String, int>("벽", 1));
-	edgeMode->AddOption(std::pair<String, int>("반복", 2));
-	edgeMode->SetActionCallback({ [this] { c->SetEdgeMode(edgeMode->GetOption().second); } });
-
-	tempLabel = new ui::Label(ui::Point(8, currentY), ui::Point(Size.X-96, 16), "모서리");
-	tempLabel->Appearance.HorizontalAlign = ui::Appearance::AlignLeft;
-	tempLabel->Appearance.VerticalAlign = ui::Appearance::AlignMiddle;
-	scrollPanel->AddChild(tempLabel);
-
-	currentY+=20;
-	temperatureScale = new ui::DropDown(ui::Point(Size.X-95, currentY), ui::Point(80, 16));
-	scrollPanel->AddChild(temperatureScale);
-	temperatureScale->AddOption(std::pair<String, int>("절대온도", 0));
-	temperatureScale->AddOption(std::pair<String, int>("섭씨", 1));
-	temperatureScale->AddOption(std::pair<String, int>("화씨", 2));
-	temperatureScale->SetActionCallback({ [this] { c->SetTemperatureScale(temperatureScale->GetOption().second); } });
-
-	tempLabel = new ui::Label(ui::Point(8, currentY), ui::Point(Size.X-96, 16), "온도 단위");
-	tempLabel->Appearance.HorizontalAlign = ui::Appearance::AlignLeft;
-	tempLabel->Appearance.VerticalAlign = ui::Appearance::AlignMiddle;
-	scrollPanel->AddChild(tempLabel);
-
-	currentY+=20;
-	tmpSeparator = new Separator(ui::Point(0, currentY), ui::Point(Size.X, 1));
-	scrollPanel->AddChild(tmpSeparator);
-
-	currentY+=4;
-	scale = new ui::DropDown(ui::Point(8, currentY), ui::Point(40, 16));
+		}
+	});
+	edgeMode = addDropDown("모서리", {
+		{ "공허", 0 },
+		{ "벽", 1 },
+		{ "반복", 2 },
+	}, [this] {
+		c->SetEdgeMode(edgeMode->GetOption().second);
+	});
+	temperatureScale = addDropDown("온도 단위", {
+		{ "절대온도", 0 },
+		{ "섭씨", 1 },
+		{ "화씨", 2 },
+	}, [this] {
+		c->SetTemperatureScale(temperatureScale->GetOption().second);
+	});
+	addSeparator();
 	{
-		int current_scale = ui::Engine::Ref().GetScale();
-		int ix_scale = 1;
-		bool current_scale_valid = false;
+		std::vector<std::pair<String, int>> options;
+		int currentScale = ui::Engine::Ref().GetScale();
+		int scaleIndex = 1;
+		bool currentScaleValid = false;
 		do
 		{
-			if (current_scale == ix_scale)
-				current_scale_valid = true;
-			scale->AddOption(std::pair<String, int>(String::Build(ix_scale), ix_scale));
-			ix_scale += 1;
+			if (currentScale == scaleIndex)
+			{
+				currentScaleValid = true;
+			}
+			options.push_back({ String::Build(scaleIndex), scaleIndex });
+			scaleIndex += 1;
 		}
-		while (desktopWidth >= GetGraphics()->Size().X * ix_scale && desktopHeight >= GetGraphics()->Size().Y * ix_scale);
-		if (!current_scale_valid)
-			scale->AddOption(std::pair<String, int>("현재", current_scale));
+		while (desktopWidth >= GetGraphics()->Size().X * scaleIndex && desktopHeight >= GetGraphics()->Size().Y * scaleIndex);
+		if (!currentScaleValid)
+		{
+			options.push_back({ "현재", currentScale });
+		}
+		scale = addDropDown("대화면 디스플레이용 창 스케일 조정", options, [this] {
+			c->SetScale(scale->GetOption().second);
+		});
 	}
-	scale->SetActionCallback({ [this] { c->SetScale(scale->GetOption().second); } });
-	scrollPanel->AddChild(scale);
+	resizable = addCheckbox(0, "창 크기 조절 \bg- 창 크기의 조절을 허용합니다.", "", [this] {
+		c->SetResizable(resizable->GetChecked());
+	});
+	fullscreen = addCheckbox(0, "전체 화면 \bg- 전체 화면으로 플레이합니다.", "", [this] {
+		c->SetFullscreen(fullscreen->GetChecked());
+	});
+	altFullscreen = addCheckbox(1, "해상도 변경 \bg- 최적화된 해상도로 조정합니다.", "", [this] {
+		c->SetAltFullscreen(altFullscreen->GetChecked());
+	});
+	forceIntegerScaling = addCheckbox(1, "강제 정수 스케일링 \bg- 화면이 선명해지도록 조정합니다.", "", [this] {
+		c->SetForceIntegerScaling(forceIntegerScaling->GetChecked());
+	});
+	addSeparator();
+	fastquit = addCheckbox(0, "빠른 종료", "닫기 단추를 누르면 바로 종료합니다.", [this] {
+		c->SetFastQuit(fastquit->GetChecked());
+	});
+	showAvatars = addCheckbox(0, "프로필 사진 표시", "댓글에서 프로필 사진을 표시합니다.", [this] {
+		c->SetShowAvatars(showAvatars->GetChecked());
+	});
+	momentumScroll = addCheckbox(0, "부드러운 스크롤 활성화", "부드러운 스크롤을 활성화합니다.", [this] {
+		c->SetMomentumScroll(momentumScroll->GetChecked());
+	});
+	mouseClickRequired = addCheckbox(0, "카테고리 고정", "우측 물질 카테고리를 클릭으로 전환합니다.", [this] {
+		c->SetMouseClickrequired(mouseClickRequired->GetChecked());
+	});
+	includePressure = addCheckbox(0, "압력 포함 저장", "복사하거나 저장할 때 압력을 포함합니다.", [this] {
+		c->SetIncludePressure(includePressure->GetChecked());
+	});
+	perfectCircle = addCheckbox(0, "정확한 원 브러시", "브러시의 원을 정확하게 조정합니다.", [this] {
+		c->SetPerfectCircle(perfectCircle->GetChecked());
+	});
+	graveExitsConsole = addCheckbox(0, "[Esc] 밑의 키로 콘솔 끄기", "이 키가 귀하의 자판에서 [0]일 경우 비활성화하십시오.", [this] {
+		c->SetGraveExitsConsole(graveExitsConsole->GetChecked());
+	});
+	decoSpace = addDropDown("도색 도구에서 사용할 색 공간", {
+		{ "sRGB", 0 },
+		{ "Linear", 1 },
+		{ "Gamma 2.2", 2 },
+		{ "Gamma 1.8", 3 },
+	}, [this] {
+		c->SetDecoSpace(decoSpace->GetOption().second);
+	});
 
-	tempLabel = new ui::Label(ui::Point(scale->Position.X+scale->Size.X+3, currentY), ui::Point(Size.X-40, 16), "\bg- 대화면 디스플레이용 창 스케일 조정");
-	tempLabel->Appearance.HorizontalAlign = ui::Appearance::AlignLeft;
-	tempLabel->Appearance.VerticalAlign = ui::Appearance::AlignMiddle;
-	scrollPanel->AddChild(tempLabel);
-
-	currentY+=20;
-	resizable = new ui::Checkbox(ui::Point(8, currentY), ui::Point(1, 16), "창 크기 조절", "");
-	autowidth(resizable);
-	resizable->SetActionCallback({ [this] { c->SetResizable(resizable->GetChecked()); } });
-	tempLabel = new ui::Label(ui::Point(resizable->Position.X+Graphics::TextSize(resizable->GetText()).X+19, currentY), ui::Point(1, 16), "\bg- 창 크기의 조절을 허용합니다.");
-	autowidth(tempLabel);
-	tempLabel->Appearance.HorizontalAlign = ui::Appearance::AlignLeft;
-	tempLabel->Appearance.VerticalAlign = ui::Appearance::AlignMiddle;
-	scrollPanel->AddChild(tempLabel);
-	scrollPanel->AddChild(resizable);
-
-	currentY+=20;
-	fullscreen = new ui::Checkbox(ui::Point(8, currentY), ui::Point(1, 16), "전체 화면", "");
-	autowidth(fullscreen);
-	fullscreen->SetActionCallback({ [this] { c->SetFullscreen(fullscreen->GetChecked()); } });
-	tempLabel = new ui::Label(ui::Point(fullscreen->Position.X+Graphics::TextSize(fullscreen->GetText()).X+19, currentY), ui::Point(1, 16), "\bg- 전체 화면으로 플레이합니다.");
-	autowidth(tempLabel);
-	tempLabel->Appearance.HorizontalAlign = ui::Appearance::AlignLeft;
-	tempLabel->Appearance.VerticalAlign = ui::Appearance::AlignMiddle;
-	scrollPanel->AddChild(tempLabel);
-	scrollPanel->AddChild(fullscreen);
-
-	currentY+=20;
-	altFullscreen = new ui::Checkbox(ui::Point(23, currentY), ui::Point(1, 16), "해상도 변경", "");
-	autowidth(altFullscreen);
-	altFullscreen->SetActionCallback({ [this] { c->SetAltFullscreen(altFullscreen->GetChecked()); } });
-	tempLabel = new ui::Label(ui::Point(altFullscreen->Position.X+Graphics::TextSize(altFullscreen->GetText()).X+19, currentY), ui::Point(1, 16), "\bg- 최적화된 해상도로 조정합니다.");
-	autowidth(tempLabel);
-	tempLabel->Appearance.HorizontalAlign = ui::Appearance::AlignLeft;
-	tempLabel->Appearance.VerticalAlign = ui::Appearance::AlignMiddle;
-	scrollPanel->AddChild(tempLabel);
-	scrollPanel->AddChild(altFullscreen);
-
-	currentY+=20;
-	forceIntegerScaling = new ui::Checkbox(ui::Point(23, currentY), ui::Point(1, 16), "강제 정수 스케일링", "");
-	autowidth(forceIntegerScaling);
-	forceIntegerScaling->SetActionCallback({ [this] { c->SetForceIntegerScaling(forceIntegerScaling->GetChecked()); } });
-	tempLabel = new ui::Label(ui::Point(altFullscreen->Position.X+Graphics::TextSize(forceIntegerScaling->GetText()).X+19, currentY), ui::Point(1, 16), "\bg- 화면이 선명해지도록 조정합니다.");
-	autowidth(tempLabel);
-	tempLabel->Appearance.HorizontalAlign = ui::Appearance::AlignLeft;
-	tempLabel->Appearance.VerticalAlign = ui::Appearance::AlignMiddle;
-	scrollPanel->AddChild(tempLabel);
-	scrollPanel->AddChild(forceIntegerScaling);
-
-	currentY+=20;
-	fastquit = new ui::Checkbox(ui::Point(8, currentY), ui::Point(1, 16), "빠른 종료", "");
-	autowidth(fastquit);
-	fastquit->SetActionCallback({ [this] { c->SetFastQuit(fastquit->GetChecked()); } });
-	tempLabel = new ui::Label(ui::Point(fastquit->Position.X+Graphics::TextSize(fastquit->GetText()).X+19, currentY), ui::Point(1, 16), "\bg- 닫기 단추를 누르면 바로 종료합니다.");
-	autowidth(tempLabel);
-	tempLabel->Appearance.HorizontalAlign = ui::Appearance::AlignLeft;
-	tempLabel->Appearance.VerticalAlign = ui::Appearance::AlignMiddle;
-	scrollPanel->AddChild(tempLabel);
-	scrollPanel->AddChild(fastquit);
-
-	currentY+=20;
-	showAvatars = new ui::Checkbox(ui::Point(8, currentY), ui::Point(1, 16), "프로필 사진 표시", "");
-	autowidth(showAvatars);
-	showAvatars->SetActionCallback({ [this] { c->SetShowAvatars(showAvatars->GetChecked()); } });
-	tempLabel = new ui::Label(ui::Point(showAvatars->Position.X+Graphics::TextSize(showAvatars->GetText()).X+19, currentY), ui::Point(1, 16), "\bg- 댓글에서 프로필 사진을 표시합니다.");
-	autowidth(tempLabel);
-	tempLabel->Appearance.HorizontalAlign = ui::Appearance::AlignLeft;
-	tempLabel->Appearance.VerticalAlign = ui::Appearance::AlignMiddle;
-	scrollPanel->AddChild(tempLabel);
-	scrollPanel->AddChild(showAvatars);
-
-	currentY += 20;
-	momentumScroll = new ui::Checkbox(ui::Point(8, currentY), ui::Point(1, 16), "부드러운 스크롤 활성화", "");
-	autowidth(momentumScroll);
-	momentumScroll->SetActionCallback({ [this] { c->SetMomentumScroll(momentumScroll->GetChecked()); } });
-	tempLabel = new ui::Label(ui::Point(momentumScroll->Position.X + Graphics::TextSize(momentumScroll->GetText()).X+19, currentY), ui::Point(1, 16), "\bg- 부드러운 스크롤을 활성화합니다.");
-	autowidth(tempLabel);
-	tempLabel->Appearance.HorizontalAlign = ui::Appearance::AlignLeft;
-	tempLabel->Appearance.VerticalAlign = ui::Appearance::AlignMiddle;
-	scrollPanel->AddChild(tempLabel);
-	scrollPanel->AddChild(momentumScroll);
-
-	currentY+=20;
-	mouseClickRequired = new ui::Checkbox(ui::Point(8, currentY), ui::Point(1, 16), "카테고리 고정", "");
-	autowidth(mouseClickRequired);
-	mouseClickRequired->SetActionCallback({ [this] { c->SetMouseClickrequired(mouseClickRequired->GetChecked()); } });
-	tempLabel = new ui::Label(ui::Point(mouseClickRequired->Position.X+Graphics::TextSize(mouseClickRequired->GetText()).X+19, currentY), ui::Point(1, 16), "\bg- 우측 물질 카테고리를 클릭으로 전환합니다.");
-	autowidth(tempLabel);
-	tempLabel->Appearance.HorizontalAlign = ui::Appearance::AlignLeft;
-	tempLabel->Appearance.VerticalAlign = ui::Appearance::AlignMiddle;
-	scrollPanel->AddChild(tempLabel);
-	scrollPanel->AddChild(mouseClickRequired);
-
-	currentY+=20;
-	includePressure = new ui::Checkbox(ui::Point(8, currentY), ui::Point(1, 16), "압력 포함 저장", "");
-	autowidth(includePressure);
-	includePressure->SetActionCallback({ [this] { c->SetIncludePressure(includePressure->GetChecked()); } });
-	tempLabel = new ui::Label(ui::Point(includePressure->Position.X+Graphics::TextSize(includePressure->GetText()).X+19, currentY), ui::Point(1, 16), "\bg- 복사하거나 저장할 때 압력을 포함합니다.");
-	autowidth(tempLabel);
-	tempLabel->Appearance.HorizontalAlign = ui::Appearance::AlignLeft;
-	tempLabel->Appearance.VerticalAlign = ui::Appearance::AlignMiddle;
-	scrollPanel->AddChild(tempLabel);
-	scrollPanel->AddChild(includePressure);
-
-	currentY+=20;
-	perfectCirclePressure = new ui::Checkbox(ui::Point(8, currentY), ui::Point(1, 16), "정확한 원 브러시", "");
-	autowidth(perfectCirclePressure);
-	perfectCirclePressure->SetActionCallback({ [this] { c->SetPerfectCircle(perfectCirclePressure->GetChecked()); } });
-	tempLabel = new ui::Label(ui::Point(perfectCirclePressure->Position.X+Graphics::TextSize(perfectCirclePressure->GetText()).X+19, currentY), ui::Point(1, 16), "\bg- 브러시의 원을 정확하게 조정합니다.");
-	autowidth(tempLabel);
-	tempLabel->Appearance.HorizontalAlign = ui::Appearance::AlignLeft;
-	tempLabel->Appearance.VerticalAlign = ui::Appearance::AlignMiddle;
-	scrollPanel->AddChild(tempLabel);
-	scrollPanel->AddChild(perfectCirclePressure);
-
-	currentY+=20;
-	decoSpace = new ui::DropDown(ui::Point(8, currentY), ui::Point(60, 16));
-	decoSpace->SetActionCallback({ [this] { c->SetDecoSpace(decoSpace->GetOption().second); } });
-	scrollPanel->AddChild(decoSpace);
-	decoSpace->AddOption(std::pair<String, int>("sRGB", 0));
-	decoSpace->AddOption(std::pair<String, int>("Linear", 1));
-	decoSpace->AddOption(std::pair<String, int>("Gamma 2.2", 2));
-	decoSpace->AddOption(std::pair<String, int>("Gamma 1.8", 3));
-
-	tempLabel = new ui::Label(ui::Point(decoSpace->Position.X+decoSpace->Size.X+3, currentY), ui::Point(Size.X-40, 16), "\bg- 도색 도구에서 사용할 색 공간");
-	tempLabel->Appearance.HorizontalAlign = ui::Appearance::AlignLeft;
-	tempLabel->Appearance.VerticalAlign = ui::Appearance::AlignMiddle;
-	scrollPanel->AddChild(tempLabel);
-
-	currentY+=20;
-	ui::Button * dataFolderButton = new ui::Button(ui::Point(8, currentY), ui::Point(90, 16), "데이터 폴더 열기");
-	dataFolderButton->SetActionCallback({ [] {
-		ByteString cwd = Platform::GetCwd();
-		if (!cwd.empty())
-			Platform::OpenURI(cwd);
-		else
-			fprintf(stderr, "cannot open data folder: Platform::GetCwd(...) failed\n");
-	} });
-	scrollPanel->AddChild(dataFolderButton);
-
-	ui::Button * migrationButton = new ui::Button(ui::Point(Size.X - 178, currentY), ui::Point(163, 16), "공유 데이터 디렉터리로 이동");
-	migrationButton->SetActionCallback({ [] {
-		ByteString from = Platform::originalCwd;
-		ByteString to = Platform::sharedCwd;
-		new ConfirmPrompt("디렉터리를 이동합니까?", "이는\n\bt" + from.FromUtf8() + "\bw\n에 있는 모든 스탬프, 세이브, 스크립트를 디렉터리\n\bt" + to.FromUtf8() + "\bw로 이동합니다.\n\n" +
-			 "이미 존재하는 파일은 덮어쓰이지 않을 것입니다.", { [=] () {
-				 String ret = Client::Ref().DoMigration(from, to);
+	{
+		currentY += 4;
+		auto *dataFolderButton = new ui::Button(ui::Point(10, currentY), ui::Point(90, 16), "데이터 폴더 열기");
+		dataFolderButton->SetActionCallback({ [] {
+			ByteString cwd = Platform::GetCwd();
+			if (!cwd.empty())
+			{
+				Platform::OpenURI(cwd);
+			}
+			else
+			{
+				std::cerr << "Cannot open data folder: Platform::GetCwd(...) failed" << std::endl;
+			}
+		} });
+		scrollPanel->AddChild(dataFolderButton);
+		auto *migrationButton = new ui::Button(ui::Point(Size.X - 178, currentY), ui::Point(163, 16), "공유 데이터 디렉터리로 이동");
+		migrationButton->SetActionCallback({ [] {
+			ByteString from = Platform::originalCwd;
+			ByteString to = Platform::sharedCwd;
+			new ConfirmPrompt("디렉터리를 이동합니까?", "\bt" + from.FromUtf8() + "\bw\n에 있는 모든 스탬프, 세이브, 스크립트를 디렉터리\n\bt" + to.FromUtf8() + "\n\bw로 이동합니다.\n\n", { [from, to]() {
+				String ret = Client::Ref().DoMigration(from, to);
 				new InformationMessage("이동됨", ret, false);
-			 } });
-	} });
-	scrollPanel->AddChild(migrationButton);
-
-	ui::Button * tempButton = new ui::Button(ui::Point(0, Size.Y-16), ui::Point(Size.X, 16), "확인");
-	tempButton->SetActionCallback({ [this] { c->Exit(); } });
-	AddComponent(tempButton);
-	SetCancelButton(tempButton);
-	SetOkayButton(tempButton);
-	currentY+=20;
+			} });
+		} });
+		scrollPanel->AddChild(migrationButton);
+		currentY += 26;
+	}
+	{
+		ui::Button *ok = new ui::Button(ui::Point(0, Size.Y-16), ui::Point(Size.X, 16), "확인");
+		ok->SetActionCallback({ [this] {
+			c->Exit();
+		} });
+		AddComponent(ok);
+		SetCancelButton(ok);
+		SetOkayButton(ok);
+	}
 	scrollPanel->InnerSize = ui::Point(Size.X, currentY);
 }
 
@@ -539,7 +439,8 @@ void OptionsView::NotifySettingsChanged(OptionsModel * sender)
 	showAvatars->SetChecked(sender->GetShowAvatars());
 	mouseClickRequired->SetChecked(sender->GetMouseClickRequired());
 	includePressure->SetChecked(sender->GetIncludePressure());
-	perfectCirclePressure->SetChecked(sender->GetPerfectCircle());
+	perfectCircle->SetChecked(sender->GetPerfectCircle());
+	graveExitsConsole->SetChecked(sender->GetGraveExitsConsole());
 	momentumScroll->SetChecked(sender->GetMomentumScroll());
 }
 
@@ -558,8 +459,4 @@ void OptionsView::OnDraw()
 void OptionsView::OnTryExit(ExitMethod method)
 {
 	c->Exit();
-}
-
-
-OptionsView::~OptionsView() {
 }

@@ -37,7 +37,8 @@ class OptionsView: public ui::Window
 	ui::Checkbox * momentumScroll;
 	ui::Checkbox * mouseClickRequired;
 	ui::Checkbox * includePressure;
-	ui::Checkbox * perfectCirclePressure;
+	ui::Checkbox * perfectCircle;
+	ui::Checkbox * graveExitsConsole;
 	ui::ScrollPanel * scrollPanel;
 	float customGravityX, customGravityY;
 	void UpdateAmbientAirTempPreview(float airTemp, bool isValid);
@@ -49,5 +50,4 @@ public:
 	void AttachController(OptionsController * c_);
 	void OnDraw() override;
 	void OnTryExit(ExitMethod method) override;
-	virtual ~OptionsView();
 };

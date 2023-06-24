@@ -123,22 +123,30 @@ void BlueScreen(String detailMessage)
 	}
 }
 
+struct
+{
+	int sig;
+	const char *message;
+} signalMessages[] = {
+	{ SIGSEGV, "Memory read/write error" },
+	{ SIGFPE, "Floating point exception" },
+	{ SIGILL, "Program execution exception" },
+	{ SIGABRT, "Unexpected program abort" },
+	{ 0, nullptr },
+};
+
 void SigHandler(int signal)
 {
-	switch(signal){
-	case SIGSEGV:
-		BlueScreen("Memory read/write error");
-		break;
-	case SIGFPE:
-		BlueScreen("Floating point exception");
-		break;
-	case SIGILL:
-		BlueScreen("Program execution exception");
-		break;
-	case SIGABRT:
-		BlueScreen("Unexpected program abort");
-		break;
+	const char *message = "Unknown signal";
+	for (auto *msg = signalMessages; msg->message; ++msg)
+	{
+		if (msg->sig == signal)
+		{
+			message = msg->message;
+			break;
+		}
 	}
+	BlueScreen(ByteString(message).FromUtf8());
 }
 
 constexpr int SCALE_MAXIMUM = 10;
@@ -176,6 +184,11 @@ int main(int argc, char * argv[])
 {
 	Platform::SetupCrt();
 	Platform::Atexit([]() {
+		// Unregister dodgy error handlers so they don't try to show the blue screen when the window is closed
+		for (auto *msg = signalMessages; msg->message; ++msg)
+		{
+			signal(msg->sig, SIG_DFL);
+		}
 		SDLClose();
 		explicitSingletons.reset();
 	});
@@ -241,24 +254,22 @@ int main(int argc, char * argv[])
 	}
 	else
 	{
-		char *ddir = SDL_GetPrefPath(NULL, APPDATA);
+		auto ddir = std::unique_ptr<char, decltype(&SDL_free)>(SDL_GetPrefPath(NULL, APPDATA), SDL_free);
 		if (!Platform::FileExists("powder.pref"))
 		{
 			if (ddir)
 			{
-				if (!Platform::ChangeDir(ddir))
+				if (!Platform::ChangeDir(ddir.get()))
 				{
 					perror("failed to chdir to default ddir");
-					SDL_free(ddir);
-					ddir = nullptr;
+					ddir.reset();
 				}
 			}
 		}
 
 		if (ddir)
 		{
-			Platform::sharedCwd = ddir;
-			SDL_free(ddir);
+			Platform::sharedCwd = ddir.get();
 		}
 	}
 	// We're now in the correct directory, time to get prefs.
@@ -266,6 +277,7 @@ int main(int argc, char * argv[])
 
 	auto &prefs = GlobalPrefs::Ref();
 	scale = prefs.Get("Scale", 1);
+	auto graveExitsConsole = prefs.Get("GraveExitsConsole", true);
 	resizable = prefs.Get("Resizable", false);
 	fullscreen = prefs.Get("Fullscreen", false);
 	altFullscreen = prefs.Get("AltFullscreen", false);
@@ -370,6 +382,7 @@ int main(int argc, char * argv[])
 	auto &engine = ui::Engine::Ref();
 	engine.g = new Graphics();
 	engine.Scale = scale;
+	engine.GraveExitsConsole = graveExitsConsole;
 	engine.SetResizable(resizable);
 	engine.Fullscreen = fullscreen;
 	engine.SetAltFullscreen(altFullscreen);
@@ -383,10 +396,10 @@ int main(int argc, char * argv[])
 	if (enableBluescreen)
 	{
 		//Get ready to catch any dodgy errors
-		signal(SIGSEGV, SigHandler);
-		signal(SIGFPE, SigHandler);
-		signal(SIGILL, SigHandler);
-		signal(SIGABRT, SigHandler);
+		for (auto *msg = signalMessages; msg->message; ++msg)
+		{
+			signal(msg->sig, SigHandler);
+		}
 	}
 
 	if constexpr (X86)
