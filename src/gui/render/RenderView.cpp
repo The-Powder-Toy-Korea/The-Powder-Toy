@@ -61,7 +61,7 @@ RenderView::RenderView():
 	addRenderModeCheckbox(RENDER_GLOW, IconGlow  , ui::Point(33,  4), "일부 물질에 조명 효과를 표시합니다.");
 	addRenderModeCheckbox(RENDER_BLUR, IconBlur  , ui::Point(33, 22), "액체 물질에 블러 효과를 표시합니다.");
 	addRenderModeCheckbox(RENDER_BLOB, IconBlob  , ui::Point(65,  4), "모든 것의 윤곽선을 흐리게 표시합니다.");
-	addRenderModeCheckbox(RENDER_BASC, IconBasic , ui::Point(65, 22), "기본 렌더링, 이 렌더링이 있어야 대부분의 것들이 표시됩니다.");
+	addRenderModeCheckbox(RENDER_BASC, IconBasic , ui::Point(65, 22), "기본 렌더링, 이 렌더링이 있어야 대부분의 물질 및 입자가 표시됩니다.");
 	addRenderModeCheckbox(RENDER_SPRK, IconEffect, ui::Point(97,  4), "전류에 조명 효과를 표시합니다.");
 
 	auto addDisplayModeCheckbox = [this](unsigned int mode, Icon icon, ui::Point offset, String tooltip) {

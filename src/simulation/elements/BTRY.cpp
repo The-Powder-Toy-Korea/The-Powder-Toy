@@ -29,7 +29,7 @@ void Element::Element_BTRY()
 	Weight = 100;
 
 	HeatConduct = 251;
-	Description = "전지: 무한한 전류를 생성합니다.";
+	Description = "전지: 전류를 무한히 방출합니다.";
 
 	Properties = TYPE_SOLID;
 

@@ -29,7 +29,7 @@ void Element::Element_NTCT()
 	Weight = 100;
 
 	HeatConduct = 251;
-	Description = "고온 반응 반도체: 100 °C 이상에서만 전류를 흐르게 합니다.";
+	Description = "고온형 반도체: 100 °C 이상에서만 전류가 흐릅니다.";
 
 	Properties = TYPE_SOLID|PROP_CONDUCTS|PROP_LIFE_DEC;
 

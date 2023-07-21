@@ -31,7 +31,7 @@ void Element::Element_PUMP()
 
 	DefaultProperties.temp = 273.15f;
 	HeatConduct = 0;
-	Description = "압력 생성기: 활성화되었을 때 설정한 온도에 맞춰 압력을 발생시킵니다.";
+	Description = "압력 생성기: 활성화하였을 때 설정한 온도에 맞춰 압력을 발생시킵니다.";
 
 	Properties = TYPE_SOLID;
 

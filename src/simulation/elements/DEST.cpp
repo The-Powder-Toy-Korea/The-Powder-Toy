@@ -30,7 +30,7 @@ void Element::Element_DEST()
 	Weight = 101;
 
 	HeatConduct = 150;
-	Description = "파괴적 폭탄: 거의 모든 물질을 파괴할 수 있습니다.";
+	Description = "파괴적 폭탄: 거의 모든 물질을 파괴합니다.";
 
 	Properties = TYPE_PART|PROP_LIFE_DEC|PROP_LIFE_KILL_DEC;
 

@@ -30,7 +30,7 @@ void Element::Element_HSWC()
 	Weight = 100;
 
 	HeatConduct = 251;
-	Description = "열 스위치: 활성화되었을 때에만 열을 전도합니다.";
+	Description = "열 스위치: 활성화하였을 때에만 열을 전도합니다.";
 
 	Properties = TYPE_SOLID;
 

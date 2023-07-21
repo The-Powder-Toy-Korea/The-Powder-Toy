@@ -1658,7 +1658,7 @@ void GameView::OnFileDrop(ByteString filename)
 		return;
 	if (saveFile->GetError().length())
 	{
-		new ErrorMessage("세이브 불러오기 오류", "세이브 파일을 블러오는 중에 문제가 발생했습니다. 오류: " + saveFile->GetError());
+		new ErrorMessage("세이브 불러오기 오류", "세이브 파일을 블러오는 중에 문제가 발생하였습니다. 오류: " + saveFile->GetError());
 		return;
 	}
 	c->LoadSaveFile(std::move(saveFile));

@@ -30,7 +30,7 @@ void Element::Element_GPMP()
 	Weight = 100;
 
 	HeatConduct = 0;
-	Description = "중력 펌프: 활성화되었을 때 설정한 온도에 맞춰 중력을 발생시킵니다.";
+	Description = "중력 펌프: 활성화하였을 때 설정한 온도에 맞춰 중력을 발생시킵니다.";
 
 	Properties = TYPE_SOLID;
 
