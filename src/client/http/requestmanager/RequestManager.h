@@ -3,12 +3,14 @@
 #include "common/String.h"
 #include "client/http/PostData.h"
 #include <atomic>
+#include <cstdint>
 #include <thread>
 #include <vector>
 #include <memory>
 #include <mutex>
 #include <condition_variable>
 #include <optional>
+#include <utility>
 
 namespace http
 {
@@ -23,10 +25,10 @@ namespace http
 
 	public:
 		ByteString uri;
-		ByteString verb;
+		std::optional<ByteString> verb;
 		bool isPost = false;
 		PostData postData;
-		std::vector<ByteString> headers;
+		std::vector<Header> headers;
 
 		enum State
 		{
@@ -38,11 +40,11 @@ namespace http
 		State state = ready;
 		std::mutex stateMx;
 		std::condition_variable stateCv;
-		std::atomic<int> bytesTotal = -1;
-		std::atomic<int> bytesDone = 0;
+		std::atomic<int64_t> bytesTotal = -1;
+		std::atomic<int64_t> bytesDone = 0;
 		int statusCode = 0;
 		ByteString responseData;
-		std::vector<ByteString> responseHeaders;
+		std::vector<Header> responseHeaders;
 		std::optional<ByteString> error;
 		std::optional<ByteString> failEarly;
 

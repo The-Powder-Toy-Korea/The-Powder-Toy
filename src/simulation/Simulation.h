@@ -149,7 +149,7 @@ public:
 	void create_gain_photon(int pp);
 	void kill_part(int i);
 	bool FloodFillPmapCheck(int x, int y, int type);
-	int flood_prop(int x, int y, size_t propoffset, PropertyValue propvalue, StructProperty::PropertyType proptype);
+	int flood_prop(int x, int y, StructProperty prop, PropertyValue propvalue);
 	bool flood_water(int x, int y, int i);
 	int FloodINST(int x, int y);
 	void detach(int i);
@@ -217,11 +217,6 @@ public:
 	void clear_sim();
 	Simulation();
 	~Simulation();
-
-	static bool InBounds(int x, int y)
-	{
-		return RES.OriginRect().Contains({ x, y });
-	}
 
 	// These don't really belong anywhere at the moment, so go here for loop edge mode
 	static int remainder_p(int x, int y);

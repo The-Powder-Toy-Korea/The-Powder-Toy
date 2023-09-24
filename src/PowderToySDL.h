@@ -1,8 +1,10 @@
 #pragma once
 #include "common/String.h"
 #include "graphics/Pixel.h"
+#include "FpsLimit.h"
 #include <cstdint>
 #include <SDL.h>
+#include <variant>
 
 extern int desktopWidth;
 extern int desktopHeight;
@@ -26,6 +28,7 @@ extern bool mouseDown;
 extern bool calculatedInitialMouse;
 extern bool hasMouseMoved;
 
+void MainLoop();
 void EngineProcess();
 void StartTextInput();
 void StopTextInput();
@@ -39,9 +42,11 @@ void blit(pixel *vid);
 void SDLOpen();
 void SDLClose();
 void SDLSetScreen(int scale_, bool resizable_, bool fullscreen_, bool altFullscreen_, bool forceIntegerScaling_);
+void SetFpsLimit(FpsLimit newFpsLimit);
 bool RecreateWindow();
 void LoadWindowPosition();
 void SaveWindowPosition();
 void LargeScreenDialog();
 void TickClient();
 void EventProcess(const SDL_Event &event);
+void UpdateFpsLimit();

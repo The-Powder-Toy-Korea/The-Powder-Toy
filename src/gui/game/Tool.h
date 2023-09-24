@@ -1,10 +1,11 @@
 #pragma once
-#include <memory>
 #include "common/String.h"
 #include "common/Vec2.h"
 #include "graphics/Pixel.h"
 #include "gui/interface/Point.h"
 #include "simulation/StructProperty.h"
+#include <memory>
+#include <optional>
 
 class Simulation;
 class Brush;
@@ -97,12 +98,17 @@ public:
 
 class PropertyTool: public Tool
 {
+public:
+	struct Configuration
+	{
+		StructProperty prop;
+		PropertyValue propValue;
+		bool changeType;
+	};
+
+private:
 	GameModel &gameModel;
-	StructProperty::PropertyType propType;
-	PropertyValue propValue;
-	bool changeType;
-	size_t propOffset;
-	bool validProperty;
+	std::optional<Configuration> configuration;
 
 	friend class PropertyWindow;
 
@@ -124,6 +130,11 @@ public:
 	void DrawLine(Simulation * sim, Brush const &brush, ui::Point position1, ui::Point position2, bool dragging = false) override;
 	void DrawRect(Simulation * sim, Brush const &brush, ui::Point position1, ui::Point position2) override;
 	void DrawFill(Simulation * sim, Brush const &brush, ui::Point position) override;
+
+	std::optional<Configuration> GetConfiguration() const
+	{
+		return configuration;
+	}
 };
 
 class GOLTool: public Tool

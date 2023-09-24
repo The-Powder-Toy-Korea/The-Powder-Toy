@@ -60,13 +60,13 @@ inline ByteString IntroText()
 	{
 		sb << " NOHTTP";
 	}
+	else if constexpr (ENFORCE_HTTPS)
+	{
+		sb << " HTTPS";
+	}
 	if constexpr (DEBUG)
 	{
 		sb << " DEBUG";
-	}
-	if constexpr (ENFORCE_HTTPS)
-	{
-		sb << " HTTPS";
 	}
 	return sb.Build();
 }

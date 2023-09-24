@@ -62,4 +62,12 @@ namespace Platform
 	using ExitFunc = void (*)();
 	void Atexit(ExitFunc exitFunc);
 	void Exit(int code);
+
+	ByteString DefaultDdir();
+
+	int InvokeMain(int argc, char *argv[]);
+
+	void MarkPresentable();
 }
+
+extern "C" int Main(int argc, char *argv[]);

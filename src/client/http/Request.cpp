@@ -43,7 +43,7 @@ namespace http
 		handle->verb = newVerb;
 	}
 
-	void Request::AddHeader(ByteString header)
+	void Request::AddHeader(Header header)
 	{
 		assert(handle->state == RequestHandle::ready);
 		handle->headers.push_back(header);
@@ -60,16 +60,16 @@ namespace http
 	void Request::AuthHeaders(ByteString ID, ByteString session)
 	{
 		assert(handle->state == RequestHandle::ready);
-		if (ID.size())
+		if (ID.size() && ID != "-1") // -1 is an emscripten hack, see AuthUserEmscripten.cpp
 		{
 			if (session.size())
 			{
-				AddHeader("X-Auth-User-Id: " + ID);
-				AddHeader("X-Auth-Session-Key: " + session);
+				AddHeader({ "X-Auth-User-Id", ID });
+				AddHeader({ "X-Auth-Session-Key", session });
 			}
 			else
 			{
-				AddHeader("X-Auth-User: " + ID);
+				AddHeader({ "X-Auth-User", ID });
 			}
 		}
 	}
@@ -88,14 +88,14 @@ namespace http
 		return handle->state == RequestHandle::done;
 	}
 
-	std::pair<int, int> Request::CheckProgress() const
+	std::pair<int64_t, int64_t> Request::CheckProgress() const
 	{
 		std::lock_guard lk(handle->stateMx);
 		assert(handle->state == RequestHandle::running || handle->state == RequestHandle::done);
 		return { handle->bytesTotal, handle->bytesDone };
 	}
 
-	const std::vector<ByteString> &Request::ResponseHeaders() const
+	const std::vector<Header> &Request::ResponseHeaders() const
 	{
 		std::lock_guard lk(handle->stateMx);
 		assert(handle->state == RequestHandle::done);
@@ -145,6 +145,10 @@ namespace http
 		if (error)
 		{
 			std::cerr << *error << std::endl;
+		}
+		else if (statusCode >= 400)
+		{
+			std::cerr << "status code " << statusCode << " for request to " << uri << std::endl;
 		}
 	}
 

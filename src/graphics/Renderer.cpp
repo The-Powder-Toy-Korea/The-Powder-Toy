@@ -172,7 +172,6 @@ void Renderer::render_parts()
 {
 	int deca, decr, decg, decb, cola, colr, colg, colb, firea, firer, fireg, fireb, pixel_mode, q, i, t, nx, ny, x, y;
 	int orbd[4] = {0, 0, 0, 0}, orbl[4] = {0, 0, 0, 0};
-	float gradv, flicker;
 	Particle * parts;
 	Element *elements;
 	if(!sim)
@@ -259,7 +258,7 @@ void Renderer::render_parts()
 				}
 				if((elements[t].Properties & PROP_HOT_GLOW) && sim->parts[i].temp>(elements[t].HighTemperature-800.0f))
 				{
-					gradv = 3.1415/(2*elements[t].HighTemperature-(elements[t].HighTemperature-800.0f));
+					auto gradv = 3.1415/(2*elements[t].HighTemperature-(elements[t].HighTemperature-800.0f));
 					auto caddress = int((sim->parts[i].temp>elements[t].HighTemperature)?elements[t].HighTemperature-(elements[t].HighTemperature-800.0f):sim->parts[i].temp-(elements[t].HighTemperature-800.0f));
 					colr += int(sin(gradv*caddress) * 226);
 					colg += int(sin(gradv*caddress*4.55 +TPT_PI_DBL) * 34);
@@ -299,7 +298,7 @@ void Renderer::render_parts()
 				}
 				else if(colour_mode & COLOUR_LIFE)
 				{
-					gradv = 0.4f;
+					auto gradv = 0.4f;
 					if (!(sim->parts[i].life<5))
 						q = int(sqrt((float)sim->parts[i].life));
 					else
@@ -369,10 +368,41 @@ void Renderer::render_parts()
 				if(firea>255) firea = 255;
 				else if(firea<0) firea = 0;
 
+				auto matchesFindingElement = false;
 				if (findingElement)
 				{
-					if (TYP(findingElement) == parts[i].type &&
-							(parts[i].type != PT_LIFE || (ID(findingElement) == parts[i].ctype)))
+					if (findingElement->property.Offset == offsetof(Particle, type))
+					{
+						auto ft = std::get<int>(findingElement->value);
+						matchesFindingElement = parts[i].type == TYP(ft);
+						if (ID(ft))
+						{
+							matchesFindingElement &= parts[i].ctype == ID(ft);
+						}
+					}
+					else
+					{
+						switch (findingElement->property.Type)
+						{
+						case StructProperty::Float:
+							matchesFindingElement = *((float*)(((char*)&sim->parts[i])+findingElement->property.Offset)) == std::get<float>(findingElement->value);
+							break;
+
+						case StructProperty::ParticleType:
+						case StructProperty::Integer:
+							matchesFindingElement = *((int*)(((char*)&sim->parts[i])+findingElement->property.Offset)) == std::get<int>(findingElement->value);
+							break;
+
+						case StructProperty::UInteger:
+							matchesFindingElement = *((unsigned int*)(((char*)&sim->parts[i])+findingElement->property.Offset)) == std::get<unsigned int>(findingElement->value);
+							break;
+
+						default:
+							break;
+						}
+					}
+
+					if (matchesFindingElement)
 					{
 						colr = firer = 255;
 						colg = fireg = colb = fireb = 0;
@@ -417,7 +447,7 @@ void Renderer::render_parts()
 						BlendText(mousePos + Vec2{ -8-2*(sim->parts[i].life<100)-2*(sim->parts[i].life<10), -12 }, hp, 0xFFFFFF_rgb .WithAlpha(255));
 					}
 
-					if (findingElement == t)
+					if (matchesFindingElement)
 					{
 						colr = 255;
 						colg = colb = 0;
@@ -446,7 +476,7 @@ void Renderer::render_parts()
 						}
 					}
 
-					if (findingElement && findingElement == t)
+					if (matchesFindingElement)
 					{
 						legr = 255;
 						legg = legb = 0;
@@ -470,7 +500,7 @@ void Renderer::render_parts()
 						legb = 255;
 					}
 
-					if (findingElement && findingElement != t)
+					if (matchesFindingElement)
 					{
 						colr /= 10;
 						colg /= 10;
@@ -589,20 +619,25 @@ void Renderer::render_parts()
 				}
 				if(pixel_mode & PMODE_SPARK)
 				{
-					flicker = float(rng()%20);
-					gradv = 4*sim->parts[i].life + flicker;
+					auto flicker = float(rng()%20);
+					auto gradv = 4*sim->parts[i].life + flicker;
 					for (x = 0; gradv>0.5; x++) {
-						AddPixel({ nx+x, ny }, RGBA<uint8_t>(colr, colg, colb, int(gradv)));
-						AddPixel({ nx-x, ny }, RGBA<uint8_t>(colr, colg, colb, int(gradv)));
-						AddPixel({ nx, ny+x }, RGBA<uint8_t>(colr, colg, colb, int(gradv)));
-						AddPixel({ nx, ny-x }, RGBA<uint8_t>(colr, colg, colb, int(gradv)));
+						auto col = RGBA<uint8_t>(
+							std::min(0xFF, colr * int(gradv) / 255),
+							std::min(0xFF, colg * int(gradv) / 255),
+							std::min(0xFF, colb * int(gradv) / 255)
+						);
+						AddPixel({ nx+x, ny }, col);
+						AddPixel({ nx-x, ny }, col);
+						AddPixel({ nx, ny+x }, col);
+						AddPixel({ nx, ny-x }, col);
 						gradv = gradv/1.5f;
 					}
 				}
 				if(pixel_mode & PMODE_FLARE)
 				{
-					flicker = float(rng()%20);
-					gradv = flicker + fabs(parts[i].vx)*17 + fabs(sim->parts[i].vy)*17;
+					auto flicker = float(rng()%20);
+					auto gradv = flicker + fabs(parts[i].vx)*17 + fabs(sim->parts[i].vy)*17;
 					BlendPixel({ nx, ny }, RGBA<uint8_t>(colr, colg, colb, int((gradv*4)>255?255:(gradv*4)) ));
 					BlendPixel({ nx+1, ny }, RGBA<uint8_t>(colr, colg, colb,int( (gradv*2)>255?255:(gradv*2)) ));
 					BlendPixel({ nx-1, ny }, RGBA<uint8_t>(colr, colg, colb, int((gradv*2)>255?255:(gradv*2)) ));
@@ -623,8 +658,8 @@ void Renderer::render_parts()
 				}
 				if(pixel_mode & PMODE_LFLARE)
 				{
-					flicker = float(rng()%20);
-					gradv = flicker + fabs(parts[i].vx)*17 + fabs(parts[i].vy)*17;
+					auto flicker = float(rng()%20);
+					auto gradv = flicker + fabs(parts[i].vx)*17 + fabs(parts[i].vy)*17;
 					BlendPixel({ nx, ny }, RGBA<uint8_t>(colr, colg, colb, int((gradv*4)>255?255:(gradv*4)) ));
 					BlendPixel({ nx+1, ny }, RGBA<uint8_t>(colr, colg, colb, int((gradv*2)>255?255:(gradv*2)) ));
 					BlendPixel({ nx-1, ny }, RGBA<uint8_t>(colr, colg, colb, int((gradv*2)>255?255:(gradv*2)) ));
@@ -1161,7 +1196,7 @@ void Renderer::render_fire()
 						a = fire_alpha[y+CELL][x+CELL];
 						if (findingElement)
 							a /= 2;
-						AddPixel({ i*CELL+x, j*CELL+y }, RGBA<uint8_t>(r, g, b, a));
+						AddFirePixel({ i*CELL+x, j*CELL+y }, RGB<uint8_t>(r, g, b), a);
 					}
 			r *= 8;
 			g *= 8;

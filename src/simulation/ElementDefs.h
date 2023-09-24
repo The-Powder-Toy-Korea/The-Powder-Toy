@@ -54,8 +54,6 @@ constexpr auto FLAG_PHOTDECO      = UINT32_C(0x00000008); // compatibility with 
 #define CTYPEDRAW_FUNC_ARGS Simulation *sim, int i, int t, int v
 #define CTYPEDRAW_FUNC_SUBCALL_ARGS sim, i, t, v
 
-constexpr bool BOUNDS_CHECK = true;
-
 constexpr int OLD_PT_WIND = 147;
 
 // Change this to change the amount of bits used to store type in pmap (and a few elements such as PIPE and CRAY)
@@ -78,5 +76,10 @@ constexpr int PMAPID(int id)
 	return id << PMAPBITS;
 }
 constexpr int PT_NUM = 1 << PMAPBITS;
+
+constexpr bool InBounds(int x, int y)
+{
+	return RES.OriginRect().Contains({ x, y });
+}
 
 struct playerst;

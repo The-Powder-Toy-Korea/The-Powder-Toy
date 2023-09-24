@@ -1,6 +1,5 @@
 luaconsole_files = files(
 	'LegacyLuaAPI.cpp',
-	'LuaBit.cpp',
 	'LuaButton.cpp',
 	'LuaCheckbox.cpp',
 	'LuaCompat.c',
@@ -15,17 +14,22 @@ luaconsole_files = files(
 	'LuaTextbox.cpp',
 	'LuaWindow.cpp',
 )
+if lua_variant != 'luajit'
+	luaconsole_files += files(
+		'LuaBit.cpp',
+	)
+endif
 if host_platform == 'windows'
 	luaconsole_files += files('LuaSocketWindows.cpp')
 else
 	luaconsole_files += files('LuaSocketDefault.cpp')
 endif
-if enable_http
-	luaconsole_files += files('LuaSocketTCPHttp.cpp')
-else
+if not enable_http or host_platform == 'emscripten'
 	luaconsole_files += files('LuaSocketTCPNoHttp.cpp')
+else
+	luaconsole_files += files('LuaSocketTCPHttp.cpp')
 endif
-conf_data.set('LUACONSOLE', lua_variant != 'none' ? 'true' : 'false')
+conf_data.set('LUACONSOLE', (lua_variant != 'none').to_string())
 
 subdir('luascripts')
 

@@ -9,7 +9,6 @@
 #include "client/GameSave.h"
 #include "client/SaveInfo.h"
 #include "gui/dialogues/ErrorMessage.h"
-#include "PreviewModelException.h"
 #include "PreviewView.h"
 #include "Config.h"
 #include <cmath>
@@ -73,6 +72,16 @@ void PreviewModel::SetDoOpen(bool doOpen)
 bool PreviewModel::GetDoOpen()
 {
 	return doOpen;
+}
+
+void PreviewModel::SetFromUrl(bool fromUrl)
+{
+	this->fromUrl = fromUrl;
+}
+
+bool PreviewModel::GetFromUrl()
+{
+	return fromUrl;
 }
 
 bool PreviewModel::GetCanOpen()
@@ -234,11 +243,11 @@ void PreviewModel::Update()
 		{
 			if (favouriteSaveRequest->Favourite())
 			{
-				throw PreviewModelException("오류가 발생하여 세이브를 즐겨찾기에 등록할 수 없습니다: " + ByteString(ex.what()).FromUtf8());
+				new ErrorMessage("오류", "세이브를 즐겨찾기에 등록할 수 없습니다: " + ByteString(ex.what()).FromUtf8());
 			}
 			else
 			{
-				throw PreviewModelException("오류가 발생하여 세이브를 즐겨찾기에서 해제할 수 없습니다: " + ByteString(ex.what()).FromUtf8());
+				new ErrorMessage("오류", "세이브를 즐겨찾기에서 해제할 수 없습니다: " + ByteString(ex.what()).FromUtf8());
 			}
 		}
 		favouriteSaveRequest.reset();

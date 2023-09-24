@@ -31,7 +31,7 @@ namespace http
 		void FailEarly(ByteString error);
 
 		void Verb(ByteString newVerb);
-		void AddHeader(ByteString header);
+		void AddHeader(Header header);
 
 		void AddPostData(PostData data);
 		void AuthHeaders(ByteString ID, ByteString session);
@@ -39,8 +39,8 @@ namespace http
 		void Start();
 		bool CheckDone() const;
 
-		std::pair<int, int> CheckProgress() const; // total, done
-		const std::vector<ByteString> &ResponseHeaders() const;
+		std::pair<int64_t, int64_t> CheckProgress() const; // total, done
+		const std::vector<Header> &ResponseHeaders() const;
 		void Wait();
 
 		int StatusCode() const; // status

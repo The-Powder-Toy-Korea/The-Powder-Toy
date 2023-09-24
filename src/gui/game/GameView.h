@@ -1,11 +1,13 @@
 #pragma once
+#include "common/String.h"
+#include "gui/interface/Window.h"
+#include "simulation/Sample.h"
+#include "graphics/FindingElement.h"
 #include <ctime>
 #include <deque>
 #include <memory>
 #include <vector>
-#include "common/String.h"
-#include "gui/interface/Window.h"
-#include "simulation/Sample.h"
+#include <optional>
 
 enum DrawMode
 {
@@ -141,6 +143,8 @@ private:
 
 	Vec2<int> PlaceSavePos() const;
 
+	std::optional<FindingElement> FindingElementCandidate() const;
+
 public:
 	GameView();
 	virtual ~GameView();
@@ -225,4 +229,6 @@ public:
 	void DoKeyRelease(int key, int scan, bool repeat, bool shift, bool ctrl, bool alt) override;
 
 	class OptionListener;
+
+	void SkipIntroText();
 };

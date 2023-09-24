@@ -522,11 +522,7 @@ void GameView::NotifyActiveToolsChanged(GameModel * sender)
 
 	if (sender->GetRenderer()->findingElement)
 	{
-		Tool *active = sender->GetActiveTool(0);
-		if (!active->Identifier.Contains("_PT_"))
-			ren->findingElement = 0;
-		else
-			ren->findingElement = sender->GetActiveTool(0)->ToolID;
+		ren->findingElement = FindingElementCandidate();
 	}
 }
 
@@ -606,10 +602,9 @@ void GameView::NotifyToolListChanged(GameModel * sender)
 					}
 					else if (identifier.BeginsWith("DEFAULT_PT_LIFECUST_"))
 					{
-						if (ConfirmPrompt::Blocking("사용자 지정 생명 게임 제거", identifier.Substr(20).FromUtf8() + "을(를) 정말로 제거하시겠습니까?"))
-						{
+						new ConfirmPrompt("사용자 지정 생명 게임 제거", identifier.Substr(20).FromUtf8() + "을(를) 정말로 제거하시겠습니까?", { [this, identifier]() {
 							c->RemoveCustomGOLType(identifier);
-						}
+						} });
 					}
 				}
 			}
@@ -996,17 +991,12 @@ int GameView::Record(bool record)
 	}
 	else if (!recording)
 	{
-		// block so that the return value is correct
-		bool record = ConfirmPrompt::Blocking("녹화 중...", "모든 프레임을 녹화하여 저장합니다. 많은 드라이브 용량을 요구합니다.");
-		if (record)
-		{
-			time_t startTime = time(NULL);
-			recordingFolder = startTime;
-			Platform::MakeDirectory("recordings");
-			Platform::MakeDirectory(ByteString::Build("recordings", PATH_SEP_CHAR, recordingFolder));
-			recording = true;
-			recordingIndex = 0;
-		}
+		time_t startTime = time(NULL);
+		recordingFolder = startTime;
+		Platform::MakeDirectory("recordings");
+		Platform::MakeDirectory(ByteString::Build("recordings", PATH_SEP_CHAR, recordingFolder));
+		recording = true;
+		recordingIndex = 0;
 	}
 	return recordingFolder;
 }
@@ -1444,11 +1434,15 @@ void GameView::OnKeyPress(int key, int scan, bool repeat, bool shift, bool ctrl,
 	case SDL_SCANCODE_F:
 		if (ctrl)
 		{
-			Tool *active = c->GetActiveTool(0);
-			if (!active->Identifier.Contains("_PT_") || (ren->findingElement == active->ToolID))
-				ren->findingElement = 0;
+			auto findingElementCandidate = FindingElementCandidate();
+			if (ren->findingElement == findingElementCandidate)
+			{
+				ren->findingElement = std::nullopt;
+			}
 			else
-				ren->findingElement = active->ToolID;
+			{
+				ren->findingElement = findingElementCandidate;
+			}
 		}
 		else
 			c->FrameStep();
@@ -1503,7 +1497,10 @@ void GameView::OnKeyPress(int key, int scan, bool repeat, bool shift, bool ctrl,
 		break;
 	case SDL_SCANCODE_ESCAPE:
 	case SDL_SCANCODE_Q:
-		ui::Engine::Ref().ConfirmExit();
+		if (ALLOW_QUIT)
+		{
+			ui::Engine::Ref().ConfirmExit();
+		}
 		break;
 	case SDL_SCANCODE_U:
 		if (ctrl)
@@ -1661,9 +1658,21 @@ void GameView::OnFileDrop(ByteString filename)
 		new ErrorMessage("세이브 불러오기 오류", "세이브 파일을 블러오는 중에 문제가 발생하였습니다. 오류: " + saveFile->GetError());
 		return;
 	}
-	c->LoadSaveFile(std::move(saveFile));
+	if (filename.EndsWith(".stm"))
+	{
+		c->LoadStamp(saveFile->TakeGameSave());
+	}
+	else
+	{
+		c->LoadSaveFile(std::move(saveFile));
+	}
 
 	// hide the info text if it's not already hidden
+	SkipIntroText();
+}
+
+void GameView::SkipIntroText()
+{
 	introText = 0;
 }
 
@@ -2505,4 +2514,22 @@ ui::Point GameView::rectSnapCoords(ui::Point point1, ui::Point point2)
 		return point1 + ui::Point((diff.X + diff.Y)/2, (diff.X + diff.Y)/2);
 	// SW-NE
 	return point1 + ui::Point((diff.X - diff.Y)/2, (diff.Y - diff.X)/2);
+}
+
+std::optional<FindingElement> GameView::FindingElementCandidate() const
+{
+	Tool *active = c->GetActiveTool(0);
+	if (active->Identifier.Contains("_PT_"))
+	{
+		return FindingElement{ Particle::GetProperties()[FIELD_TYPE], active->ToolID };
+	}
+	else if (active->Identifier == "DEFAULT_UI_PROPERTY")
+	{
+		auto configuration = static_cast<PropertyTool *>(active)->GetConfiguration();
+		if (configuration)
+		{
+			return FindingElement{ configuration->prop, configuration->propValue };
+		}
+	}
+	return std::nullopt;
 }

@@ -5,6 +5,8 @@
 #include "common/ExplicitSingleton.h"
 #include "graphics/Pixel.h"
 #include "gui/interface/Point.h"
+#include <climits>
+#include "FpsLimit.h"
 
 class Graphics;
 namespace ui
@@ -39,12 +41,9 @@ namespace ui
 
 		void Begin();
 		inline bool Running() { return running_; }
-		inline bool Broken() { return break_; }
 		inline long unsigned int LastTick() { return lastTick; }
 		void Exit();
 		void ConfirmExit();
-		void Break();
-		void UnBreak();
 
 		void SetDrawingFrequencyLimit(int limit) {drawingFrequencyLimit = limit;}
 		inline int GetDrawingFrequencyLimit() {return drawingFrequencyLimit;}
@@ -78,7 +77,13 @@ namespace ui
 		//void SetState(Window* state);
 		//inline State* GetState() { return state_; }
 		inline Window* GetWindow() { return state_; }
-		float FpsLimit;
+
+		void SetFpsLimit(FpsLimit newFpsLimit);
+		FpsLimit GetFpsLimit() const
+		{
+			return fpsLimit;
+		}
+
 		int drawingFrequencyLimit;
 		Graphics * g;
 		int Scale;
@@ -87,11 +92,13 @@ namespace ui
 
 		unsigned int FrameIndex;
 	private:
+		FpsLimit fpsLimit;
 		bool altFullscreen;
 		bool forceIntegerScaling = true;
 		bool resizable;
 
 		bool textInput = false;
+		int lastTextEditingStart = INT_MAX;
 
 		float dt;
 		float fps;
@@ -113,7 +120,6 @@ namespace ui
 		std::stack<FrozenGraphics> frozenGraphics;
 
 		bool running_;
-		bool break_;
 		bool FastQuit;
 
 		long unsigned int lastTick;

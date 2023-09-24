@@ -1,7 +1,6 @@
 #include "PreviewController.h"
 #include "Controller.h"
 #include "PreviewModel.h"
-#include "PreviewModelException.h"
 #include "PreviewView.h"
 #include "client/Client.h"
 #include "client/SaveInfo.h"
@@ -18,7 +17,7 @@
 #include "gui/login/LoginView.h"
 #include "Config.h"
 
-PreviewController::PreviewController(int saveID, int saveDate, bool instant, std::function<void ()> onDone_, std::unique_ptr<VideoBuffer> thumbnail):
+PreviewController::PreviewController(int saveID, int saveDate, SavePreviewType savePreviewType, std::function<void ()> onDone_, std::unique_ptr<VideoBuffer> thumbnail):
 	saveId(saveID),
 	loginWindow(NULL),
 	HasExited(false)
@@ -27,7 +26,8 @@ PreviewController::PreviewController(int saveID, int saveDate, bool instant, std
 	previewView = new PreviewView(std::move(thumbnail));
 	previewModel->AddObserver(previewView);
 	previewView->AttachController(this);
-	previewModel->SetDoOpen(instant);
+	previewModel->SetDoOpen(savePreviewType != savePreviewNormal);
+	previewModel->SetFromUrl(savePreviewType == savePreviewUrl);
 
 	previewModel->UpdateSave(saveID, saveDate);
 
@@ -51,6 +51,7 @@ void PreviewController::Update()
 	}
 	if (previewModel->GetDoOpen() && previewModel->GetSaveInfo() && previewModel->GetSaveInfo()->GetGameSave())
 	{
+		Platform::MarkPresentable();
 		Exit();
 	}
 }
@@ -79,6 +80,11 @@ std::unique_ptr<SaveInfo> PreviewController::TakeSaveInfo()
 bool PreviewController::GetDoOpen()
 {
 	return previewModel->GetDoOpen();
+}
+
+bool PreviewController::GetFromUrl()
+{
+	return previewModel->GetFromUrl();
 }
 
 void PreviewController::DoOpen()

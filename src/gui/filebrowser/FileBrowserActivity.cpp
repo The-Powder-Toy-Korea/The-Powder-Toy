@@ -141,29 +141,36 @@ void FileBrowserActivity::SelectSave(int index)
 
 void FileBrowserActivity::DeleteSave(int index)
 {
-	auto &file = files[index];
-	String deleteMessage = file->GetDisplayName() + ".cps를 정말로 삭제하시겠습니까?";
-	if (ConfirmPrompt::Blocking("세이브 제거", deleteMessage))
-	{
+	String deleteMessage = files[index]->GetDisplayName() + ".cps를 정말로 삭제하시겠습니까?";
+	new ConfirmPrompt("세이브 제거", deleteMessage, { [this, index]() {
+		auto &file = files[index];
 		Platform::RemoveFile(file->GetName());
 		loadDirectory(directory, "");
-	}
+	} });
 }
 
 void FileBrowserActivity::RenameSave(int index)
 {
-	auto &file = files[index];
-	ByteString newName = TextPrompt::Blocking("이름 바꾸기", "세이브 이름 바꾸기", file->GetDisplayName(), "", 0).ToUtf8();
-	if (newName.length())
-	{
-		newName = ByteString::Build(directory, PATH_SEP_CHAR, newName, ".cps");
-		if (!Platform::RenameFile(file->GetName(), newName, false))
-			ErrorMessage::Blocking("오류", "세이브의 이름을 바꿀 수 없습니다.");
+	new TextPrompt("이름 바꾸기", "세이브 이름 바꾸기", files[index]->GetDisplayName(), "", 0, { [this, index](const String &input) {
+		auto &file = files[index];
+		auto newName = input.ToUtf8();
+		if (newName.length())
+		{
+			newName = ByteString::Build(directory, PATH_SEP_CHAR, newName, ".cps");
+			if (!Platform::RenameFile(file->GetName(), newName, false))
+			{
+				new ErrorMessage("오류", "세이브의 이름을 바꿀 수 없습니다.");
+			}
+			else
+			{
+				loadDirectory(directory, "");
+			}
+		}
 		else
-			loadDirectory(directory, "");
-	}
-	else
-		ErrorMessage::Blocking("오류", "세이브 이름이 없습니다.");
+		{
+			new ErrorMessage("오류", "세이브 이름이 없습니다.");
+		}
+	} });
 }
 
 void FileBrowserActivity::cleanup()

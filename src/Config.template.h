@@ -1,4 +1,5 @@
 #pragma once
+#include "VcsTag.h"
 
 constexpr bool SET_WINDOW_ICON          = @SET_WINDOW_ICON@;
 constexpr bool DEBUG                    = @DEBUG@;
@@ -11,10 +12,15 @@ constexpr bool LUACONSOLE               = @LUACONSOLE@;
 constexpr bool ALLOW_FAKE_NEWER_VERSION = @ALLOW_FAKE_NEWER_VERSION@;
 constexpr bool USE_UPDATESERVER         = @USE_UPDATESERVER@;
 constexpr bool CAN_INSTALL              = @CAN_INSTALL@;
+constexpr bool USE_BLUESCREEN           = @USE_BLUESCREEN@;
 constexpr bool INSTALL_CHECK            = @INSTALL_CHECK@;
 constexpr bool IGNORE_UPDATES           = @IGNORE_UPDATES@;
 constexpr bool ENFORCE_HTTPS            = @ENFORCE_HTTPS@;
 constexpr bool SECURE_CIPHERS_ONLY      = @SECURE_CIPHERS_ONLY@;
+constexpr bool FFTW_PLAN_MEASURE        = @FFTW_PLAN_MEASURE@;
+constexpr bool ALLOW_QUIT               = @ALLOW_QUIT@;
+constexpr bool ALLOW_WINDOW_FRAME_OPS   = @ALLOW_WINDOW_FRAME_OPS@;
+constexpr bool ALLOW_DATA_FOLDER        = @ALLOW_DATA_FOLDER@;
 constexpr char PATH_SEP_CHAR            = '@PATH_SEP_CHAR@';
 
 constexpr char SERVER[]         = "@SERVER@";
@@ -46,3 +52,6 @@ constexpr char STATICSCHEME[]   = "https://";
 constexpr char LOCAL_SAVE_DIR[] = "Saves";
 constexpr char STAMPS_DIR[]     = "stamps";
 constexpr char BRUSH_DIR[]      = "Brushes";
+
+constexpr int httpMaxConcurrentStreams = 50;
+constexpr int httpConnectTimeoutS      = 15;

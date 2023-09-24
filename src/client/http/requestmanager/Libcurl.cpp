@@ -3,6 +3,7 @@
 #include "client/http/Request.h"
 #include "CurlError.h"
 #include "Config.h"
+#include <iostream>
 
 #if defined(CURL_AT_LEAST_VERSION) && CURL_AT_LEAST_VERSION(7, 55, 0)
 # define REQUEST_USE_CURL_OFFSET_T
@@ -14,9 +15,9 @@
 # define REQUEST_USE_CURL_TLSV13CL
 #endif
 
-const long curlMaxHostConnections   = 1;
-const long curlMaxConcurrentStreams = 50;
-const long curlConnectTimeoutS      = 15;
+constexpr long curlMaxHostConnections   = 1;
+constexpr long curlMaxConcurrentStreams = httpMaxConcurrentStreams;
+constexpr long curlConnectTimeoutS      = httpConnectTimeoutS;
 
 namespace http
 {
@@ -58,6 +59,7 @@ namespace http
 		CURL *curlEasy = NULL;
 		char curlErrorBuffer[CURL_ERROR_SIZE];
 		bool curlAddedToMulti = false;
+		bool gotStatusLine = false;
 
 		RequestHandleHttp() : RequestHandle(CtorTag{})
 		{
@@ -69,10 +71,28 @@ namespace http
 			auto bytes = size * count;
 			if (bytes >= 2 && ptr[bytes - 2] == '\r' && ptr[bytes - 1] == '\n')
 			{
-				if (bytes > 2) // Don't include header list terminator (but include the status line).
+				if (bytes > 2 && handle->gotStatusLine) // Don't include header list terminator or the status line.
 				{
-					handle->responseHeaders.push_back(ByteString(ptr, ptr + bytes - 2));
+					auto line = ByteString(ptr, ptr + bytes - 2);
+					if (auto split = line.SplitBy(':'))
+					{
+						auto value = split.After();
+						while (value.size() && (value.front() == ' ' || value.front() == '\t'))
+						{
+							value = value.Substr(1);
+						}
+						while (value.size() && (value.back() == ' ' || value.back() == '\t'))
+						{
+							value = value.Substr(0, value.size() - 1);
+						}
+						handle->responseHeaders.push_back({ split.Before().ToLower(), value });
+					}
+					else
+					{
+						std::cerr << "skipping weird header: " << line << std::endl;
+					}
 				}
+				handle->gotStatusLine = true;
 				return bytes;
 			}
 			return 0;
@@ -221,8 +241,8 @@ namespace http
 				HandleCURLcode(curl_easy_getinfo(handle->curlEasy, CURLINFO_CONTENT_LENGTH_DOWNLOAD, &total)); // stores -1 if unknown
 				HandleCURLcode(curl_easy_getinfo(handle->curlEasy, CURLINFO_SIZE_DOWNLOAD, &done));
 #endif
-				handle->bytesTotal = int(total);
-				handle->bytesDone = int(done);
+				handle->bytesTotal = int64_t(total);
+				handle->bytesDone = int64_t(done);
 			}
 			else
 			{
@@ -255,6 +275,8 @@ namespace http
 				}
 				for (auto &requestHandle : requestHandlesToRegister)
 				{
+					// Must not be present
+					assert(std::find(requestHandles.begin(), requestHandles.end(), requestHandle) == requestHandles.end());
 					requestHandles.push_back(requestHandle);
 					RegisterRequestHandle(requestHandle);
 				}
@@ -262,8 +284,10 @@ namespace http
 				for (auto &requestHandle : requestHandlesToUnregister)
 				{
 					auto eraseFrom = std::remove(requestHandles.begin(), requestHandles.end(), requestHandle);
+					// Must either not be present
 					if (eraseFrom != requestHandles.end())
 					{
+						// Or be present exactly once
 						assert(eraseFrom + 1 == requestHandles.end());
 						UnregisterRequestHandle(requestHandle);
 						requestHandles.erase(eraseFrom, requestHandles.end());
@@ -327,7 +351,7 @@ namespace http
 			} 
 			for (auto &header : handle->headers)
 			{
-				auto *newHeaders = curl_slist_append(handle->curlHeaders, header.c_str());
+				auto *newHeaders = curl_slist_append(handle->curlHeaders, (header.name + ": " + header.value).c_str());
 				if (!newHeaders)
 				{
 					// Hopefully this is what a NULL from curl_slist_append means.
@@ -355,36 +379,32 @@ namespace http
 							// Hopefully this is what a NULL from curl_mime_addpart means.
 							HandleCURLcode(CURLE_OUT_OF_MEMORY);
 						}
-						HandleCURLcode(curl_mime_data(part, &field.second[0], field.second.size()));
-						if (auto split = field.first.SplitBy(':'))
+						HandleCURLcode(curl_mime_data(part, &field.value[0], field.value.size()));
+						HandleCURLcode(curl_mime_name(part, field.name.c_str()));
+						if (field.filename.has_value())
 						{
-							HandleCURLcode(curl_mime_name(part, split.Before().c_str()));
-							HandleCURLcode(curl_mime_filename(part, split.After().c_str()));
-						}
-						else
-						{
-							HandleCURLcode(curl_mime_name(part, field.first.c_str()));
+							HandleCURLcode(curl_mime_filename(part, field.filename->c_str()));
 						}
 					}
 					HandleCURLcode(curl_easy_setopt(handle->curlEasy, CURLOPT_MIMEPOST, handle->curlPostFields));
 #else
 					for (auto &field : formData)
 					{
-						if (auto split = field.first.SplitBy(':'))
+						if (field.filename.has_value())
 						{
 							HandleCURLFORMcode(curl_formadd(&handle->curlPostFieldsFirst, &handle->curlPostFieldsLast,
-								CURLFORM_COPYNAME, split.Before().c_str(),
-								CURLFORM_BUFFER, split.After().c_str(),
-								CURLFORM_BUFFERPTR, &field.second[0],
-								CURLFORM_BUFFERLENGTH, field.second.size(),
+								CURLFORM_COPYNAME, field.name.c_str(),
+								CURLFORM_BUFFER, field.filename->c_str(),
+								CURLFORM_BUFFERPTR, &field.value[0],
+								CURLFORM_BUFFERLENGTH, field.value.size(),
 							CURLFORM_END));
 						}
 						else
 						{
 							HandleCURLFORMcode(curl_formadd(&handle->curlPostFieldsFirst, &handle->curlPostFieldsLast,
-								CURLFORM_COPYNAME, field.first.c_str(),
-								CURLFORM_PTRCONTENTS, &field.second[0],
-								CURLFORM_CONTENTLEN, field.second.size(),
+								CURLFORM_COPYNAME, field.name.c_str(),
+								CURLFORM_PTRCONTENTS, &field.value[0],
+								CURLFORM_CONTENTLEN, field.value.size(),
 							CURLFORM_END));
 						}
 					}
@@ -406,9 +426,9 @@ namespace http
 				{
 					HandleCURLcode(curl_easy_setopt(handle->curlEasy, CURLOPT_HTTPGET, 1L));
 				}
-				if (handle->verb.size())
+				if (handle->verb)
 				{
-					HandleCURLcode(curl_easy_setopt(handle->curlEasy, CURLOPT_CUSTOMREQUEST, handle->verb.c_str()));
+					HandleCURLcode(curl_easy_setopt(handle->curlEasy, CURLOPT_CUSTOMREQUEST, handle->verb->c_str()));
 				}
 				HandleCURLcode(curl_easy_setopt(handle->curlEasy, CURLOPT_FOLLOWLOCATION, 1L));
 				if constexpr (ENFORCE_HTTPS)

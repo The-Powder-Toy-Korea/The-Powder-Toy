@@ -200,8 +200,9 @@ void ProfileActivity::OnTick(float dt)
 {
 	if (doError)
 	{
-		ErrorMessage::Blocking("오류", doErrorMessage);
-		Exit();
+		new ErrorMessage("오류", doErrorMessage, { [this]() {
+			Exit();
+		} });
 	}
 
 	if (saveUserInfoRequest && saveUserInfoRequest->CheckDone())

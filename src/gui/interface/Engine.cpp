@@ -1,4 +1,5 @@
 #include "Engine.h"
+#include "Config.h"
 #include "PowderToySDL.h"
 #include "Window.h"
 #include "common/platform/Platform.h"
@@ -10,7 +11,6 @@
 using namespace ui;
 
 Engine::Engine():
-	FpsLimit(60.0f),
 	drawingFrequencyLimit(0),
 	Scale(1),
 	Fullscreen(false),
@@ -19,7 +19,6 @@ Engine::Engine():
 	resizable(false),
 	state_(NULL),
 	windowTargetPosition(0, 0),
-	break_(false),
 	FastQuit(1),
 	lastTick(0),
 	mouseb_(0),
@@ -28,7 +27,7 @@ Engine::Engine():
 	mousexp_(0),
 	mouseyp_(0)
 {
-	SetFps(FpsLimit); // populate dt with whatever that makes any sort of sense
+	SetFpsLimit(FpsLimitExplicit{ 60.0f });
 }
 
 Engine::~Engine()
@@ -42,20 +41,16 @@ Engine::~Engine()
 	}
 }
 
+void Engine::SetFpsLimit(FpsLimit newFpsLimit)
+{
+	fpsLimit = newFpsLimit;
+	::SetFpsLimit(fpsLimit);
+}
+
 void Engine::Begin()
 {
 	//engine is now ready
 	running_ = true;
-}
-
-void Engine::Break()
-{
-	break_ = true;
-}
-
-void Engine::UnBreak()
-{
-	break_ = false;
 }
 
 void Engine::Exit()
@@ -205,10 +200,14 @@ void Engine::Draw()
 void Engine::SetFps(float fps)
 {
 	this->fps = fps;
-	if(FpsLimit > 2.0f)
+	if (std::holds_alternative<FpsLimitExplicit>(fpsLimit))
+	{
 		this->dt = 60/fps;
+	}
 	else
+	{
 		this->dt = 1.0f;
+	}
 }
 
 void Engine::onKeyPress(int key, int scan, bool repeat, bool shift, bool ctrl, bool alt)
@@ -249,10 +248,15 @@ void Engine::onTextEditing(String text, int start)
 		//   arrives. We also forward a textediting event on every packet,
 		//   which is redundant, but should be okay, as textediting events are
 		//   not supposed to have an effect on the actual text being edited.
-		if (start == 0)
+		// * We define a first-y looking packet as one with a start parameter
+		//   lower than or equal to the start parameter of the previous packet.
+		//   This is general enough that it seems to work around the bugs
+		//   of all SDL input method backends.
+		if (start <= lastTextEditingStart)
 		{
 			textEditingBuf.clear();
 		}
+		lastTextEditingStart = start;
 		textEditingBuf.append(text);
 		if (state_ && !ignoreEvents)
 			state_->DoTextEditing(textEditingBuf);

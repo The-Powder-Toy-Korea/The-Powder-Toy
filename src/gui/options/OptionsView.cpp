@@ -18,6 +18,7 @@
 #include "gui/interface/Textbox.h"
 #include "gui/interface/DirectionSelector.h"
 #include "PowderToySDL.h"
+#include "Config.h"
 #include <cstdio>
 #include <cstring>
 #include <cmath>
@@ -251,22 +252,28 @@ OptionsView::OptionsView() : ui::Window(ui::Point(-1, -1), ui::Point(320, 340))
 			c->SetScale(scale->GetOption().second);
 		});
 	}
-	resizable = addCheckbox(0, "창 크기 조절 \bg- 창 크기의 조절을 허용합니다.", "", [this] {
-		c->SetResizable(resizable->GetChecked());
-	});
-	fullscreen = addCheckbox(0, "전체 화면 \bg- 전체 화면으로 플레이합니다.", "", [this] {
-		c->SetFullscreen(fullscreen->GetChecked());
-	});
-	altFullscreen = addCheckbox(1, "해상도 변경 \bg- 최적화된 해상도로 조정합니다.", "", [this] {
-		c->SetAltFullscreen(altFullscreen->GetChecked());
-	});
-	forceIntegerScaling = addCheckbox(1, "강제 정수 스케일링 \bg- 화면이 선명해지도록 조정합니다.", "", [this] {
-		c->SetForceIntegerScaling(forceIntegerScaling->GetChecked());
-	});
+	if (ALLOW_WINDOW_FRAME_OPS)
+	{
+		resizable = addCheckbox(0, "창 크기 조절 \bg- 창 크기의 조절을 허용합니다.", "", [this] {
+			c->SetResizable(resizable->GetChecked());
+		});
+		fullscreen = addCheckbox(0, "전체 화면 \bg- 전체 화면으로 플레이합니다.", "", [this] {
+			c->SetFullscreen(fullscreen->GetChecked());
+		});
+		altFullscreen = addCheckbox(1, "해상도 변경 \bg- 최적화된 해상도로 조정합니다.", "", [this] {
+			c->SetAltFullscreen(altFullscreen->GetChecked());
+		});
+		forceIntegerScaling = addCheckbox(1, "강제 정수 스케일링 \bg- 화면이 선명해지도록 조정합니다.", "", [this] {
+			c->SetForceIntegerScaling(forceIntegerScaling->GetChecked());
+		});
+	}
 	addSeparator();
-	fastquit = addCheckbox(0, "빠른 종료", "닫기 단추를 누르면 바로 종료합니다.", [this] {
-		c->SetFastQuit(fastquit->GetChecked());
-	});
+	if (ALLOW_QUIT)
+	{
+		fastquit = addCheckbox(0, "빠른 종료", "닫기 단추를 누르면 바로 종료합니다.", [this] {
+			c->SetFastQuit(fastquit->GetChecked());
+		});
+	}
 	showAvatars = addCheckbox(0, "프로필 사진 표시", "댓글에서 프로필 사진을 표시합니다.", [this] {
 		c->SetShowAvatars(showAvatars->GetChecked());
 	});
@@ -294,8 +301,9 @@ OptionsView::OptionsView() : ui::Window(ui::Point(-1, -1), ui::Point(320, 340))
 		c->SetDecoSpace(decoSpace->GetOption().second);
 	});
 
+	currentY += 4;
+	if (ALLOW_DATA_FOLDER)
 	{
-		currentY += 4;
 		auto *dataFolderButton = new ui::Button(ui::Point(10, currentY), ui::Point(90, 16), "데이터 폴더 열기");
 		dataFolderButton->SetActionCallback({ [] {
 			ByteString cwd = Platform::GetCwd();
@@ -431,11 +439,26 @@ void OptionsView::NotifySettingsChanged(OptionsModel * sender)
 	decoSpace->SetOption(sender->GetDecoSpace());
 	edgeMode->SetOption(sender->GetEdgeMode());
 	scale->SetOption(sender->GetScale());
-	resizable->SetChecked(sender->GetResizable());
-	fullscreen->SetChecked(sender->GetFullscreen());
-	altFullscreen->SetChecked(sender->GetAltFullscreen());
-	forceIntegerScaling->SetChecked(sender->GetForceIntegerScaling());
-	fastquit->SetChecked(sender->GetFastQuit());
+	if (resizable)
+	{
+		resizable->SetChecked(sender->GetResizable());
+	}
+	if (fullscreen)
+	{
+		fullscreen->SetChecked(sender->GetFullscreen());
+	}
+	if (altFullscreen)
+	{
+		altFullscreen->SetChecked(sender->GetAltFullscreen());
+	}
+	if (forceIntegerScaling)
+	{
+		forceIntegerScaling->SetChecked(sender->GetForceIntegerScaling());
+	}
+	if (fastquit)
+	{
+		fastquit->SetChecked(sender->GetFastQuit());
+	}
 	showAvatars->SetChecked(sender->GetShowAvatars());
 	mouseClickRequired->SetChecked(sender->GetMouseClickRequired());
 	includePressure->SetChecked(sender->GetIncludePressure());

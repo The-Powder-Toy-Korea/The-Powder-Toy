@@ -16,6 +16,5 @@ public:
 	ConfirmPrompt(String title, String message, ResultCallback callback_ = {}, String buttonText = String("확인"));
 	virtual ~ConfirmPrompt() = default;
 
-	static bool Blocking(String title, String message, String buttonText = String("확인"));
 	void OnDraw() override;
 };
