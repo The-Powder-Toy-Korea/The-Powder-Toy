@@ -1,13 +1,16 @@
 --TPT Integrated Script Manager Korea
 --The autorun to end all autoruns
---Version 3.12
+--Version 3.14
 
 --TODO:
 --manual file addition (that can be anywhere and any extension)
+--Moving window (because why not)
 --some more API functions
 --prettier, organize code
 
 --CHANGES:
+--Version 3.14: Fix extra newlines being inserted into scripts on Windows
+--Version 3.13: Better support for upcoming versions of TPT, all script downloads now async, settings now stored separately per scripts directory, fix another rare failure on startup
 --Version 3.12: Use https for all requests, online view loads async, add FILTER button to online, fix rare failure on startup if downloaded scripts list is corrupted
 --Version 3.11: Fix icons in 94.0, fix "view script in browser"
 --Version 3.10: Fix HTTP requests, without this update the online section may break
@@ -59,8 +62,8 @@ local icons = {
 if not socket then error("TPT version not supported") end
 if MANAGER then error("manager is already running") end
 
-local scriptversion = 14
-MANAGER = {["version"] = "3.12", ["scriptversion"] = scriptversion, ["hidden"] = true}
+local scriptversion = 16
+MANAGER = {["version"] = "3.14", ["scriptversion"] = scriptversion, ["hidden"] = true}
 
 local type = type -- people like to overwrite this function with a global a lot
 local TPT_LUA_PATH = 'scripts'
@@ -93,6 +96,23 @@ else
 		EXE_NAME = "powder"
 	end
 end
+local beginInput, beginConfirm = ui.beginInput, ui.beginConfirm
+if not beginInput then
+	beginInput = function(...)
+		local args = {...}
+		local cb = table.remove(args)
+		local input = tpt.input(unpack(args))
+		cb(input)
+	end
+end
+if not beginConfirm then
+	beginConfirm = function(...)
+		local args = {...}
+		local cb = table.remove(args)
+		local confirmed = tpt.confirm(unpack(args))
+		cb(confirmed)
+	end
+end
 local filenames = {}
 local num_files = 0 --downloaded scripts aren't stored in filenames
 local localscripts = {}
@@ -105,6 +125,7 @@ local online_req = nil
 local script_manager_update_req = nil
 local updatetable --temporarily holds info on script manager updates
 local gen_buttons
+local count_local_scripts
 local check_req_status
 local sidebutton
 local download_file
@@ -144,6 +165,18 @@ local function readScriptInfo(list)
 end
 
 --save settings
+local function save_dir()
+	-- Older versions of script manager stored settings here when TPT_LUA_PATH was changed away from scripts/
+	-- But now, only the "DIR" argument is kept here
+	fs.removeFile("autorunsettings.txt")
+	if TPT_LUA_PATH ~= "scripts" then
+		f = io.open("autorunsettings.txt", "wb")
+		if f then
+			f:write("DIR "..TPT_LUA_PATH)
+			f:close()
+		end
+	end
+end
 local function save_last()
 	local savestring=""
 	for script,v in pairs(running) do
@@ -151,22 +184,21 @@ local function save_last()
 	end
 	savestring = "SAV "..savestring.."\nDIR "..TPT_LUA_PATH
 	for k,t in pairs(settings) do
-	for n,v in pairs(t) do
-		savestring = savestring.."\nSET "..k.." "..n..":\""..v.."\""
+		for n,v in pairs(t) do
+			savestring = savestring.."\nSET "..k.." "..n..":\""..v.."\""
+		end
 	end
-	end
-	local f
-	if TPT_LUA_PATH == "scripts" then
-		f = io.open(TPT_LUA_PATH..PATH_SEP.."autorunsettings.txt", "w")
-	else
-		f = io.open("autorunsettings.txt", "w")
-	end
+	local f = io.open(TPT_LUA_PATH..PATH_SEP.."autorunsettings.txt", "wb")
 	if f then
 		f:write(savestring)
 		f:close()
+	else
+		MANAGER.print("Couldn't save autorunsettings.txt")
 	end
 
-	f = io.open(TPT_LUA_PATH..PATH_SEP.."downloaded"..PATH_SEP.."scriptinfo", "w")
+	save_dir()
+
+	f = io.open(TPT_LUA_PATH..PATH_SEP.."downloaded"..PATH_SEP.."scriptinfo", "wb")
 	if f then
 		for k,v in pairs(localscripts) do
 			f:write(scriptInfoString(v).."\n")
@@ -176,6 +208,7 @@ local function save_last()
 end
 
 local function load_downloaded()
+	localscripts = {}
 	local f = io.open(TPT_LUA_PATH..PATH_SEP.."downloaded"..PATH_SEP.."scriptinfo","r")
 	if f then
 		local lines = f:read("*a")
@@ -194,11 +227,8 @@ local function load_downloaded()
 end
 
 --load settings before anything else
-local function load_last()
-	local f = io.open(TPT_LUA_PATH..PATH_SEP.."autorunsettings.txt","r")
-	if not f then
-		f = io.open("autorunsettings.txt","r")
-	end
+local function load_settings(settings_file)
+	local f = io.open(settings_file, "r")
 	if f then
 		local lines = {}
 		local line = f:read("*l")
@@ -218,11 +248,20 @@ local function load_last()
 				TPT_LUA_PATH=str
 			elseif tok=="SET" then
 				local ident,name,val = string.match(str,"(.-) (.-):\"(.-)\"")
-				if settings[ident] then settings[ident][name]=val
-				else settings[ident]={[name]=val} end
+				if ident and name then
+					if settings[ident] then settings[ident][name]=val
+					else settings[ident]={[name]=val} end
+				end
 			end
 		end
 	end
+end
+local function load_last()
+	-- Load settings from both places.
+	-- Older versions of script manager may keep all settings in base-dir autorunsettings.txt
+	-- Modern versions only keep the DIR arg there, and put everything else into the scripts subfolder
+	load_settings("autorunsettings.txt")
+	load_settings(TPT_LUA_PATH .. PATH_SEP .. "autorunsettings.txt")
 
 	load_downloaded()
 end
@@ -585,7 +624,7 @@ new_button = function(x,y,w,h,splitx,f,f2,text,localscript)
 			tpt.drawtext(self.x+18, self.y+5, icons["checkbox"])
 		end
 		if self.almostselected then
-			self.almostselected = false 
+			self.almostselected = false
 			tpt.drawtext(self.x+18, self.y+5, icons["checkboxfill"], 255, 255, 255, 192)
 		elseif self.selected then
 			tpt.drawtext(self.x+18, self.y+5, icons["checkboxcomposite"])
@@ -789,19 +828,23 @@ tooltip = ui_tooltip.new(0,1,250,"")
 function MANAGER.print(msg,...)
 	mainwindow.menuconsole:addstr(msg,...)
 end
---downloads and returns a file, so you can do whatever...
-local download_file
-function MANAGER.download(url)
-	return download_file(url)
-end
-function MANAGER.scriptinfo(id)
+-- Gets script info table for a script, or all scripts if nil is used as id. Data is fetched from the server.
+-- Returns table as argument to callback function once info download finishes, or nil and http status code if download / parsing failed
+function MANAGER.scriptinfo(id, callback)
+	if not callback then error("Callback function argument is required") end
+
 	local url = "https://starcatcher.us/scripts/main.lua"
 	if id then
 		url = url.."?info="..id
 	end
-	local info = download_file(url)
-	infotable = readScriptInfo(info)
-	return id and infotable[id] or infotable
+	download_file(url, function(info, status_code)
+		if status_code == 200 then
+			local infotable = readScriptInfo(info)
+			callback(id and infotable[id] or infotable)
+		else
+			callback(nil, status_code)
+		end
+	end)
 end
 --Get various info about the system (operating system, script directory, path seperator, if socket is loaded)
 function MANAGER.sysinfo()
@@ -831,47 +874,66 @@ function MANAGER.delsetting(ident,name)
 	end
 end
 
---mniip's download thing (mostly)
-local pattern = "http://w*%.?(.-)(/.*)"
-function download_file(url)
+local active_downloads = {}
+function download_file(url, cb)
 	if not http then
 		MANAGER.print("TPT 95.0 or greater required to use http api", 255, 0, 0)
 		return false
 	end
+	if not cb then
+		MANAGER.print("Callback function required for async download", 255, 0, 0)
+		return false
+	end
 	local req = http.get(url)
 	local timeout_after = socket.gettime() + 3
-	while true do
+	table.insert(active_downloads, {req=req, timeout_after=timeout_after, cb=cb})
+end
+
+local function process_downloads()
+	for k,v in pairs(active_downloads) do
+		local req = v["req"]
+		local cb = v["cb"]
+		local timeout_after = v["timeout_after"]
+
 		local status = req:status()
 		if status ~= "running" then
+			active_downloads[k] = nil
 			local body, status_code = req:finish()
 			if status_code and status_code ~= 200 then
 				MANAGER.print("http download failed with status code " .. status_code, 255, 0, 0)
-				return nil
 			end
-			return body
+			cb(body, status_code)
 		end
 
 		if socket.gettime() > timeout_after then
+			active_downloads[k] = nil
 			MANAGER.print("http download timed out ", 255, 0, 0)
 			req:cancel()
-			return
+			cb(nil, 408)
 		end
 	end
 end
---Downloads to a location
-local function download_script(ID,location)
-	local file = download_file("https://starcatcher.us/scripts/main.lua?get="..ID)
-	if file then
-		f=io.open(location,"w")
-		f:write(file)
-		f:close()
-		return true
-	end
-	return false
+
+--Downloads script to a location, runs callback function with either true or false argument indicading success
+local function download_script(ID, location, cb)
+	download_file("https://starcatcher.us/scripts/main.lua?get=" .. ID, function(file, status_code)
+		if file and status_code == 200 then
+			f = io.open(location, "wb")
+			f:write(file)
+			f:close()
+			cb(true, status_code)
+		else
+			MANAGER.print("Got http status " .. status_code .. " while downloading script", 255, 0, 0)
+			cb(false, status_code)
+		end
+	end)
 end
+
 --Restart exe (if named correctly)
-local function do_restart()
-	save_last()
+local function do_restart(skip_save)
+	if not skip_save then
+		save_last()
+	end
 	if platform then
 		platform.restart()
 	end
@@ -901,7 +963,7 @@ local function step()
 	if requiresrestart then
 		tpt.drawtext(302, 58, "스크립트를 비활성화하려면 다시 시작해야 합니다.", 255, 50, 50)
 	else
-		tpt.drawtext(292, 58, "스크립트를 클릭하여 토글하고 ".. (online and icons["download"] or icons["accept"]) .. " 단추를 누르세요.")
+		tpt.drawtext(292, 58, "스크립트를 클릭하여 토글하고 ".. (online and icons["download"] or icons["accept"]) .. " 단추를 누르십시오.")
 	end
 	tpt.drawtext(302,75,"콘솔 출력:")
 	tooltip:draw()
@@ -946,26 +1008,34 @@ local function smallstep()
 	tpt.drawtext(sidebutton.x+2, sidebutton.y+4, icons["manager"], color[1], color[2], color[3], 255)
 	check_req_status()
 end
+local function reload_action()
+	load_filenames()
+	load_downloaded()
+	if not online then
+		gen_buttons()
+		mainwindow.checkbox:updatescroll()
+	else
+		count_local_scripts()
+	end
+	if num_files == 0 then
+		MANAGER.print("No scripts found in '"..TPT_LUA_PATH.."' folder",255,255,0)
+		fs.makeDirectory(TPT_LUA_PATH)
+	else
+		MANAGER.print("Reloaded file list, found "..num_files.." scripts")
+	end
+end
 --button functions on click
 function ui_button.reloadpressed(self)
 	if not online then
-		load_filenames()
-		load_downloaded()
-		gen_buttons()
-		mainwindow.checkbox:updatescroll()
-		if num_files == 0 then
-			MANAGER.print("No scripts found in '"..TPT_LUA_PATH.."' folder",255,255,0)
-			fs.makeDirectory(TPT_LUA_PATH)
-		else
-			MANAGER.print("Reloaded file list, found "..num_files.." scripts")
-		end
+		reload_action()
 	else
-		search_terms = {}
-		local filter = tpt.input("스크립트 검색", "스크립트를 검색합니다.")
-		for match in filter:gmatch("%w+") do
-			table.insert(search_terms, match)
-		end
-		gen_buttons()
+		beginInput("스크립트 검색", "스크립트를 검색합니다.", function(filter)
+			search_terms = {}
+			for match in filter:gmatch("%w+") do
+				table.insert(search_terms, match)
+			end
+			gen_buttons()
+		end)
 	end
 end
 function ui_button.selectnone(self)
@@ -977,15 +1047,18 @@ function ui_button.consoleclear(self)
 	mainwindow.menuconsole:clear()
 end
 function ui_button.changedir(self)
-	local last = TPT_LUA_PATH
-	local new = tpt.input("Change search directory","Enter the folder where your scripts are",TPT_LUA_PATH,TPT_LUA_PATH)
-	if new~=last and new~="" then
-		fs.removeFile(last..PATH_SEP.."autorunsettings.txt")
-		MANAGER.print("Directory changed to "..new,255,255,0)
-		TPT_LUA_PATH = new
-	end
-	ui_button.reloadpressed()
-	save_last()
+	beginInput("검색할 디렉터리 변경", "스크립트와 설정이 있는 폴더를 입력하십시오(다시 시작해야 함).", TPT_LUA_PATH, TPT_LUA_PATH, function(new)
+		local last = TPT_LUA_PATH
+		if new and new~=last and new~="" then
+			save_last()
+
+			MANAGER.print("Directory changed to "..new,255,255,0)
+			TPT_LUA_PATH = new
+
+			save_dir()
+			do_restart(true)
+		end
+	end)
 end
 function ui_button.uploadscript(self)
 	if not online then
@@ -1036,53 +1109,54 @@ function ui_button.donepressed(self)
 	save_last()
 end
 function ui_button.downloadpressed(self)
-	local successful_download = false
+	local remaining_downloads = 0
+	local any_failed = false
 	for i,but in ipairs(mainwindow.checkbox.list) do
 		if but.selected then
-			--maybe do better display names later
-			local displayName
-			local function get_script(butt)
-				local script = download_file("https://starcatcher.us/scripts/main.lua?get="..butt.ID)
-				if not script then
-					MANAGER.print("Failed to download " .. but.t.text, 255, 0, 0)
-					return false
-				end
-				displayName = "downloaded"..PATH_SEP..butt.ID.." "..onlinescripts[butt.ID].author:gsub("[^%w _-]", "_").."-"..onlinescripts[butt.ID].name:gsub("[^%w _-]", "_")..".lua"
-				local name = TPT_LUA_PATH..PATH_SEP..displayName
-				if not fs.exists(TPT_LUA_PATH..PATH_SEP.."downloaded") then
-					fs.makeDirectory(TPT_LUA_PATH..PATH_SEP.."downloaded")
-				end
-				local file = io.open(name, "w")
-				if not file then error("could not open "..name) end
-				file:write(script)
-				file:close()
-				if localscripts[butt.ID] and localscripts[butt.ID]["path"] ~= displayName then
-					local oldpath = localscripts[butt.ID]["path"]
-					fs.removeFile(TPT_LUA_PATH.."/"..oldpath:gsub("\\","/"))
-					running[oldpath] = nil
-				end
-				localscripts[butt.ID] = onlinescripts[butt.ID]
-				localscripts[butt.ID]["path"] = displayName
-				dofile(name)
+			local displayName = "downloaded"..PATH_SEP..but.ID.." "..onlinescripts[but.ID].author:gsub("[^%w _-]", "_").."-"..onlinescripts[but.ID].name:gsub("[^%w _-]", "_")..".lua"
+			local name = TPT_LUA_PATH..PATH_SEP..displayName
+			if not fs.exists(TPT_LUA_PATH..PATH_SEP.."downloaded") then
+				fs.makeDirectory(TPT_LUA_PATH..PATH_SEP.."downloaded")
+			end
 
-				return true
-			end
-			local status,err = pcall(get_script, but)
-			if not status then
-				MANAGER.print(err,255,0,0)
-				print(err)
-				but.selected = false
-			elseif err == true then
-				MANAGER.print("Downloaded and started "..but.t.text)
-				running[displayName] = true
-				successful_download = true
-			end
+			remaining_downloads = remaining_downloads + 1
+			download_script(but.ID, name, function(success, status_code)
+				if success then
+					local status, err = pcall(function()
+						if localscripts[but.ID] and localscripts[but.ID]["path"] ~= displayName then
+							local oldpath = localscripts[but.ID]["path"]
+							fs.removeFile(TPT_LUA_PATH.."/"..oldpath:gsub("\\","/"))
+							running[oldpath] = nil
+						end
+						localscripts[but.ID] = onlinescripts[but.ID]
+						localscripts[but.ID]["path"] = displayName
+						dofile(name)
+
+						MANAGER.print("Downloaded and started "..but.t.text)
+						running[displayName] = true
+					end)
+					if not status then
+						MANAGER.print(err)
+						any_failed = true
+					end
+				else
+					any_failed = true
+				end
+
+				-- All remaining downloads finished, close the manager and save data
+				remaining_downloads = remaining_downloads - 1
+				if remaining_downloads == 0 then
+					save_last()
+					print("Finished downloading and installing scripts")
+					if not any_failed then
+						MANAGER.hidden = true
+						ui_button.localview()
+					else
+						print("Some scripts failed, see manager log")
+					end
+				end
+			end)
 		end
-	end
-	if successful_download then
-		MANAGER.hidden = true
-		ui_button.localview()
-		save_last()
 	end
 end
 
@@ -1090,8 +1164,9 @@ function ui_button.pressed(self)
 	self.selected = not self.selected
 end
 function ui_button.delete(self)
-	--there is no tpt.confirm() yet
-	if tpt.input("파일 제거", self.t.text.."을(를) 제거하시겠어요?", "확인", "취소") == "확인" then
+	local cb = function(confirmed)
+		if confirmed ~= true then return end
+
 		local filepath = self.ID and localscripts[self.ID]["path"] or self.t.text
 		fs.removeFile(TPT_LUA_PATH.."/"..filepath:gsub("\\","/"))
 		if running[filepath] then running[filepath] = nil end
@@ -1101,6 +1176,7 @@ function ui_button.delete(self)
 		load_filenames()
 		gen_buttons()
 	end
+	beginConfirm("파일 제거", self.t.text.."을(를) 제거하시겠습니까?", cb)
 end
 function ui_button.viewonline(self)
 	open_link("https://starcatcher.us/scripts?view="..self.ID)
@@ -1108,7 +1184,9 @@ end
 function ui_button.scriptcheck(self)
 	local oldpath = localscripts[self.ID]["path"]
 	local newpath = "downloaded"..PATH_SEP..self.ID.." "..onlinescripts[self.ID].author:gsub("[^%w _-]", "_").."-"..onlinescripts[self.ID].name:gsub("[^%w _-]", "_")..".lua"
-	if download_script(self.ID,TPT_LUA_PATH..PATH_SEP..newpath) then
+	download_script(self.ID, TPT_LUA_PATH..PATH_SEP..newpath, function(success, status_code)
+		if not success then return end
+
 		self.canupdate = false
 		localscripts[self.ID] = onlinescripts[self.ID]
 		localscripts[self.ID]["path"] = newpath
@@ -1124,13 +1202,19 @@ function ui_button.scriptcheck(self)
 			save_last()
 			MANAGER.print(onlinescripts[self.ID]["name"].."를 업데이트함")
 		end
-	end
+	end)
 end
 function ui_button.doupdate(self)
-	fileSystem.move("autorun.lua", "autorunold.lua")
-	download_script(1, 'autorun.lua')
-	localscripts[1] = updatetable[1]
-	do_restart()
+	local scriptname, scriptbackup = "autorun.lua", "autorunold.lua"
+	if jacobsmod and jacobsmod >= 30 then
+		scriptname, scriptbackup = "scriptmanager.lua", "scriptmanagerold.lua"
+	end
+
+	fileSystem.move(scriptname, scriptbackup)
+	download_script(1, scriptname, function()
+		localscripts[1] = updatetable[1]
+		do_restart()
+	end)
 end
 local globebutton
 local donebutton
@@ -1213,6 +1297,11 @@ local function gen_buttons_local()
 		end
 	end
 	num_files = count + #filenames
+end
+function count_local_scripts()
+	local total = #filenames
+	for k in pairs(localscripts) do total = total + 1 end
+	num_files = total
 end
 local function gen_buttons_online()
 	if not http then
@@ -1303,6 +1392,8 @@ end
 function check_req_status()
 	check_online_req_status()
 	check_update_req_status()
+	-- Check other misc downloads (script or update downloads)
+	process_downloads()
 end
 
 gen_buttons = function()

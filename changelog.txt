@@ -1,2 +1,2 @@
 Based on The Powder Toy, Snapshot-260.
-- Updated TPT code.
+- Updated intergrated scripts.

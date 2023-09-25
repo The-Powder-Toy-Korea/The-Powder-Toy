@@ -1,8 +1,11 @@
 local env__ = setmetatable({}, { __index = function(_, key)
-	return rawget(_G, key) or error("__index on env: " .. tostring(key), 2)
+	error("__index on env: " .. tostring(key), 2)
 end, __newindex = function(_, key)
 	error("__newindex on env: " .. tostring(key), 2)
 end })
+for key, value in pairs(_G) do
+	rawset(env__, key, value)
+end
 local _ENV = env__
 if rawget(_G, "setfenv") then
 	setfenv(1, env__)
@@ -21,6 +24,33 @@ local function require(modname)
 	return mod
 end
 rawset(env__, "require", require)
+
+local unpack = rawget(_G, "unpack") or table.unpack
+local function packn(...)
+	return { [ 0 ] = select("#", ...), ... }
+end
+local function unpackn(tbl, from, to)
+	return unpack(tbl, from or 1, to or tbl[0])
+end
+local function xpcall_wrap(func, handler)
+	return function(...)
+		local iargs = packn(...)
+		local oargs
+		xpcall(function()
+			oargs = packn(func(unpackn(iargs)))
+		end, function(err)
+			if handler then
+				handler(err)
+			end
+			print(debug.traceback(err, 2))
+			return err
+		end)
+		if oargs then
+			return unpackn(oargs)
+		end
+	end
+end
+rawset(env__, "xpcall_wrap", xpcall_wrap)
 
 require_preload__["tptmp.client"] = function()
 
@@ -126,6 +156,9 @@ require_preload__["tptmp.client"] = function()
 			print(text)
 		end
 	
+		local last_trace_str
+		local handle_error
+	
 		local should_reconnect_at
 		local cli
 		local prof = profile.new({
@@ -187,19 +220,21 @@ require_preload__["tptmp.client"] = function()
 			end,
 			new_client_func = function(params)
 				should_reconnect_at = nil
-				params.window = win
-				params.profile = prof
-				params.set_id_func = set_id
-				params.get_id_func = get_id
-				params.set_qa_func = set_qa
-				params.get_qa_func = get_qa
-				params.log_event_func = log_event
+				params.window            = win
+				params.profile           = prof
+				params.set_id_func       = set_id
+				params.get_id_func       = get_id
+				params.set_qa_func       = set_qa
+				params.get_qa_func       = get_qa
+				params.log_event_func    = log_event
+				params.handle_error_func = handle_error
 				params.should_reconnect_func = function()
 					should_reconnect = true
 				end
 				params.should_not_reconnect_func = function()
 					should_reconnect = false
 				end
+				last_trace_str = nil
 				cli = client.new(params)
 				return cli
 			end,
@@ -241,6 +276,28 @@ require_preload__["tptmp.client"] = function()
 			end
 		end
 	
+		function handle_error(err)
+			if not last_trace_str then
+				local handle = io.open(config.trace_path, "wb")
+				handle:write(("TPTMP %s %s\n"):format(config.versionstr, os.date("!%Y-%m-%dT%H:%M:%SZ")))
+				handle:close()
+				win:backlog_push_error("An error occurred and its trace has been saved to " .. config.trace_path .. "; please find this file in your data folder and attach it when reporting this to developers")
+				win:backlog_push_error("Top-level error: " .. tostring(err))
+			end
+			local str = debug.traceback(err, 2) .. "\n"
+			if last_trace_str ~= str then
+				last_trace_str = str
+				local handle = io.open(config.trace_path, "ab")
+				handle:write(str)
+				handle:close()
+			end
+			should_reconnect = false
+			if cli then
+				cli:stop("error handled")
+				kill_client()
+			end
+		end
+	
 		local pcur_r, pcur_g, pcur_b, pcur_a = unpack(colours.common.player_cursor)
 		local bmode_to_repr = {
 			[ 0 ] = "",
@@ -252,7 +309,7 @@ require_preload__["tptmp.client"] = function()
 				return tool.repr
 			end
 		end
-		local function handle_tick()
+		local handle_tick = xpcall_wrap(function()
 			local now = socket.gettime()
 			if should_reconnect_at and now >= should_reconnect_at then
 				should_reconnect_at = nil
@@ -392,15 +449,15 @@ require_preload__["tptmp.client"] = function()
 				return false
 			end
 			prof:handle_tick()
-		end
+		end, handle_error)
 	
-		local function handle_mousemove(px, py, dx, dy)
+		local handle_mousemove = xpcall_wrap(function(px, py, dx, dy)
 			if prof:handle_mousemove(px, py, dx, dy) then
 				return false
 			end
-		end
+		end, handle_error)
 	
-		local function handle_mousedown(px, py, button)
+		local handle_mousedown = xpcall_wrap(function(px, py, button)
 			if window_status == "shown" and win:handle_mousedown(px, py, button) then
 				return false
 			end
@@ -410,9 +467,9 @@ require_preload__["tptmp.client"] = function()
 			if prof:handle_mousedown(px, py, button) then
 				return false
 			end
-		end
+		end, handle_error)
 	
-		local function handle_mouseup(px, py, button, reason)
+		local handle_mouseup = xpcall_wrap(function(px, py, button, reason)
 			if window_status == "shown" and win:handle_mouseup(px, py, button, reason) then
 				return false
 			end
@@ -422,9 +479,9 @@ require_preload__["tptmp.client"] = function()
 			if prof:handle_mouseup(px, py, button, reason) then
 				return false
 			end
-		end
+		end, handle_error)
 	
-		local function handle_mousewheel(px, py, dir)
+		local handle_mousewheel = xpcall_wrap(function(px, py, dir)
 			if window_status == "shown" and win:handle_mousewheel(px, py, dir) then
 				return false
 			end
@@ -434,9 +491,9 @@ require_preload__["tptmp.client"] = function()
 			if prof:handle_mousewheel(px, py, dir) then
 				return false
 			end
-		end
+		end, handle_error)
 	
-		local function handle_keypress(key, scan, rep, shift, ctrl, alt)
+		local handle_keypress = xpcall_wrap(function(key, scan, rep, shift, ctrl, alt)
 			if window_status == "shown" and win:handle_keypress(key, scan, rep, shift, ctrl, alt) then
 				return false
 			end
@@ -446,9 +503,9 @@ require_preload__["tptmp.client"] = function()
 			if prof:handle_keypress(key, scan, rep, shift, ctrl, alt) then
 				return false
 			end
-		end
+		end, handle_error)
 	
-		local function handle_keyrelease(key, scan, rep, shift, ctrl, alt)
+		local handle_keyrelease = xpcall_wrap(function(key, scan, rep, shift, ctrl, alt)
 			if window_status == "shown" and win:handle_keyrelease(key, scan, rep, shift, ctrl, alt) then
 				return false
 			end
@@ -458,9 +515,9 @@ require_preload__["tptmp.client"] = function()
 			if prof:handle_keyrelease(key, scan, rep, shift, ctrl, alt) then
 				return false
 			end
-		end
+		end, handle_error)
 	
-		local function handle_textinput(text)
+		local handle_textinput = xpcall_wrap(function(text)
 			if window_status == "shown" and win:handle_textinput(text) then
 				return false
 			end
@@ -470,9 +527,9 @@ require_preload__["tptmp.client"] = function()
 			if prof:handle_textinput(text) then
 				return false
 			end
-		end
+		end, handle_error)
 	
-		local function handle_textediting(text)
+		local handle_textediting = xpcall_wrap(function(text)
 			if window_status == "shown" and win:handle_textediting(text) then
 				return false
 			end
@@ -482,9 +539,9 @@ require_preload__["tptmp.client"] = function()
 			if prof:handle_textediting(text) then
 				return false
 			end
-		end
+		end, handle_error)
 	
-		local function handle_blur()
+		local handle_blur = xpcall_wrap(function()
 			if window_status == "shown" and win:handle_blur() then
 				return false
 			end
@@ -494,7 +551,7 @@ require_preload__["tptmp.client"] = function()
 			if prof:handle_blur() then
 				return false
 			end
-		end
+		end, handle_error)
 	
 		evt.register(evt.tick      , handle_tick      )
 		evt.register(evt.mousemove , handle_mousemove )
@@ -1608,7 +1665,10 @@ require_preload__["tptmp.client.client"] = function()
 					handler(self)
 				end
 			end, function(err)
-				print(debug.traceback(err, 2))
+				if self.handle_error_func_ then
+					self.handle_error_func_(err)
+				end
+				return err
 			end)
 			if not ok then
 				error(err)
@@ -1654,7 +1714,7 @@ require_preload__["tptmp.client.client"] = function()
 			local ok, err = coroutine.resume(self.proto_coro_)
 			if not ok then
 				self.proto_coro_ = nil
-				error(err)
+				error("proto coroutine: " .. err, 0)
 			end
 			if self.proto_coro_ and coroutine.status(self.proto_coro_) == "dead" then
 				error("proto coroutine terminated")
@@ -1963,31 +2023,32 @@ require_preload__["tptmp.client.client"] = function()
 	local function new(params)
 		local now = socket.gettime()
 		return setmetatable({
-			host_ = params.host,
-			port_ = params.port,
-			secure_ = params.secure,
-			event_log_ = params.event_log,
-			backlog_ = params.backlog,
-			rx_ = buffer_list.new({ limit = config.recvq_limit }),
-			tx_ = buffer_list.new({ limit = config.sendq_limit }),
-			connecting_since_ = now,
-			last_ping_sent_at_ = now,
-			last_ping_received_at_ = now,
-			status_ = "ready",
-			window_ = params.window,
-			profile_ = params.profile,
-			localcmd_ = params.localcmd,
-			initial_room_ = params.initial_room,
-			set_id_func_ = params.set_id_func,
-			get_id_func_ = params.get_id_func,
-			set_qa_func_ = params.set_qa_func,
-			get_qa_func_ = params.get_qa_func,
-			log_event_func_ = params.log_event_func,
-			should_reconnect_func_ = params.should_reconnect_func,
+			host_                      = params.host,
+			port_                      = params.port,
+			secure_                    = params.secure,
+			event_log_                 = params.event_log,
+			backlog_                   = params.backlog,
+			rx_                        = buffer_list.new({ limit = config.recvq_limit }),
+			tx_                        = buffer_list.new({ limit = config.sendq_limit }),
+			connecting_since_          = now,
+			last_ping_sent_at_         = now,
+			last_ping_received_at_     = now,
+			status_                    = "ready",
+			window_                    = params.window,
+			profile_                   = params.profile,
+			localcmd_                  = params.localcmd,
+			initial_room_              = params.initial_room,
+			set_id_func_               = params.set_id_func,
+			get_id_func_               = params.get_id_func,
+			set_qa_func_               = params.set_qa_func,
+			get_qa_func_               = params.get_qa_func,
+			log_event_func_            = params.log_event_func,
+			handle_error_func_         = params.handle_error_func,
+			should_reconnect_func_     = params.should_reconnect_func,
 			should_not_reconnect_func_ = params.should_not_reconnect_func,
-			id_to_member = {},
-			nick_colour_seed_ = 0,
-			fps_sync_ = false,
+			id_to_member               = {},
+			nick_colour_seed_          = 0,
+			fps_sync_                  = false,
 		}, client_m)
 	end
 	
@@ -2085,7 +2146,7 @@ require_preload__["tptmp.client.config"] = function()
 
 	local common_config = require("tptmp.common.config")
 	
-	local versionstr = "v2.0.28"
+	local versionstr = "v2.0.33"
 	
 	local config = {
 		-- ***********************************************************************
@@ -2139,6 +2200,9 @@ require_preload__["tptmp.client.config"] = function()
 		-- * Path to tptmp.client.manager.null configuration file relative to
 		--   current directory. Only relevant if the null manager is active.
 		null_manager_path = "tptmpsettings.txt",
+	
+		-- * Path to error trace file relative to current directory.
+		trace_path = "tptmptrace.log",
 	
 	
 		-- ***********************************************************************
@@ -3669,9 +3733,9 @@ require_preload__["tptmp.client.profile.vanilla"] = function()
 		local complete_select_mode = self.select_x_ and self.select_mode_
 		if self.prev_select_mode_ ~= complete_select_mode then
 			self.prev_select_mode_ = complete_select_mode
-			if self.select_mode_ == "copy"
-			or self.select_mode_ == "cut"
-			or self.select_mode_ == "stamp" then
+			if self.select_x_ and (self.select_mode_ == "copy" or
+			                       self.select_mode_ == "cut" or
+			                       self.select_mode_ == "stamp") then
 				if self.select_mode_ == "copy" then
 					self:report_selectstatus_(1, self.select_x_, self.select_y_)
 				elseif self.select_mode_ == "cut" then
@@ -3687,7 +3751,7 @@ require_preload__["tptmp.client.profile.vanilla"] = function()
 		local complete_place_mode = self.place_x_ and self.select_mode_
 		if self.prev_place_mode_ ~= complete_place_mode then
 			self.prev_place_mode_ = complete_place_mode
-			if self.select_mode_ == "place" then
+			if self.place_x_ and self.select_mode_ == "place" then
 				self:report_placestatus_(1, self.place_x_, self.place_y_)
 			else
 				self.place_x_, self.place_y_ = nil, nil
@@ -6791,13 +6855,13 @@ require_preload__["tptmp.common.config"] = function()
 		auth_backend = "https://powdertoy.co.uk/ExternalAuth.api",
 	
 		-- * Authentication backend timeout in seconds.
-		auth_backend_timeout = 3,
+		auth_backend_timeout = 15,
 	
 		-- * Username to UID backend URL.
 		uid_backend = "https://powdertoy.co.uk/User.json",
 	
 		-- * Username to UID backend timeout in seconds.
-		uid_backend_timeout = 3,
+		uid_backend_timeout = 15,
 	
 		-- * Host to connect to by default.
 		host = "tptmp.starcatcher.us",
@@ -6845,4 +6909,6 @@ require_preload__["tptmp.common.util"] = function()
 	
 end
 
-require("tptmp.client").run()
+xpcall_wrap(function()
+	require("tptmp.client").run()
+end)()
