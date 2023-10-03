@@ -44,7 +44,7 @@ constexpr int MOD_ID               = @MOD_ID@;
 constexpr int FUTURE_SAVE_VERSION  = 98;
 constexpr int FUTURE_MINOR_VERSION = 0;
 constexpr int MOD_MAJOR_VERSION    = 2;
-constexpr int MOD_MINOR_VERSION    = 8;
+constexpr int MOD_MINOR_VERSION    = 9;
 
 constexpr char IDENT_RELTYPE    = SNAPSHOT ? 'S' : (BETA ? 'B' : 'R');
 

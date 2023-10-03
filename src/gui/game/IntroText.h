@@ -39,7 +39,7 @@ inline ByteString VersionInfo()
 inline ByteString IntroText()
 {
 	ByteStringBuilder sb;
-	sb << "\bl\bU" << APPNAME << "\bU " << SAVE_VERSION << "." << MINOR_VERSION << " ko-KR_" << MOD_MAJOR_VERSION << "." << MOD_MINOR_VERSION << ".1 한국어 - https://powdertoy.co.uk, irc.libera.chat #powder, https://tpt.io/discord\n"
+	sb << "\bl\bU" << APPNAME << "\bU " << SAVE_VERSION << "." << MINOR_VERSION << " ko-KR_" << MOD_MAJOR_VERSION << "." << MOD_MINOR_VERSION << " 한국어 - https://powdertoy.co.uk, irc.libera.chat #powder, https://tpt.io/discord\n"
 	      "\n"
 	      "\n"
 	      "\bg[Ctrl] + [C]/[V]/[X]는 각각 복사, 붙여넣기, 잘라내기입니다.\n"
