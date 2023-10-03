@@ -2,6 +2,40 @@
 #include "Config.h"
 #include "common/String.h"
 
+inline ByteString VersionInfo()
+{
+	ByteStringBuilder sb;
+	sb << SAVE_VERSION << "." << MINOR_VERSION << "." << BUILD_NUM << " " << IDENT;
+	if constexpr (SNAPSHOT)
+	{
+		sb << " SNAPSHOT " << SNAPSHOT_ID;
+	}
+	else if constexpr (MOD)
+	{
+		sb << " MODVER " << SNAPSHOT_ID;
+	}
+	if constexpr (LUACONSOLE)
+	{
+		sb << " LUACONSOLE";
+	}
+#ifdef REALISTIC
+	sb << " REALISTIC";
+#endif
+	if constexpr (NOHTTP)
+	{
+		sb << " NOHTTP";
+	}
+	else if constexpr (ENFORCE_HTTPS)
+	{
+		sb << " HTTPS";
+	}
+	if constexpr (DEBUG)
+	{
+		sb << " DEBUG";
+	}
+	return sb.Build();
+}
+
 inline ByteString IntroText()
 {
 	ByteStringBuilder sb;
@@ -39,34 +73,6 @@ inline ByteString IntroText()
 	{
 		sb << "\bg세이브의 업로드와 같은 기능을 사용하려면 \brhttps://powdertoy.co.uk/Register.html\bg에서 계정을 만드십시오.\n";
 	}
-	sb << "\n"
-	   << "\bt" << SAVE_VERSION << "." << MINOR_VERSION << "." << BUILD_NUM << " " << IDENT;
-	if constexpr (SNAPSHOT)
-	{
-		sb << " SNAPSHOT " << SNAPSHOT_ID;
-	}
-	else if constexpr (MOD)
-	{
-		sb << " MODVER " << SNAPSHOT_ID;
-	}
-	if constexpr (LUACONSOLE)
-	{
-		sb << " LUACONSOLE";
-	}
-#ifdef REALISTIC
-	sb << " REALISTIC";
-#endif
-	if constexpr (NOHTTP)
-	{
-		sb << " NOHTTP";
-	}
-	else if constexpr (ENFORCE_HTTPS)
-	{
-		sb << " HTTPS";
-	}
-	if constexpr (DEBUG)
-	{
-		sb << " DEBUG";
-	}
+	sb << "\n\bt" << VersionInfo();
 	return sb.Build();
 }
