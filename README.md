@@ -91,6 +91,7 @@ TPT를 빌드하려면 [The Powder Toy 공식 위키](https://powdertoy.co.uk/Wi
 | I                     | 압력 및 공기 흐름 뒤집기                                                       |
 | W                     | 중력 모드 전환, STK2이 있을 때에는 \[Ctrl\]를 누른 상태로 사용합니다.          |
 | Y                     | 공기 모드 전환                                                                 |
+| Ctrl + E              | 모서리 모드 전환                                                               |
 | B                     | 도색 편집 메뉴                                                                 |
 | Ctrl + B              | 도색 효과 표시 전환                                                            |
 | N                     | 뉴턴 중력 전환                                                                 |

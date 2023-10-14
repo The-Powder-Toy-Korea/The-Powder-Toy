@@ -773,20 +773,20 @@ void GameController::ResetSpark()
 
 void GameController::SwitchGravity()
 {
-	gameModel->GetSimulation()->gravityMode = (gameModel->GetSimulation()->gravityMode+1)%4;
+	gameModel->GetSimulation()->gravityMode = (gameModel->GetSimulation()->gravityMode + 1) % NUM_GRAV_MODES;
 
 	switch (gameModel->GetSimulation()->gravityMode)
 	{
-	case 0:
+	case GRAV_VERTICAL:
 		gameModel->SetInfoTip("중력: 수직");
 		break;
-	case 1:
+	case GRAV_OFF:
 		gameModel->SetInfoTip("중력: 끄기");
 		break;
-	case 2:
+	case GRAV_RADIAL:
 		gameModel->SetInfoTip("중력: 중심");
 		break;
-	case 3:
+	case GRAV_CUSTOM:
 		gameModel->SetInfoTip("중력: 사용자 지정");
 		break;
 	}
@@ -794,23 +794,23 @@ void GameController::SwitchGravity()
 
 void GameController::SwitchAir()
 {
-	gameModel->GetSimulation()->air->airMode = (gameModel->GetSimulation()->air->airMode+1)%5;
+	gameModel->GetSimulation()->air->airMode = (gameModel->GetSimulation()->air->airMode + 1) % NUM_AIR_MODES;
 
 	switch (gameModel->GetSimulation()->air->airMode)
 	{
-	case 0:
+	case AIR_ON:
 		gameModel->SetInfoTip("공기: 켜기");
 		break;
-	case 1:
+	case AIR_PRESSURE_OFF:
 		gameModel->SetInfoTip("공기: 압력 끄기");
 		break;
-	case 2:
+	case AIR_VELOCITY_OFF:
 		gameModel->SetInfoTip("공기: 바람 끄기");
 		break;
-	case 3:
+	case AIR_OFF:
 		gameModel->SetInfoTip("공기: 끄기");
 		break;
-	case 4:
+	case AIR_NO_UPDATE:
 		gameModel->SetInfoTip("공기: 업데이트 없음");
 		break;
 	}
@@ -1010,6 +1010,32 @@ void GameController::SetTemperatureScale(int temperatureScale)
 int GameController::GetTemperatureScale()
 {
 	return gameModel->GetTemperatureScale();
+}
+
+int GameController::GetEdgeMode()
+{
+	return gameModel->GetEdgeMode();
+}
+
+void GameController::SetEdgeMode(int edgeMode)
+{
+	if (edgeMode < 0 || edgeMode >= NUM_EDGE_MODES)
+		edgeMode = 0;
+
+	gameModel->SetEdgeMode(edgeMode);
+
+	switch (edgeMode)
+	{
+		case EDGE_VOID:
+			gameModel->SetInfoTip("모서리 모드: 공허");
+			break;
+		case EDGE_SOLID:
+			gameModel->SetInfoTip("모서리 모드: 벽");
+			break;
+		case EDGE_LOOP:
+			gameModel->SetInfoTip("모서리 모드: 반복");
+			break;
+	}
 }
 
 void GameController::SetActiveColourPreset(int preset)

@@ -228,8 +228,9 @@ OptionsView::OptionsView() : ui::Window(ui::Point(-1, -1), ui::Point(320, 340))
 	}, [this] {
 		c->SetTemperatureScale(temperatureScale->GetOption().second);
 	});
-	addSeparator();
+	if (FORCE_WINDOW_FRAME_OPS != forceWindowFrameOpsHandheld)
 	{
+		addSeparator();
 		std::vector<std::pair<String, int>> options;
 		int currentScale = ui::Engine::Ref().GetScale();
 		int scaleIndex = 1;
@@ -252,7 +253,7 @@ OptionsView::OptionsView() : ui::Window(ui::Point(-1, -1), ui::Point(320, 340))
 			c->SetScale(scale->GetOption().second);
 		});
 	}
-	if (ALLOW_WINDOW_FRAME_OPS)
+	if (FORCE_WINDOW_FRAME_OPS == forceWindowFrameOpsNone)
 	{
 		resizable = addCheckbox(0, "창 크기 조절 \bg- 창 크기의 조절을 허용합니다.", "", [this] {
 			c->SetResizable(resizable->GetChecked());
@@ -260,13 +261,16 @@ OptionsView::OptionsView() : ui::Window(ui::Point(-1, -1), ui::Point(320, 340))
 		fullscreen = addCheckbox(0, "전체 화면 \bg- 전체 화면으로 플레이합니다.", "", [this] {
 			c->SetFullscreen(fullscreen->GetChecked());
 		});
-		altFullscreen = addCheckbox(1, "해상도 변경 \bg- 최적화된 해상도로 조정합니다.", "", [this] {
-			c->SetAltFullscreen(altFullscreen->GetChecked());
+		changeResolution = addCheckbox(1, "해상도 변경 \bg- 최적화된 해상도로 조정합니다.", "", [this] {
+			c->SetChangeResolution(changeResolution->GetChecked());
 		});
 		forceIntegerScaling = addCheckbox(1, "강제 정수 스케일링 \bg- 화면이 선명해지도록 조정합니다.", "", [this] {
 			c->SetForceIntegerScaling(forceIntegerScaling->GetChecked());
 		});
 	}
+	blurryScaling = addCheckbox(0, "흐릿한 스케일링 \bg- 화면이 흐릿해지도록 조정합니다(아주 큰 화면용).", "", [this] {
+		c->SetBlurryScaling(blurryScaling->GetChecked());
+	});
 	addSeparator();
 	if (ALLOW_QUIT)
 	{
@@ -438,7 +442,10 @@ void OptionsView::NotifySettingsChanged(OptionsModel * sender)
 	customGravityY = sender->GetCustomGravityY();
 	decoSpace->SetOption(sender->GetDecoSpace());
 	edgeMode->SetOption(sender->GetEdgeMode());
-	scale->SetOption(sender->GetScale());
+	if (scale)
+	{
+		scale->SetOption(sender->GetScale());
+	}
 	if (resizable)
 	{
 		resizable->SetChecked(sender->GetResizable());
@@ -447,13 +454,17 @@ void OptionsView::NotifySettingsChanged(OptionsModel * sender)
 	{
 		fullscreen->SetChecked(sender->GetFullscreen());
 	}
-	if (altFullscreen)
+	if (changeResolution)
 	{
-		altFullscreen->SetChecked(sender->GetAltFullscreen());
+		changeResolution->SetChecked(sender->GetChangeResolution());
 	}
 	if (forceIntegerScaling)
 	{
 		forceIntegerScaling->SetChecked(sender->GetForceIntegerScaling());
+	}
+	if (blurryScaling)
+	{
+		blurryScaling->SetChecked(sender->GetBlurryScaling());
 	}
 	if (fastquit)
 	{
