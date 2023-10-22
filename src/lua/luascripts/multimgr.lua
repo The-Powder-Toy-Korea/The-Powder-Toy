@@ -337,8 +337,8 @@ require_preload__["tptmp.client"] = function()
 							sx, sy = 0, 0
 						end
 						local tool = member.last_tool or member.tool_l
-						local tool_name = util.to_tool[tool] or decode_rulestring(tool) or "UNKNOWN"
-						local tool_class = util.xid_class[tool]
+						local tool_name = (tool and util.to_tool[tool] or decode_rulestring(tool)) or "UNKNOWN"
+						local tool_class = tool and util.xid_class[tool]
 						if elem[tool_name] and tool ~= 0 and tool_name ~= "UNKNOWN" then
 							local real_name = elem.property(elem[tool_name], "Name")
 							if real_name ~= "" then
@@ -356,8 +356,7 @@ require_preload__["tptmp.client"] = function()
 						local repl_tool_name
 						if member.bmode ~= 0 then
 							local repl_tool = member.tool_x
-							repl_tool_name = util.to_tool[repl_tool] or "UNKNOWN"
-							local repl_tool_class = util.xid_class[repl_tool]
+							repl_tool_name = repl_tool and util.to_tool[repl_tool] or "UNKNOWN"
 							if elem[repl_tool_name] and repl_tool ~= 0 and repl_tool_name ~= "UNKNOWN" then
 								local real_name = elem.property(elem[repl_tool_name], "Name")
 								if real_name ~= "" then
@@ -1007,17 +1006,21 @@ require_preload__["tptmp.client.client"] = function()
 		end
 		member.last_tool = member[index_to_lrax[index]]
 		local x, y = self:read_xy_12_()
-		util.flood_any(x, y, member.last_tool, -1, -1, member)
+		if member.last_tool then
+			util.flood_any(x, y, member.last_tool, -1, -1, member)
+		end
 	end
 	
 	function client_i:handle_lineend_40_()
 		local member = self:member_prefix_()
 		local x1, y1 = member.line_x, member.line_y
 		local x2, y2 = self:read_xy_12_()
-		if member.kmod_a then
-			x2, y2 = util.line_snap_coords(x1, y1, x2, y2)
+		if member:can_render() and x1 and member.last_tool then
+			if member.kmod_a then
+				x2, y2 = util.line_snap_coords(x1, y1, x2, y2)
+			end
+			util.create_line_any(x1, y1, x2, y2, member.size_x, member.size_y, member.last_tool, member.shape, member, false)
 		end
-		util.create_line_any(x1, y1, x2, y2, member.size_x, member.size_y, member.last_tool, member.shape, member, false)
 		member.line_x, member.line_y = nil, nil
 	end
 	
@@ -1025,10 +1028,12 @@ require_preload__["tptmp.client.client"] = function()
 		local member = self:member_prefix_()
 		local x1, y1 = member.rect_x, member.rect_y
 		local x2, y2 = self:read_xy_12_()
-		if member.kmod_a then
-			x2, y2 = util.rect_snap_coords(x1, y1, x2, y2)
+		if member:can_render() and x1 and member.last_tool then
+			if member.kmod_a then
+				x2, y2 = util.rect_snap_coords(x1, y1, x2, y2)
+			end
+			util.create_box_any(x1, y1, x2, y2, member.last_tool, member)
 		end
-		util.create_box_any(x1, y1, x2, y2, member.last_tool, member)
 		member.rect_x, member.rect_y = nil, nil
 	end
 	
@@ -1040,7 +1045,9 @@ require_preload__["tptmp.client.client"] = function()
 		end
 		member.last_tool = member[index_to_lrax[index]]
 		local x, y = self:read_xy_12_()
-		util.create_parts_any(x, y, member.size_x, member.size_y, member.last_tool, member.shape, member)
+		if member:can_render() and member.last_tool then
+			util.create_parts_any(x, y, member.size_x, member.size_y, member.last_tool, member.shape, member)
+		end
 		member.last_x = x
 		member.last_y = y
 	end
@@ -1048,7 +1055,9 @@ require_preload__["tptmp.client.client"] = function()
 	function client_i:handle_pointscont_43_()
 		local member = self:member_prefix_()
 		local x, y = self:read_xy_12_()
-		util.create_line_any(member.last_x, member.last_y, x, y, member.size_x, member.size_y, member.last_tool, member.shape, member, true)
+		if member:can_render() and member.last_tool and member.last_x then
+			util.create_line_any(member.last_x, member.last_y, x, y, member.size_x, member.size_y, member.last_tool, member.shape, member, true)
+		end
 		member.last_x = x
 		member.last_y = y
 	end
@@ -1164,7 +1173,7 @@ require_preload__["tptmp.client.client"] = function()
 		self:member_prefix_()
 		local x, y = self:read_xy_12_()
 		local w, h = self:read_xy_12_()
-		sim.clearRect(x, y, w, h)
+		util.clear_rect(x, y, w, h)
 	end
 	
 	function client_i:handle_canceldraw_68_()
@@ -1785,7 +1794,7 @@ require_preload__["tptmp.client.client"] = function()
 		for _, member in pairs(self.id_to_member) do
 			if member:can_render() then
 				local lx, ly = member.line_x, member.line_y
-				if member.last_tool == util.from_tool.DEFAULT_UI_WIND and not (member.select or member.place) and lx then
+				if lx and member.last_tool == util.from_tool.DEFAULT_UI_WIND and not (member.select or member.place) and lx then
 					local px, py = member.pos_x, member.pos_y
 					if member.kmod_a then
 						px, py = util.line_snap_coords(lx, ly, px, py)
@@ -2146,7 +2155,7 @@ require_preload__["tptmp.client.config"] = function()
 
 	local common_config = require("tptmp.common.config")
 	
-	local versionstr = "v2.0.33"
+	local versionstr = "v2.0.36"
 	
 	local config = {
 		-- ***********************************************************************
@@ -5116,6 +5125,9 @@ require_preload__["tptmp.client.util"] = function()
 	end
 	
 	local function create_parts_any(x, y, rx, ry, xtype, brush, member)
+		if not inside_rect(0, 0, sim.XRES, sim.YRES, x, y) then
+			return
+		end
 		if line_only[xtype] or no_create[xtype] then
 			return
 		end
@@ -5160,6 +5172,10 @@ require_preload__["tptmp.client.util"] = function()
 	end
 	
 	local function create_line_any(x1, y1, x2, y2, rx, ry, xtype, brush, member, cont)
+		if not inside_rect(0, 0, sim.XRES, sim.YRES, x1, y1) or
+		   not inside_rect(0, 0, sim.XRES, sim.YRES, x2, y2) then
+			return
+		end
 		if no_create[xtype] or no_shape[xtype] or (jacobsmod and xtype == tpt.element("ball") and not member.kmod_s) then
 			return
 		end
@@ -5259,6 +5275,10 @@ require_preload__["tptmp.client.util"] = function()
 	end
 	
 	local function create_box_any(x1, y1, x2, y2, xtype, member)
+		if not inside_rect(0, 0, sim.XRES, sim.YRES, x1, y1) or
+		   not inside_rect(0, 0, sim.XRES, sim.YRES, x2, y2) then
+			return
+		end
 		if line_only[xtype] or no_create[xtype] or no_shape[xtype] then
 			return
 		end
@@ -5295,6 +5315,9 @@ require_preload__["tptmp.client.util"] = function()
 	end
 	
 	local function flood_any(x, y, xtype, part_flood_hint, wall_flood_hint, member)
+		if not inside_rect(0, 0, sim.XRES, sim.YRES, x, y) then
+			return
+		end
 		if line_only[xtype] or no_create[xtype] or no_flood[xtype] then
 			return
 		end
@@ -5324,6 +5347,13 @@ require_preload__["tptmp.client.util"] = function()
 		if member.bmode ~= 0 then
 			tpt.selectedreplace = selectedreplace
 		end
+	end
+	
+	local function clear_rect(x, y, w, h)
+		if not inside_rect(0, 0, sim.XRES, sim.YRES, x + w, y + h) then
+			return
+		end
+		sim.clearRect(x, y, w, h)
 	end
 	
 	local function corners_to_rect(x1, y1, x2, y2)
@@ -5410,6 +5440,7 @@ require_preload__["tptmp.client.util"] = function()
 		create_line_any = create_line_any,
 		create_box_any = create_box_any,
 		flood_any = flood_any,
+		clear_rect = clear_rect,
 		from_tool = from_tool,
 		to_tool = to_tool,
 		create_override = create_override,
@@ -6840,7 +6871,7 @@ require_preload__["tptmp.common.config"] = function()
 		-- ***********************************************************************
 	
 		-- * Protocol version, between 0 and 254. 255 is reserved for future use.
-		version = 28,
+		version = 31,
 	
 		-- * Client-to-server message size limit, between 0 and 255, the latter
 		--   limit being imposted by the protocol.

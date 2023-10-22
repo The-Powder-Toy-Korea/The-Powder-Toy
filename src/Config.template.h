@@ -58,7 +58,7 @@ constexpr DisplayVersionWithBuild UPSTREAM_VERSION = { { @UPSTREAM_VERSION_MAJOR
 constexpr auto DISPLAY_VERSION = APP_VERSION.displayVersion;
 
 constexpr int MOD_MAJOR_VERSION = 2;
-constexpr int MOD_MINOR_VERSION = 10;
+constexpr int MOD_MINOR_VERSION = 11;
 
 constexpr char IDENT_RELTYPE    = SNAPSHOT ? 'S' : (BETA ? 'B' : 'R');
 
