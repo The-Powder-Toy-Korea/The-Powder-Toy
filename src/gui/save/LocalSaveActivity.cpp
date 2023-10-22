@@ -115,8 +115,8 @@ void LocalSaveActivity::saveWrite(ByteString finalFilename)
 		gameSave->authors = localSaveInfo;
 		save->SetGameSave(std::move(gameSave));
 	}
-	auto [ fromNewerVersion, saveData ] = save->GetGameSave()->Serialise();
-	(void)fromNewerVersion;
+	std::vector<char> saveData;
+	std::tie(std::ignore, saveData) = save->GetGameSave()->Serialise();
 	if (saveData.size() == 0)
 		new ErrorMessage("오류", "게임 데이터를 시리얼화할 수 없습니다.");
 	else if (!Platform::WriteFile(saveData, finalFilename))

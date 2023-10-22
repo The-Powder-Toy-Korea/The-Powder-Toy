@@ -5,14 +5,19 @@
 inline ByteString VersionInfo()
 {
 	ByteStringBuilder sb;
-	sb << SAVE_VERSION << "." << MINOR_VERSION << "." << BUILD_NUM << " " << IDENT;
+	sb << DISPLAY_VERSION[0] << "." << DISPLAY_VERSION[1];
+	if constexpr (!SNAPSHOT)
+	{
+		sb << "." << APP_VERSION.build;
+	}
+	sb << " " << IDENT;
+	if constexpr (MOD)
+	{
+		sb << " MOD " << MOD_ID << " UPSTREAM " << UPSTREAM_VERSION.build;
+	}
 	if constexpr (SNAPSHOT)
 	{
-		sb << " SNAPSHOT " << SNAPSHOT_ID;
-	}
-	else if constexpr (MOD)
-	{
-		sb << " MODVER " << SNAPSHOT_ID;
+		sb << " SNAPSHOT " << APP_VERSION.build;
 	}
 	if constexpr (LUACONSOLE)
 	{
@@ -39,7 +44,7 @@ inline ByteString VersionInfo()
 inline ByteString IntroText()
 {
 	ByteStringBuilder sb;
-	sb << "\bl\bU" << APPNAME << "\bU " << SAVE_VERSION << "." << MINOR_VERSION << " ko-KR_" << MOD_MAJOR_VERSION << "." << MOD_MINOR_VERSION << " 한국어 - https://powdertoy.co.uk, irc.libera.chat #powder, https://tpt.io/discord\n"
+	sb << "\bl\bU" << APPNAME << "\bU " << DISPLAY_VERSION[0] << "." << DISPLAY_VERSION[1] << " ko-KR_" << MOD_MAJOR_VERSION << "." << MOD_MINOR_VERSION << " 한국어 - https://powdertoy.co.uk, irc.libera.chat #powder, https://tpt.io/discord\n"
 	      "\n"
 	      "\n"
 	      "\bg[Ctrl] + [C]/[V]/[X]는 각각 복사, 붙여넣기, 잘라내기입니다.\n"

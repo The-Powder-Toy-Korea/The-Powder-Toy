@@ -40,10 +40,6 @@
 #include <iostream>
 #include <SDL.h>
 
-#ifdef GetUserName
-# undef GetUserName // dammit windows
-#endif
-
 class SplitButton : public ui::Button
 {
 	bool rightDown;
@@ -1603,6 +1599,12 @@ void GameView::OnKeyPress(int key, int scan, bool repeat, bool shift, bool ctrl,
 	{
 		switch (key)
 		{
+		case SDLK_AC_BACK:
+			if (ALLOW_QUIT)
+			{
+				ui::Engine::Ref().ConfirmExit();
+			}
+			break;
 		case SDLK_TAB: //Tab
 			c->ChangeBrush();
 			break;
@@ -1964,7 +1966,7 @@ void GameView::NotifyTransformedPlaceSaveChanged(GameModel *sender)
 {
 	if (sender->GetTransformedPlaceSave())
 	{
-		placeSaveThumb = SaveRenderer::Ref().Render(sender->GetTransformedPlaceSave(), true, true, sender->GetRenderer());
+		std::tie(placeSaveThumb, std::ignore) = SaveRenderer::Ref().Render(sender->GetTransformedPlaceSave(), true, true, sender->GetRenderer());
 		selectMode = PlaceSave;
 		selectPoint2 = mousePosition;
 	}

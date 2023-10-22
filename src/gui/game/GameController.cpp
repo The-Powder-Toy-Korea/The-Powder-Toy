@@ -24,6 +24,7 @@
 #include "debug/DebugParts.h"
 #include "debug/ElementPopulation.h"
 #include "debug/ParticleDebug.h"
+#include "debug/SurfaceNormals.h"
 #include "graphics/Renderer.h"
 #include "simulation/Air.h"
 #include "simulation/ElementClasses.h"
@@ -65,10 +66,6 @@
 #include <SDL.h>
 #include <iostream>
 
-#ifdef GetUserName
-# undef GetUserName // dammit windows
-#endif
-
 GameController::GameController():
 	firstTick(true),
 	foundSignID(-1),
@@ -96,10 +93,11 @@ GameController::GameController():
 
 	Client::Ref().AddListener(this);
 
-	debugInfo.push_back(new DebugParts(0x1, gameModel->GetSimulation()));
-	debugInfo.push_back(new ElementPopulationDebug(0x2, gameModel->GetSimulation()));
-	debugInfo.push_back(new DebugLines(0x4, gameView, this));
-	debugInfo.push_back(new ParticleDebug(0x8, gameModel->GetSimulation(), gameModel));
+	debugInfo.push_back(std::make_unique<DebugParts            >(DEBUG_PARTS     , gameModel->GetSimulation()));
+	debugInfo.push_back(std::make_unique<ElementPopulationDebug>(DEBUG_ELEMENTPOP, gameModel->GetSimulation()));
+	debugInfo.push_back(std::make_unique<DebugLines            >(DEBUG_LINES     , gameView, this));
+	debugInfo.push_back(std::make_unique<ParticleDebug         >(DEBUG_PARTICLE  , gameModel->GetSimulation(), gameModel));
+	debugInfo.push_back(std::make_unique<SurfaceNormals        >(DEBUG_SURFNORM  , gameModel->GetSimulation(), gameView, this));
 }
 
 GameController::~GameController()
@@ -136,10 +134,7 @@ GameController::~GameController()
 	{
 		delete options;
 	}
-	for(std::vector<DebugInfo*>::iterator iter = debugInfo.begin(), end = debugInfo.end(); iter != end; iter++)
-	{
-		delete *iter;
-	}
+	debugInfo.clear();
 	std::vector<QuickOption*> quickOptions = gameModel->GetQuickOptions();
 	for(std::vector<QuickOption*>::iterator iter = quickOptions.begin(), end = quickOptions.end(); iter != end; ++iter)
 	{
@@ -649,11 +644,15 @@ bool GameController::KeyPress(int key, int scan, bool repeat, bool shift, bool c
 			}
 		}
 
-		for(std::vector<DebugInfo*>::iterator iter = debugInfo.begin(), end = debugInfo.end(); iter != end; iter++)
+		for (auto &debug : debugInfo)
 		{
-			if ((*iter)->debugID & debugFlags)
-				if (!(*iter)->KeyPress(key, scan, shift, ctrl, alt, gameView->GetMousePosition()))
+			if (debug->debugID & debugFlags)
+			{
+				if (!debug->KeyPress(key, scan, shift, ctrl, alt, gameView->GetMousePosition()))
+				{
 					ret = false;
+				}
+			}
 		}
 	}
 	return ret;
@@ -719,10 +718,12 @@ void GameController::Tick()
 		gameModel->SetActiveTool(gameModel->SelectNextTool, gameModel->GetToolFromIdentifier(gameModel->SelectNextIdentifier));
 		gameModel->SelectNextIdentifier.clear();
 	}
-	for(std::vector<DebugInfo*>::iterator iter = debugInfo.begin(), end = debugInfo.end(); iter != end; iter++)
+	for (auto &debug : debugInfo)
 	{
-		if ((*iter)->debugID & debugFlags)
-			(*iter)->Draw();
+		if (debug->debugID & debugFlags)
+		{
+			debug->Draw();
+		}
 	}
 	commandInterface->OnTick();
 }
@@ -1208,10 +1209,10 @@ void GameController::OpenLocalSaveWindow(bool asCurrent)
 			gameSave->authors = localSaveInfo;
 
 			Platform::MakeDirectory(LOCAL_SAVE_DIR);
-			auto [ fromNewerVersion, saveData ] = gameSave->Serialise();
+			std::vector<char> saveData;
+			std::tie(std::ignore, saveData) = gameSave->Serialise();
 			tempSave->SetGameSave(std::move(gameSave));
 			gameModel->SetSaveFile(std::move(tempSave), gameView->ShiftBehaviour());
-			(void)fromNewerVersion;
 			if (saveData.size() == 0)
 				new ErrorMessage("오류", "게임 데이터를 시리얼화할 수 없습니다.");
 			else if (!Platform::WriteFile(saveData, gameModel->GetSaveFile()->GetName()))
@@ -1605,21 +1606,21 @@ void GameController::NotifyUpdateAvailable(Client * sender)
 				updateMessage << "\"계속\"을 눌러 웹 사이트에서 최신 버전을 내려받습니다. \n\n현재 버전:\n ";
 			}
 
+			if constexpr (MOD)
+			{
+				updateMessage << "Mod " << MOD_ID << " ";
+			}
 			if constexpr (SNAPSHOT)
 			{
-				updateMessage << "스냅숏 " << SNAPSHOT_ID;
-			}
-			else if constexpr (MOD)
-			{
-				updateMessage << "모드 버전 " << SNAPSHOT_ID;
+				updateMessage << "스냅숏 " << APP_VERSION.build;
 			}
 			else if constexpr (BETA)
 			{
-				updateMessage << SAVE_VERSION << "." << MINOR_VERSION << " 베타, 빌드 " << BUILD_NUM;
+				updateMessage << DISPLAY_VERSION[0] << "." << DISPLAY_VERSION[1] << " 베타, 빌드 " << APP_VERSION.build;
 			}
 			else
 			{
-				updateMessage << SAVE_VERSION << "." << MINOR_VERSION << " 안정화, 빌드 " << BUILD_NUM;
+				updateMessage << DISPLAY_VERSION[0] << "." << DISPLAY_VERSION[1] << " 안정화, 빌드 " << APP_VERSION.build;
 			}
 
 			updateMessage << "\n새 버전:\n ";

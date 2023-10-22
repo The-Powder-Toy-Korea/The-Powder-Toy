@@ -76,18 +76,18 @@ namespace http
 				if constexpr (SNAPSHOT || MOD)
 				{
 					parseUpdate("Snapshot", UpdateInfo::channelSnapshot, [](int build) -> bool {
-						return build > SNAPSHOT_ID;
+						return size_t(build) > APP_VERSION.build;
 					});
 				}
 				else
 				{
 					parseUpdate("Stable", UpdateInfo::channelStable, [](int build) -> bool {
-						return build > BUILD_NUM;
+						return size_t(build) > APP_VERSION.build;
 					});
 					if (!startupInfo.updateInfo.has_value())
 					{
 						parseUpdate("Beta", UpdateInfo::channelBeta, [](int build) -> bool {
-							return build > BUILD_NUM;
+							return size_t(build) > APP_VERSION.build;
 						});
 					}
 				}

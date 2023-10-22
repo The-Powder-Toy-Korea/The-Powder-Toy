@@ -405,20 +405,19 @@ LuaScriptInterface::LuaScriptInterface(GameController * c, GameModel * m):
 
 	lua_newtable(l);
 	tptPropertiesVersion = lua_gettop(l);
-	lua_pushinteger(l, SAVE_VERSION);
+	lua_pushinteger(l, DISPLAY_VERSION[0]);
 	lua_setfield(l, tptPropertiesVersion, "major");
-	lua_pushinteger(l, MINOR_VERSION);
+	lua_pushinteger(l, DISPLAY_VERSION[1]);
 	lua_setfield(l, tptPropertiesVersion, "minor");
-	lua_pushinteger(l, BUILD_NUM);
+	lua_pushinteger(l, APP_VERSION.build);
 	lua_setfield(l, tptPropertiesVersion, "build");
-	if constexpr (SNAPSHOT || MOD)
-	{
-		lua_pushinteger(l, SNAPSHOT_ID);
-	}
-	else
-	{
-		lua_pushinteger(l, 0);
-	}
+	lua_pushinteger(l, UPSTREAM_VERSION.displayVersion[0]);
+	lua_setfield(l, tptPropertiesVersion, "upstream_major");
+	lua_pushinteger(l, UPSTREAM_VERSION.displayVersion[1]);
+	lua_setfield(l, tptPropertiesVersion, "upstream_minor");
+	lua_pushinteger(l, UPSTREAM_VERSION.build);
+	lua_setfield(l, tptPropertiesVersion, "upstream_build");
+	lua_pushboolean(l, SNAPSHOT);
 	lua_setfield(l, tptPropertiesVersion, "snapshot");
 	lua_pushinteger(l, MOD_ID);
 	lua_setfield(l, tptPropertiesVersion, "modid");
@@ -514,6 +513,12 @@ tpt.partsdata = nil");
 		lua_settable(l, tptElementTransitions);
 	}
 	lua_setfield(l, tptProperties, "eltransition");
+
+	SETCONST(l, DEBUG_PARTS);
+	SETCONST(l, DEBUG_ELEMENTPOP);
+	SETCONST(l, DEBUG_LINES);
+	SETCONST(l, DEBUG_PARTICLE);
+	SETCONST(l, DEBUG_SURFNORM);
 
 	lua_gr_func_v = std::vector<LuaSmartRef>(PT_NUM);
 	lua_gr_func = &lua_gr_func_v[0];
@@ -718,7 +723,7 @@ static int beginMessageBox(lua_State* l)
 		cb->Push(l);
 		if (lua_isfunction(l, -1))
 		{
-			if (lua_pcall(l, 0, 0, 0))
+			if (tpt_lua_pcall(l, 0, 0, 0, false))
 			{
 				luacon_ci->Log(CommandInterface::LogError, luacon_geterror());
 			}
@@ -742,7 +747,7 @@ static int beginThrowError(lua_State* l)
 		cb->Push(l);
 		if (lua_isfunction(l, -1))
 		{
-			if (lua_pcall(l, 0, 0, 0))
+			if (tpt_lua_pcall(l, 0, 0, 0, false))
 			{
 				luacon_ci->Log(CommandInterface::LogError, luacon_geterror());
 			}
@@ -777,7 +782,7 @@ static int beginInput(lua_State* l)
 			{
 				lua_pushnil(l);
 			}
-			if (lua_pcall(l, 1, 0, 0))
+			if (tpt_lua_pcall(l, 1, 0, 0, false))
 			{
 				luacon_ci->Log(CommandInterface::LogError, luacon_geterror());
 			}
@@ -809,7 +814,7 @@ static int beginConfirm(lua_State *l)
 		if (lua_isfunction(l, -1))
 		{
 			lua_pushboolean(l, result);
-			if (lua_pcall(l, 1, 0, 0))
+			if (tpt_lua_pcall(l, 1, 0, 0, false))
 			{
 				luacon_ci->Log(CommandInterface::LogError, luacon_geterror());
 			}
@@ -5191,7 +5196,7 @@ int LuaScriptInterface::luatpt_getscript(lua_State* l)
 				tpt_lua_pushString(l, runFailed->error);
 				nargs = 2;
 			}
-			if (lua_pcall(l, nargs, 0, 0))
+			if (tpt_lua_pcall(l, nargs, 0, 0, false))
 			{
 				luacon_ci->Log(CommandInterface::LogError, luacon_geterror());
 			}

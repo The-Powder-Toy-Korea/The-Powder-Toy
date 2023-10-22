@@ -121,7 +121,7 @@ public:
 	uint64_t frameCount;
 	bool ensureDeterminism;
 
-	void Load(const GameSave *save, bool includePressure, Vec2<int> blockP); // block coordinates
+	std::vector<ByteString> Load(const GameSave *save, bool includePressure, Vec2<int> blockP); // block coordinates
 	std::unique_ptr<GameSave> Save(bool includePressure, Rect<int> partR); // particle coordinates
 	void SaveSimOptions(GameSave &gameSave);
 	SimulationSample GetSample(int x, int y);
@@ -136,9 +136,16 @@ public:
 	int do_move(int i, int x, int y, float nxf, float nyf);
 	bool move(int i, int x, int y, float nxf, float nyf);
 	int try_move(int i, int x, int y, int nx, int ny);
-	int eval_move(int pt, int nx, int ny, unsigned *rr);
+	int eval_move(int pt, int nx, int ny, unsigned *rr) const;
+	struct PlanMoveResult
+	{
+		int fin_x, fin_y, clear_x, clear_y;
+		float fin_xf, fin_yf, clear_xf, clear_yf;
+		float vx, vy;
+	};
+	PlanMoveResult PlanMove(int i, int x, int y, bool update_emap);
 	void init_can_move();
-	bool IsWallBlocking(int x, int y, int type);
+	bool IsWallBlocking(int x, int y, int type) const;
 	bool IsElement(int type) const {
 		return (type > 0 && type < PT_NUM && elements[type].Enabled);
 	}
@@ -212,8 +219,14 @@ public:
 	void orbitalparts_get(int block1, int block2, int resblock1[], int resblock2[]);
 	void orbitalparts_set(int *block1, int *block2, int resblock1[], int resblock2[]);
 	int get_wavelength_bin(int *wm);
-	int get_normal(int pt, int x, int y, float dx, float dy, float *nx, float *ny);
-	int get_normal_interp(int pt, float x0, float y0, float dx, float dy, float *nx, float *ny);
+	struct GetNormalResult
+	{
+		bool success;
+		float nx, ny;
+		int lx, ly, rx, ry;
+	};
+	GetNormalResult get_normal(int pt, int x, int y, float dx, float dy);
+	GetNormalResult get_normal_interp(int pt, float x0, float y0, float dx, float dy);
 	void clear_sim();
 	Simulation();
 	~Simulation();
