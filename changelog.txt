@@ -1,2 +1,2 @@
 Based on The Powder Toy, Snapshot-354.
-- Updated TPT code.
+- Fix wrong upstream version in the intro text.
