@@ -1,5 +1,6 @@
 #pragma once
 #include "Config.h"
+#include "SimulationConfig.h"
 #include "common/String.h"
 
 inline ByteString VersionInfo()
@@ -23,9 +24,10 @@ inline ByteString VersionInfo()
 	{
 		sb << " LUACONSOLE";
 	}
-#ifdef REALISTIC
-	sb << " REALISTIC";
-#endif
+	if constexpr (LATENTHEAT)
+	{
+		sb << " LATENTHEAT";
+	}
 	if constexpr (NOHTTP)
 	{
 		sb << " NOHTTP";
@@ -44,7 +46,7 @@ inline ByteString VersionInfo()
 inline ByteString IntroText()
 {
 	ByteStringBuilder sb;
-	sb << "\bl\bU" << APPNAME << "\bU " << DISPLAY_VERSION[0] << "." << DISPLAY_VERSION[1] << " ko-KR_" << MOD_MAJOR_VERSION << "." << MOD_MINOR_VERSION << " 한국어 - https://powdertoy.co.uk, irc.libera.chat #powder, https://tpt.io/discord\n"
+	sb << "\bl\bU" << APPNAME << "\bU 96.2 ko-KR_" << DISPLAY_VERSION[0] << "." << DISPLAY_VERSION[1] << " 한국어 - https://powdertoy.co.uk, irc.libera.chat #powder, https://tpt.io/discord\n"
 	      "\n"
 	      "\n"
 	      "\bg[Ctrl] + [C]/[V]/[X]는 각각 복사, 붙여넣기, 잘라내기입니다.\n"

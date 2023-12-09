@@ -31,6 +31,7 @@ void Element::Element_SNOW()
 
 	DefaultProperties.temp = R_TEMP - 30.0f + 273.15f;
 	HeatConduct = 46;
+	LatentHeat = 1095;
 	Description = "눈: 얼음이 압력에 의해 파괴될 때 생성되는 낮은 질량의 물질입니다.";
 
 	Properties = TYPE_PART|PROP_NEUTPASS;
