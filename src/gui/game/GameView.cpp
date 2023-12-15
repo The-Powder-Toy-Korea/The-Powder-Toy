@@ -1654,24 +1654,30 @@ void GameView::OnFileDrop(ByteString filename)
 {
 	if (!(filename.EndsWith(".cps") || filename.EndsWith(".stm")))
 	{
-		new ErrorMessage("세이브 불러오기 오류", "이 파일은 세이브 파일(*.cps, *.stm)이 아닙니다.");
+		new ErrorMessage("불러오기 오류", "이 파일은 세이브 파일(*.cps, *.stm)이 아닙니다.");
 		return;
 	}
 
-	auto saveFile = Client::Ref().LoadSaveFile(filename);
-	if (!saveFile)
-		return;
-	if (saveFile->GetError().length())
-	{
-		new ErrorMessage("세이브 불러오기 오류", "세이브 파일을 블러오는 중에 문제가 발생하였습니다. 오류: " + saveFile->GetError());
-		return;
-	}
 	if (filename.EndsWith(".stm"))
 	{
+		auto saveFile = Client::Ref().GetStamp(filename);
+		if (!saveFile || !saveFile->GetGameSave())
+		{
+			new ErrorMessage("스탬프 불러오기 오류", "스탬프를 불러오는 중에 문제가 발생하였습니다. 오류: " + saveFile->GetError());
+			return;
+		}
 		c->LoadStamp(saveFile->TakeGameSave());
 	}
 	else
 	{
+		auto saveFile = Client::Ref().LoadSaveFile(filename);
+		if (!saveFile)
+			return;
+		if (saveFile->GetError().length())
+		{
+			new ErrorMessage("세이브 불러오기 오류", "세이브 파일을 불러오는 중에 문제가 발생하였습니다. 오류: " + saveFile->GetError());
+			return;
+		}
 		c->LoadSaveFile(std::move(saveFile));
 	}
 
