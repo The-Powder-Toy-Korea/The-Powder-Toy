@@ -31,6 +31,52 @@ void Simulation::Load(const GameSave *save, bool includePressure, Vec2<int> bloc
 
 	RecalcFreeParticles(false);
 
+	struct ExistingParticle
+	{
+		int id;
+		Vec2<int> pos;
+	};
+	std::vector<ExistingParticle> existingParticles;
+	auto pasteArea = RES.OriginRect() & RectSized(partP, save->blockSize * CELL);
+	for (int i = 0; i <= parts_lastActiveIndex; i++)
+	{
+		if (parts[i].type)
+		{
+			auto p = Vec2<int>{ int(parts[i].x + 0.5f), int(parts[i].y + 0.5f) };
+			if (pasteArea.Contains(p))
+			{
+				existingParticles.push_back({ i, p });
+			}
+		}
+	}
+	std::sort(existingParticles.begin(), existingParticles.end(), [](const auto &lhs, const auto &rhs) {
+		return std::tie(lhs.pos.Y, lhs.pos.X) < std::tie(rhs.pos.Y, rhs.pos.X);
+	});
+	PlaneAdapter<std::vector<size_t>> existingParticleIndices(pasteArea.Size(), existingParticles.size());
+	{
+		auto lastPos = Vec2<int>{ -1, -1 }; // not a valid pos in existingParticles
+		for (auto it = existingParticles.begin(); it != existingParticles.end(); ++it)
+		{
+			if (lastPos != it->pos)
+			{
+				existingParticleIndices[it->pos - pasteArea.TopLeft] = it - existingParticles.begin();
+				lastPos = it->pos;
+			}
+		}
+	}
+	auto removeExistingParticles = [this, pasteArea, &existingParticles, &existingParticleIndices](Vec2<int> p) {
+		auto rp = p - pasteArea.TopLeft;
+		if (existingParticleIndices.Size().OriginRect().Contains(rp))
+		{
+			auto index = existingParticleIndices[rp];
+			for (auto it = existingParticles.begin() + index; it != existingParticles.end() && it->pos == p; ++it)
+			{
+				kill_part(it->id);
+			}
+			existingParticleIndices[rp] = existingParticles.size();
+		}
+	};
+
 	std::map<unsigned int, unsigned int> soapList;
 	for (int n = 0; n < NPART && n < save->particlesCount; n++)
 	{
@@ -42,8 +88,8 @@ void Simulation::Load(const GameSave *save, bool includePressure, Vec2<int> bloc
 
 		tempPart.x += (float)partP.X;
 		tempPart.y += (float)partP.Y;
-		int x = int(tempPart.x + 0.5f);
-		int y = int(tempPart.y + 0.5f);
+		int x = int(std::floor(tempPart.x + 0.5f));
+		int y = int(std::floor(tempPart.y + 0.5f));
 
 		// Check various scenarios where we are unable to spawn the element, and set type to 0 to block spawning later
 		if (!InBounds(x, y))
@@ -69,9 +115,6 @@ void Simulation::Load(const GameSave *save, bool includePressure, Vec2<int> bloc
 			continue;
 		}
 
-		// Mark location to be cleaned of existing particles.
-		pmap[y][x] = -1;
-
 		if (elements[tempPart.type].CreateAllowed)
 		{
 			if (!(*(elements[tempPart.type].CreateAllowed))(this, -3, int(tempPart.x + 0.5f), int(tempPart.y + 0.5f), tempPart.type))
@@ -79,6 +122,8 @@ void Simulation::Load(const GameSave *save, bool includePressure, Vec2<int> bloc
 				continue;
 			}
 		}
+
+		removeExistingParticles({ x, y });
 
 		// Allocate particle (this location is guaranteed to be empty due to "full scan" logic above)
 		if (pfree == -1)
@@ -171,35 +216,12 @@ void Simulation::Load(const GameSave *save, bool includePressure, Vec2<int> bloc
 		{
 			parts[i].tmp3 = 0;
 		}
-
-		if (!parts[i].type)
-		{
-			continue;
-		}
-
-		// Mark to be preserved in the loop below.
-		parts[i].type |= 1 << PMAPBITS;
 	}
 	parts_lastActiveIndex = NPART-1;
 	force_stacking_check = true;
 	Element_PPIP_ppip_changed = 1;
 
-	// Loop through particles to find particles in need of being killed
-	for (int i = 0; i <= parts_lastActiveIndex; i++)
-	{
-		if (parts[i].type)
-		{
-			int x = int(parts[i].x + 0.5f);
-			int y = int(parts[i].y + 0.5f);
-			bool preserve = parts[i].type & (1 << PMAPBITS);
-			parts[i].type &= ~(1 << PMAPBITS);
-			if (pmap[y][x] == -1 && !preserve)
-			{
-				kill_part(i);
-			}
-		}
-	}
-
+	// Sort out pmap, just to be on the safe side.
 	RecalcFreeParticles(false);
 
 	// fix SOAP links using soapList, a map of old particle ID -> new particle ID
@@ -1504,6 +1526,35 @@ void Simulation::photoelectric_effect(int nx, int ny)//create sparks from PHOT w
 	}
 }
 
+unsigned static direction_to_map(float dx, float dy, int t)
+{
+	// TODO:
+	// Adding extra directions causes some inaccuracies.
+	// Not adding them causes problems with some diagonal surfaces (photons absorbed instead of reflected).
+	// For now, don't add them.
+	// Solution may involve more intelligent setting of initial i0 value in find_next_boundary?
+	// or rewriting normal/boundary finding code
+
+	return (dx >= 0) |
+		   (((dx + dy) >= 0) << 1) |     /*  567  */
+		   ((dy >= 0) << 2) |            /*  4+0  */
+		   (((dy - dx) >= 0) << 3) |     /*  321  */
+		   ((dx <= 0) << 4) |
+		   (((dx + dy) <= 0) << 5) |
+		   ((dy <= 0) << 6) |
+		   (((dy - dx) <= 0) << 7);
+	/*
+	return (dx >= -0.001) |
+		   (((dx + dy) >= -0.001) << 1) |     //  567
+		   ((dy >= -0.001) << 2) |            //  4+0
+		   (((dy - dx) >= -0.001) << 3) |     //  321
+		   ((dx <= 0.001) << 4) |
+		   (((dx + dy) <= 0.001) << 5) |
+		   ((dy <= 0.001) << 6) |
+		   (((dy - dx) <= 0.001) << 7);
+	}*/
+}
+
 int Simulation::is_blocking(int t, int x, int y) const
 {
 	if (t & REFRACT) {
@@ -1545,7 +1596,7 @@ int Simulation::find_next_boundary(int pt, int *x, int *y, int dm, int *em, bool
 	unsigned int mask = 0;
 	for (int i = 0; i < 8; ++i)
 	{
-		if (is_blocking(pt, *x + dx[i], *y + dy[i]))
+		if ((dm & (1U << i)) && is_blocking(pt, *x + dx[i], *y + dy[i]))
 		{
 			mask |= (1U << i);
 		}
@@ -1553,7 +1604,7 @@ int Simulation::find_next_boundary(int pt, int *x, int *y, int dm, int *em, bool
 	for (int i = 0; i < 8; ++i)
 	{
 		int n = (i + (reverse ? 1 : -1)) & 7;
-		if (((dm & mask & (1U << i))) && !(mask & (1U << n)))
+		if (((mask & (1U << i))) && !(mask & (1U << n)))
 		{
 			*x += dx[i];
 			*y += dy[i];
@@ -1578,8 +1629,8 @@ Simulation::GetNormalResult Simulation::get_normal(int pt, int x, int y, float d
 	if (!is_boundary(pt, x, y))
 		return { false };
 
-	ldm = 0xFF;
-	rdm = 0xFF;
+	ldm = (pt & REFRACT) ? 0xFF : direction_to_map(-dy, dx, pt);
+	rdm = (pt & REFRACT) ? 0xFF : direction_to_map(dy, -dx, pt);
 	lx = rx = x;
 	ly = ry = y;
 	lv = rv = 1;
@@ -2937,6 +2988,7 @@ killed:
 							}
 							auto nn = GLASS_IOR - GLASS_DISP*(r-30)/30.0f;
 							nn *= nn;
+
 							auto enter = rt_glas && !lt_glas;
 							nrx = enter ? -nrx : nrx;
 							nry = enter ? -nry : nry;
