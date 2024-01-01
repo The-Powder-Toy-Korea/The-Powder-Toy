@@ -11,6 +11,7 @@
 #include "common/platform/Platform.h"
 #include "common/String.h"
 #include "graphics/Graphics.h"
+#include "gui/dialogues/ErrorMessage.h"
 #include "prefs/Prefs.h"
 #include "lua/CommandInterface.h"
 #include "Config.h"
@@ -130,7 +131,7 @@ void Client::Tick()
 			{
 				updateInfo = info.updateInfo;
 				applyUpdateInfo = true;
-				messageOfTheDay = info.messageOfTheDay;
+				SetMessageOfTheDay(info.messageOfTheDay);
 			}
 			for (auto &notification : info.notifications)
 			{
@@ -141,7 +142,7 @@ void Client::Tick()
 		{
 			if (!usingAltUpdateServer)
 			{
-				messageOfTheDay = ByteString::Build("Error while fetching MotD: ", ex.what()).FromUtf8();
+				SetMessageOfTheDay(ByteString::Build("Error while fetching MotD: ", ex.what()).FromUtf8());
 			}
 		}
 		versionCheckRequest.reset();
@@ -153,7 +154,7 @@ void Client::Tick()
 			auto info = alternateVersionCheckRequest->Finish();
 			updateInfo = info.updateInfo;
 			applyUpdateInfo = true;
-			messageOfTheDay = info.messageOfTheDay;
+			SetMessageOfTheDay(info.messageOfTheDay);
 			for (auto &notification : info.notifications)
 			{
 				AddServerNotification(notification);
@@ -161,7 +162,7 @@ void Client::Tick()
 		}
 		catch (const http::RequestError &ex)
 		{
-			messageOfTheDay = ByteString::Build("Error while checking for updates: ", ex.what()).FromUtf8();
+			SetMessageOfTheDay(ByteString::Build("Error while checking for updates: ", ex.what()).FromUtf8());
 		}
 		alternateVersionCheckRequest.reset();
 	}
@@ -285,6 +286,27 @@ void Client::DeleteStamp(ByteString stampID)
 		Platform::RemoveFile(ByteString::Build(STAMPS_DIR, PATH_SEP_CHAR, stampID, ".stm"));
 		WriteStamps();
 	}
+}
+
+void Client::RenameStamp(ByteString stampID, ByteString newName)
+{
+	auto oldPath = ByteString::Build(STAMPS_DIR, PATH_SEP_CHAR, stampID, ".stm");
+	auto newPath = ByteString::Build(STAMPS_DIR, PATH_SEP_CHAR, newName, ".stm");
+
+	if (Platform::FileExists(newPath))
+	{
+		new ErrorMessage("Error renaming stamp", "A stamp with this name already exists.");
+		return;
+	}
+
+	if (!Platform::RenameFile(oldPath, newPath, false))
+	{
+		new ErrorMessage("Error renaming stamp", "Could not rename the stamp.");
+		return;
+	}
+
+	std::replace(stampIDs.begin(), stampIDs.end(), stampID, newName);
+	WriteStamps();
 }
 
 ByteString Client::AddStamp(std::unique_ptr<GameSave> saveData)
@@ -423,7 +445,6 @@ std::unique_ptr<SaveFile> Client::LoadSaveFile(ByteString filename)
 		{
 			file->SetLoadingError(err.FromUtf8());
 		}
-		commandInterface->SetLastError(err.FromUtf8());
 	}
 	return file;
 }

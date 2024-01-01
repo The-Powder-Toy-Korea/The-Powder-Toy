@@ -296,6 +296,12 @@ OptionsView::OptionsView() : ui::Window(ui::Point(-1, -1), ui::Point(320, 340))
 	graveExitsConsole = addCheckbox(0, "[Esc] 밑의 키로 콘솔 끄기", "이 키가 귀하의 자판에서 [0]일 경우 비활성화하십시오.", [this] {
 		c->SetGraveExitsConsole(graveExitsConsole->GetChecked());
 	});
+	if constexpr (PLATFORM_CLIPBOARD)
+	{
+		nativeClipoard = addCheckbox(0, "플랫폼 클립보드 사용", "TPT 인스턴스 간의 복사 및 붙여넣기를 허용합니다.", [this] {
+			c->SetNativeClipoard(nativeClipoard->GetChecked());
+		});
+	}
 	decoSpace = addDropDown("도색 도구에서 사용할 색 공간", {
 		{ "sRGB", 0 },
 		{ "Linear", 1 },
@@ -469,6 +475,10 @@ void OptionsView::NotifySettingsChanged(OptionsModel * sender)
 	if (fastquit)
 	{
 		fastquit->SetChecked(sender->GetFastQuit());
+	}
+	if (nativeClipoard)
+	{
+		nativeClipoard->SetChecked(sender->GetNativeClipoard());
 	}
 	showAvatars->SetChecked(sender->GetShowAvatars());
 	mouseClickRequired->SetChecked(sender->GetMouseClickRequired());

@@ -106,6 +106,7 @@ public:
 	void DrawLine(int toolSelection, ui::Point point1, ui::Point point2);
 	void DrawFill(int toolSelection, ui::Point point);
 	ByteString StampRegion(ui::Point point1, ui::Point point2);
+	ByteString StampRegion(ui::Point point1, ui::Point point2, bool includePressure);
 	void CopyRegion(ui::Point point1, ui::Point point2);
 	void CutRegion(ui::Point point1, ui::Point point2);
 	void Update();
@@ -133,6 +134,7 @@ public:
 	void SetActiveTool(int toolSelection, Tool * tool);
 	void SetActiveTool(int toolSelection, ByteString identifier);
 	void SetLastTool(Tool * tool);
+	Tool *GetLastTool();
 	int GetReplaceModeFlags();
 	void SetReplaceModeFlags(int flags);
 	void SetActiveColourPreset(int preset);
@@ -196,4 +198,7 @@ public:
 	bool GetMouseClickRequired();
 
 	void RemoveCustomGOLType(const ByteString &identifier);
+
+	void BeforeSimDraw();
+	void AfterSimDraw();
 };

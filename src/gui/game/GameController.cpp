@@ -396,6 +396,10 @@ void GameController::DrawPoints(int toolSelection, ui::Point oldPos, ui::Point n
 	}
 
 	activeTool->Strength = gameModel->GetToolStrength();
+	// This is a joke, the game mvc has to go >_>
+	activeTool->shiftBehaviour = gameView->ShiftBehaviour();
+	activeTool->ctrlBehaviour = gameView->CtrlBehaviour();
+	activeTool->altBehaviour = gameView->AltBehaviour();
 	if (!held)
 		activeTool->Draw(sim, cBrush, newPos);
 	else
@@ -444,7 +448,12 @@ static Rect<int> SaneSaveRect(Vec2<int> point1, Vec2<int> point2)
 
 ByteString GameController::StampRegion(ui::Point point1, ui::Point point2)
 {
-	auto newSave = gameModel->GetSimulation()->Save(gameModel->GetIncludePressure() != gameView->ShiftBehaviour(), SaneSaveRect(point1, point2));
+	return StampRegion(point1, point2, gameModel->GetIncludePressure() != gameView->ShiftBehaviour());
+}
+
+ByteString GameController::StampRegion(ui::Point point1, ui::Point point2, bool includePressure)
+{
+	auto newSave = gameModel->GetSimulation()->Save(includePressure, SaneSaveRect(point1, point2));
 	if(newSave)
 	{
 		newSave->paused = gameModel->GetPaused();
@@ -1105,8 +1114,10 @@ void GameController::SetActiveTool(int toolSelection, Tool * tool)
 		if(gameModel->GetActiveTool(i) == gameModel->GetMenuList().at(SC_WALL)->GetToolList().at(WL_GRAV))
 			gameModel->GetRenderer()->gravityZonesEnabled = true;
 	}
-	if(tool->Identifier == "DEFAULT_UI_PROPERTY")
-		((PropertyTool *)tool)->OpenWindow(gameModel->GetSimulation());
+	if (tool->Identifier == "DEFAULT_UI_PROPERTY")
+	{
+		static_cast<PropertyTool *>(tool)->OpenWindow(gameModel->GetSimulation(), nullptr);
+	}
 	if(tool->Identifier == "DEFAULT_UI_ADDLIFE")
 	{
 		((GOLTool *)tool)->OpenWindow(gameModel->GetSimulation(), toolSelection);
@@ -1124,6 +1135,11 @@ void GameController::SetActiveTool(int toolSelection, ByteString identifier)
 void GameController::SetLastTool(Tool * tool)
 {
 	gameModel->SetLastTool(tool);
+}
+
+Tool *GameController::GetLastTool()
+{
+	return gameModel->GetLastTool();
 }
 
 int GameController::GetReplaceModeFlags()
@@ -1696,4 +1712,14 @@ bool GameController::GetMouseClickRequired()
 void GameController::RemoveCustomGOLType(const ByteString &identifier)
 {
 	gameModel->RemoveCustomGOLType(identifier);
+}
+
+void GameController::BeforeSimDraw()
+{
+	commandInterface->HandleEvent(BeforeSimDrawEvent{});
+}
+
+void GameController::AfterSimDraw()
+{
+	commandInterface->HandleEvent(AfterSimDrawEvent{});
 }
