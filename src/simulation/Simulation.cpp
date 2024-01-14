@@ -7,7 +7,6 @@
 #include "client/GameSave.h"
 #include "common/tpt-compat.h"
 #include "common/tpt-rand.h"
-#include "common/tpt-thread-local.h"
 #include "gui/game/Brush.h"
 #include "elements/EMP.h"
 #include "elements/LOLZ.h"
@@ -452,7 +451,7 @@ bool Simulation::FloodFillPmapCheck(int x, int y, int type) const
 CoordStack& Simulation::getCoordStackSingleton()
 {
 	// Future-proofing in case Simulation is later multithreaded
-	static THREAD_LOCAL(CoordStack, cs);
+	thread_local CoordStack cs;
 	return cs;
 }
 
@@ -1363,14 +1362,6 @@ int Simulation::try_move(int i, int x, int y, int nx, int ny)
 			parts[ID(r)].tmp += 20;
 			kill_part(i);
 			return 0;
-		}
-		break;
-	// SOAP slowly floats up inside OIL
-	case PT_SOAP:
-		if (parts[i].type == PT_OIL)
-		{
-			if (rng.chance(19, 20) || std::abs(parts[i].x - nx) > 3 || std::abs(parts[i].y - ny) > 3)
-				return 0;
 		}
 		break;
 	}

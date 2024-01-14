@@ -44,12 +44,38 @@ wasm32-emscripten-emscripten-static) ;;
 *) >&2 echo "configuration $BSH_HOST_ARCH-$BSH_HOST_PLATFORM-$BSH_HOST_LIBC-$BSH_STATIC_DYNAMIC is not supported" && exit 1;;
 esac
 
+if [[ $BSH_HOST_PLATFORM == android ]]; then
+	android_platform=android-31
+	if [[ -z "${JAVA_HOME_8_X64-}" ]]; then
+		>&2 echo "JAVA_HOME_8_X64 not set"
+		exit 1
+	fi
+	if [[ -z "${ANDROID_SDK_ROOT-}" ]]; then
+		>&2 echo "ANDROID_SDK_ROOT not set"
+		exit 1
+	fi
+	if [[ -z "${ANDROID_NDK_LATEST_HOME-}" ]]; then
+		>&2 echo "ANDROID_NDK_LATEST_HOME not set"
+		exit 1
+	fi
+fi
+
 if [[ -z ${BSH_NO_PACKAGES-} ]]; then
 	case $BSH_HOST_PLATFORM in
+	android)
+		(
+			export PATH=$ANDROID_SDK_ROOT/cmdline-tools/latest/bin:$ANDROID_SDK_ROOT/tools/bin:$PATH
+			sdkmanager "platforms;$android_platform"
+		)
+		;;
 	windows)
-		if [[ $BSH_BUILD_PLATFORM == linux ]] && [[ $BSH_HOST_LIBC == mingw ]]; then
-			sudo apt update
-			sudo apt install g++-mingw-w64-x86-64
+		if [[ $BSH_BUILD_PLATFORM-$BSH_HOST_LIBC == windows-mingw ]]; then
+			pacman -Syu --noconfirm --needed mingw-w64-ucrt-x86_64-gcc
+			if [[ $BSH_STATIC_DYNAMIC == static ]]; then
+				pacman -S --noconfirm --needed mingw-w64-ucrt-x86_64-{cmake,7zip} patch
+			else
+				pacman -S --noconfirm --needed mingw-w64-ucrt-x86_64-{pkgconf,bzip2,luajit,jsoncpp,curl,SDL2,libpng,meson,fftw}
+			fi
 		fi
 		;;
 	linux)
@@ -86,22 +112,6 @@ function inplace_sed() {
 		sed -i $subst $path
 	fi
 }
-
-if [[ $BSH_HOST_PLATFORM == android ]]; then
-	android_platform=android-30
-	if [[ -z "${JAVA_HOME_8_X64-}" ]]; then
-		>&2 echo "JAVA_HOME_8_X64 not set"
-		exit 1
-	fi
-	if [[ -z "${ANDROID_SDK_ROOT-}" ]]; then
-		>&2 echo "ANDROID_SDK_ROOT not set"
-		exit 1
-	fi
-	if [[ -z "${ANDROID_NDK_LATEST_HOME-}" ]]; then
-		>&2 echo "ANDROID_NDK_LATEST_HOME not set"
-		exit 1
-	fi
-fi
 
 if [[ $BSH_HOST_PLATFORM-$BSH_HOST_LIBC == windows-msvc ]]; then
 	case $BSH_HOST_ARCH in
@@ -241,6 +251,11 @@ if [[ $BSH_STATIC_DYNAMIC == static ]]; then
 		c_link_args+=\'-static-libstdc++\',
 	fi
 else
+	if [[ "$BSH_HOST_PLATFORM-$BSH_HOST_LIBC $BSH_BUILD_PLATFORM" == "windows-mingw windows" ]]; then
+		meson_configure+=$'\t'-Dworkaround_elusive_bzip2=true
+		meson_configure+=$'\t'-Dworkaround_elusive_bzip2_include_dir=/ucrt64/include
+		meson_configure+=$'\t'-Dworkaround_elusive_bzip2_lib_dir=/ucrt64/lib
+	fi
 	if [[ $BSH_BUILD_PLATFORM == linux ]]; then
 		meson_configure+=$'\t'-Dworkaround_elusive_bzip2=true
 	fi
@@ -292,14 +307,10 @@ fi
 if [[ $RELEASE_TYPE != dev ]]; then
 	meson_configure+=$'\t'-Dignore_updates=false
 fi
-if [[ $BSH_HOST_PLATFORM-$BSH_HOST_LIBC == windows-mingw ]]; then
-	if [[ $BSH_BUILD_PLATFORM == linux ]]; then
-		meson_configure+=$'\t'--cross-file=.github/mingw-ghactions.ini
-	fi
+if [[ "$BSH_HOST_PLATFORM-$BSH_HOST_LIBC" == "windows-mingw" ]]; then
+	meson_configure+=$'\t'--cross-file=.github/mingw-ghactions.ini
 fi
-if [[ $BSH_HOST_PLATFORM-$BSH_HOST_LIBC != windows-mingw ]] && [[ $BSH_STATIC_DYNAMIC == static ]]; then
-	# LTO simply doesn't work with MinGW. I have no idea why and I also don't care.
-	# It also has a tendency to not play well with dynamic libraries.
+if [[ $BSH_DEBUG_RELEASE-$BSH_STATIC_DYNAMIC == release-static ]]; then
 	meson_configure+=$'\t'-Db_lto=true
 fi
 if [[ $BSH_HOST_PLATFORM-$BSH_HOST_ARCH == darwin-aarch64 ]]; then
@@ -308,7 +319,7 @@ fi
 if [[ $BSH_HOST_PLATFORM == emscripten ]]; then
 	meson_configure+=$'\t'--cross-file=.github/emscripten-ghactions.ini
 fi
-if [[ $RELEASE_TYPE == tptlibsdev ]] && ([[ $BSH_HOST_PLATFORM == windows ]] || [[ $BSH_STATIC_DYNAMIC == static ]]); then
+if [[ $RELEASE_TYPE == tptlibsdev ]] && ([[ $BSH_HOST_PLATFORM-$BSH_HOST_LIBC == windows-msvc ]] || [[ $BSH_STATIC_DYNAMIC == static ]]); then
 	if [[ -z ${TPTLIBSREMOTE-} ]]; then
 		if [[ -z "${GITHUB_REPOSITORY_OWNER-}" ]]; then
 			>&2 echo "GITHUB_REPOSITORY_OWNER not set"
@@ -317,11 +328,6 @@ if [[ $RELEASE_TYPE == tptlibsdev ]] && ([[ $BSH_HOST_PLATFORM == windows ]] || 
 		tptlibsremote=https://github.com/$GITHUB_REPOSITORY_OWNER/tpt-libs
 	else
 		tptlibsremote=$TPTLIBSREMOTE
-	fi
-	if [[ "$BSH_HOST_ARCH-$BSH_HOST_PLATFORM-$BSH_HOST_LIBC-$BSH_STATIC_DYNAMIC $BSH_BUILD_PLATFORM" == "x86_64-windows-mingw-dynamic linux" ]]; then
-		>&2 echo "this configuration is not supported in tptlibsdev mode"
-		touch $ASSET_PATH
-		exit 0
 	fi
 	tptlibsbranch=$(echo $RELEASE_NAME | cut -d '-' -f 2-) # $RELEASE_NAME is tptlibsdev-BRANCH
 	if [[ -d build-tpt-libs ]] && [[ ${TPTLIBSRESET-} == yes ]]; then
@@ -350,7 +356,11 @@ if [[ $RELEASE_TYPE == tptlibsdev ]] && ([[ $BSH_HOST_PLATFORM == windows ]] || 
 	meson_configure+=$'\t'-Dtpt_libs_vtag=$tpt_libs_vtag
 fi
 if [[ $BSH_HOST_PLATFORM == android ]]; then
-	android_platform=android-30
+	android_platform_jar=$ANDROID_SDK_ROOT/platforms/$android_platform/android.jar
+	if ! [[ -f $android_platform_jar ]]; then
+		>&2 echo "$android_platform_jar not found"
+		exit 1
+	fi
 	meson_configure+=$'\t'--cross-file=android/cross/$BSH_HOST_ARCH.ini
 	cat << ANDROID_INI > .github/android-ghactions.ini
 [constants]
@@ -361,7 +371,7 @@ andriod_sdk_build_tools = '$ANDROID_SDK_ROOT/build-tools/32.0.0'
 # android_ndk_toolchain_prefix comes from the correct cross-file in ./android/cross
 android_ndk_toolchain_prefix = android_ndk_toolchain_prefix
 android_platform = '$android_platform'
-android_platform_jar = '$ANDROID_SDK_ROOT/platforms/' + android_platform + '/android.jar'
+android_platform_jar = '$android_platform_jar'
 java_runtime_jar = '$JAVA_HOME_8_X64/jre/lib/rt.jar'
 
 [binaries]

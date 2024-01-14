@@ -3,10 +3,12 @@
 #include <execinfo.h>
 #include <cstdint>
 #include <array>
+#include <cxxabi.h>
+#include <iostream>
 
 namespace Platform
 {
-std::optional<std::vector<String>> StackTrace(StackTraceType)
+std::optional<std::vector<String>> StackTrace()
 {
 	std::array<void *, 100> buf;
 	auto used = backtrace(&buf[0], buf.size());
@@ -19,7 +21,27 @@ std::optional<std::vector<String>> StackTrace(StackTraceType)
 	{
 		if (strs)
 		{
-			res.push_back(ByteString(strs[i]).FromUtf8());
+			auto line = ByteString(strs[i]);
+			if (auto beginSymbolName = line.SplitBy('('))
+			{
+				auto afterBeginSymbolName = beginSymbolName.After();
+				if (auto endSymbolName = afterBeginSymbolName.SplitBy('+'))
+				{
+					auto beforeSymbolName = beginSymbolName.Before();
+					auto symbolName = endSymbolName.Before();
+					auto afterSymbolName = endSymbolName.After();
+					int status;
+					char *demangled = abi::__cxa_demangle(symbolName.c_str(), NULL, NULL, &status);
+					Defer freeDemangled([demangled]() {
+						free(demangled);
+					});
+					if (!status)
+					{
+						line = ByteString::Build(beforeSymbolName, "(", demangled, "+", afterSymbolName);
+					}
+				}
+			}
+			res.push_back(line.FromUtf8());
 		}
 		else
 		{
