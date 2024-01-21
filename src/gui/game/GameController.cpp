@@ -785,7 +785,7 @@ void GameController::ResetSpark()
 
 void GameController::SwitchGravity()
 {
-	gameModel->GetSimulation()->gravityMode = (gameModel->GetSimulation()->gravityMode + 1) % NUM_GRAV_MODES;
+	gameModel->GetSimulation()->gravityMode = (gameModel->GetSimulation()->gravityMode + 1) % NUM_GRAVMODES;
 
 	switch (gameModel->GetSimulation()->gravityMode)
 	{
@@ -806,23 +806,23 @@ void GameController::SwitchGravity()
 
 void GameController::SwitchAir()
 {
-	gameModel->GetSimulation()->air->airMode = (gameModel->GetSimulation()->air->airMode + 1) % NUM_AIR_MODES;
+	gameModel->GetSimulation()->air->airMode = (gameModel->GetSimulation()->air->airMode + 1) % NUM_AIRMODES;
 
 	switch (gameModel->GetSimulation()->air->airMode)
 	{
 	case AIR_ON:
 		gameModel->SetInfoTip("공기: 켜기");
 		break;
-	case AIR_PRESSURE_OFF:
+	case AIR_PRESSUREOFF:
 		gameModel->SetInfoTip("공기: 압력 끄기");
 		break;
-	case AIR_VELOCITY_OFF:
+	case AIR_VELOCITYOFF:
 		gameModel->SetInfoTip("공기: 바람 끄기");
 		break;
 	case AIR_OFF:
 		gameModel->SetInfoTip("공기: 끄기");
 		break;
-	case AIR_NO_UPDATE:
+	case AIR_NOUPDATE:
 		gameModel->SetInfoTip("공기: 업데이트 없음");
 		break;
 	}
@@ -1031,7 +1031,7 @@ int GameController::GetEdgeMode()
 
 void GameController::SetEdgeMode(int edgeMode)
 {
-	if (edgeMode < 0 || edgeMode >= NUM_EDGE_MODES)
+	if (edgeMode < 0 || edgeMode >= NUM_EDGEMODES)
 		edgeMode = 0;
 
 	gameModel->SetEdgeMode(edgeMode);

@@ -54,7 +54,7 @@ option(
 	'build_num',
 	type: 'integer',
 	min: 0,
-	value: 358,
+	value: 359,
 	description: 'Build number, should be strictly monotonously increasing across public releases'
 )
 option(
@@ -75,7 +75,7 @@ option(
 	'upstream_build_num',
 	type: 'integer',
 	min: 0,
-	value: 358,
+	value: 359,
 	description: 'Upstream build number, mod owners should not change this but merge upstream changes to it'
 )
 option(
@@ -292,4 +292,16 @@ option(
 	choices: [ 'no', 'yes', 'auto' ],
 	value: 'auto',
 	description: 'Show blue error screen upon unhandled signals and exceptions'
+)
+option(
+	'windows_icons',
+	type: 'boolean',
+	value: true,
+	description: 'Add icon resources to the executable on Windows'
+)
+option(
+	'windows_utf8cp',
+	type: 'boolean',
+	value: true,
+	description: 'Ask Windows nicely for UTF-8 as the codepage'
 )

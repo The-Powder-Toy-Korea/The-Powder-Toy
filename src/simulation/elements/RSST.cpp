@@ -30,7 +30,7 @@ void Element::Element_RSST()
 
 	DefaultProperties.temp = R_TEMP + 20.0f + 273.15f;
 	HeatConduct = 55;
-	Description = "Resist. Solidifies on contact with photons, is destroyed by electrons and spark.";
+	Description = "저항체: 전자와 전류에 파괴되며, 광자와 접촉하면 고체화합니다.";
 
 	Properties = TYPE_LIQUID|PROP_CONDUCTS|PROP_LIFE_DEC|PROP_NEUTPASS;
 

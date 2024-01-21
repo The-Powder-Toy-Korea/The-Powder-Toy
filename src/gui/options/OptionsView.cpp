@@ -8,6 +8,7 @@
 #include "graphics/Renderer.h"
 #include "gui/Style.h"
 #include "simulation/ElementDefs.h"
+#include "simulation/SimulationData.h"
 #include "client/Client.h"
 #include "gui/dialogues/ConfirmPrompt.h"
 #include "gui/dialogues/InformationMessage.h"
@@ -120,11 +121,11 @@ OptionsView::OptionsView() : ui::Window(ui::Point(-1, -1), ui::Point(320, 340))
 		c->SetWaterEqualisation(waterEqualisation->GetChecked());
 	});
 	airMode = addDropDown("공기 시뮬레이션 모드", {
-		{ "켜기", 0 },
-		{ "압력 끄기", 1 },
-		{ "바람 끄기", 2 },
-		{ "끄기", 3 },
-		{ "고정", 4 },
+		{ "켜기", AIR_ON },
+		{ "압력 끄기", AIR_PRESSUREOFF },
+		{ "바람 끄기", AIR_VELOCITYOFF },
+		{ "끄기", AIR_OFF },
+		{ "고정", AIR_NOUPDATE },
 	}, [this] {
 		c->SetAirMode(airMode->GetOption().second);
 	});
@@ -210,10 +211,10 @@ OptionsView::OptionsView() : ui::Window(ui::Point(-1, -1), ui::Point(320, 340))
 			}
 	};
 	gravityMode = addDropDown("중력 방향", {
-		{ "수직", 0 },
-		{ "끄기", 1 },
-		{ "중심", 2 },
-		{ "사용자 지정", 3 },
+		{ "수직", GRAV_VERTICAL },
+		{ "끄가", GRAV_OFF },
+		{ "중심", GRAV_RADIAL },
+		{ "사용자 지정", GRAV_CUSTOM },
 	}, [this] {
 		c->SetGravityMode(gravityMode->GetOption().second);
 		if (gravityMode->GetOption().second == 3)
@@ -222,9 +223,9 @@ OptionsView::OptionsView() : ui::Window(ui::Point(-1, -1), ui::Point(320, 340))
 		}
 	});
 	edgeMode = addDropDown("모서리", {
-		{ "공허", 0 },
-		{ "벽", 1 },
-		{ "반복", 2 },
+		{ "공허", EDGE_VOID },
+		{ "벽", EDGE_SOLID },
+		{ "반복", EDGE_LOOP },
 	}, [this] {
 		c->SetEdgeMode(edgeMode->GetOption().second);
 	});
@@ -271,11 +272,11 @@ OptionsView::OptionsView() : ui::Window(ui::Point(-1, -1), ui::Point(320, 340))
 		changeResolution = addCheckbox(1, "해상도 변경 \bg- 최적화된 해상도로 조정합니다.", "", [this] {
 			c->SetChangeResolution(changeResolution->GetChecked());
 		});
-		forceIntegerScaling = addCheckbox(1, "강제 정수 스케일링 \bg- 화면이 선명해지도록 조정합니다.", "", [this] {
+		forceIntegerScaling = addCheckbox(1, "강제 정수 스케일링 \bg- 화면을 선명하게 조정합니다.", "", [this] {
 			c->SetForceIntegerScaling(forceIntegerScaling->GetChecked());
 		});
 	}
-	blurryScaling = addCheckbox(0, "흐릿한 스케일링 \bg- 화면이 흐릿해지도록 조정합니다(아주 큰 화면용).", "", [this] {
+	blurryScaling = addCheckbox(0, "흐릿한 스케일링 \bg- 화면을 흐릿하게 조정합니다(대화면용).", "", [this] {
 		c->SetBlurryScaling(blurryScaling->GetChecked());
 	});
 	addSeparator();
@@ -317,10 +318,10 @@ OptionsView::OptionsView() : ui::Window(ui::Point(-1, -1), ui::Point(320, 340))
 		currentY += 4; // and then undo the undo
 	}
 	decoSpace = addDropDown("도색 도구에서 사용할 색 공간", {
-		{ "sRGB", 0 },
-		{ "Linear", 1 },
-		{ "Gamma 2.2", 2 },
-		{ "Gamma 1.8", 3 },
+		{ "sRGB", DECOSPACE_SRGB },
+		{ "Linear", DECOSPACE_LINEAR },
+		{ "Gamma 2.2", DECOSPACE_GAMMA22 },
+		{ "Gamma 1.8", DECOSPACE_GAMMA18 },
 	}, [this] {
 		c->SetDecoSpace(decoSpace->GetOption().second);
 	});

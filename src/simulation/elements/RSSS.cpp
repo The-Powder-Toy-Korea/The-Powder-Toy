@@ -30,7 +30,7 @@ void Element::Element_RSSS()
 	Weight = 100;
 
 	HeatConduct = 130;
-	Description = "Solidified resist. Blocks pressure and insulates electricity. Liquefies on contact with neutrons.";
+	Description = "고형 저항체: 압력을 차단하고 전기를 절연하며, 중성자와 접촉하면 액체화합니다.";
 
 	Properties = TYPE_SOLID|PROP_NEUTPASS;
 
