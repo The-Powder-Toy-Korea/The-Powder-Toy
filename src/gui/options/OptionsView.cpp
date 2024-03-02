@@ -212,7 +212,7 @@ OptionsView::OptionsView() : ui::Window(ui::Point(-1, -1), ui::Point(320, 340))
 	};
 	gravityMode = addDropDown("중력 방향", {
 		{ "수직", GRAV_VERTICAL },
-		{ "끄가", GRAV_OFF },
+		{ "끄기", GRAV_OFF },
 		{ "중심", GRAV_RADIAL },
 		{ "사용자 지정", GRAV_CUSTOM },
 	}, [this] {
