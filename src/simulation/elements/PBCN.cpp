@@ -31,7 +31,7 @@ void Element::Element_PBCN()
 	Weight = 100;
 
 	HeatConduct = 251;
-	Description = "파괴 가능한 전원식 CLNE입니다.";
+	Description = "파괴 가능한 전원식 복제기입니다.";
 
 	Properties = TYPE_SOLID | PROP_NOCTYPEDRAW;
 	CarriesTypeIn = 1U << FIELD_CTYPE;

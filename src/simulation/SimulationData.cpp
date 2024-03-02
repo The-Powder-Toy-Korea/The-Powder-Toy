@@ -69,7 +69,7 @@ static std::vector<wall_type> LoadWalls()
 		{0xFFAA00_rgb, 0xAA5500_rgb, 4, Renderer::WallIcon, String("ENERGY WALL"),     "DEFAULT_WL_ENRGY",  String("에너지 벽: 에너지 입자를 제외한 모든 입자를 막습니다.")},
 		{0xDCDCDC_rgb, 0x000000_rgb, 1, Renderer::WallIcon, String("AIRBLOCK WALL"),   "DEFAULT_WL_NOAIR",  String("방압벽: 물질은 통과시키지만 공기 흐름은 막습니다.")},
 		{0x808080_rgb, 0x000000_rgb, 0, Renderer::WallIcon, String("ERASEALL"),        "DEFAULT_WL_ERASEA", String("지우기 도구: 벽과 입자 및 물질, 표지판 등을 모두 지웁니다.")},
-		{0x800080_rgb, 0x000000_rgb, 0, Renderer::WallIcon, String("STASIS WALL"),     "DEFAULT_WL_STASIS", String("정지 벽: 전원이 공급될 때까지 자기 자신에 닿거나 그 내부에 있는 모든 입자를 정지시킵니다.")},
+		{0x800080_rgb, 0x000000_rgb, 0, Renderer::WallIcon, String("STASIS WALL"),     "DEFAULT_WL_STASIS", String("정지 벽: 전류가 흐를 때까지 자기 자신에 닿거나 그 내부에 있는 모든 입자를 정지시킵니다.")},
 	};
 }
 
@@ -79,7 +79,7 @@ static std::vector<menu_section> LoadMenus()
 	std::vector<menu_section>{
 		{0xE041, String("벽"), 0, 1},
 		{0xE042, String("전기"), 0, 1},
-		{0xE056, String("전원"), 0, 1},
+		{0xE056, String("전원식 물질"), 0, 1},
 		{0xE019, String("감지기"), 0, 1},
 		{0xE062, String("힘"), 0, 1},
 		{0xE043, String("폭발물"), 0, 1},
