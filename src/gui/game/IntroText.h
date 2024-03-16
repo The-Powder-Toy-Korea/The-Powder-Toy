@@ -78,7 +78,7 @@ inline ByteString IntroText()
 	}
 	else
 	{
-		sb << "\bg세이브의 업로드와 같은 기능을 사용하려면 \brhttps://powdertoy.co.uk/Register.html\bg에서 계정을 만드십시오.\n";
+		sb << "\bg세이브의 업로드와 같은 기능을 사용하려면 \brhttps://" << SERVER << "/Register.html\bg에서 계정을 만드십시오.\n";
 	}
 	sb << "\n\bt" << VersionInfo();
 	return sb.Build();

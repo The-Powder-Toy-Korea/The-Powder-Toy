@@ -151,7 +151,7 @@ void UpdateActivity::NotifyError(Task * sender)
 	new ConfirmPrompt("자동 업데이트에 실패함", sb.Build(), { [this] {
 		if constexpr (!USE_UPDATESERVER)
 		{
-			Platform::OpenURI(ByteString(SCHEME) + "powdertoy.co.uk/Download.html");
+			Platform::OpenURI(ByteString::Build(SCHEME, SERVER, "/Download.html"));
 		}
 		Exit();
 	}, [this] { Exit(); } });
