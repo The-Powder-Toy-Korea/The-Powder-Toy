@@ -90,40 +90,45 @@ void ProfileActivity::setUserInfo(UserInfo newInfo)
 	currentY += 20;
 
 	// age
-	ui::Label * ageTitle = new ui::Label(ui::Point(4, currentY), ui::Point(18, 15), "나이:");
+	ui::Label * ageTitle = new ui::Label(ui::Point(4, currentY), ui::Point(30, 15), "나이:");
 	ageTitle->Appearance.HorizontalAlign = ui::Appearance::AlignLeft;
 	ageTitle->SetTextColour(ui::Colour(180, 180, 180));
 	scrollPanel->AddChild(ageTitle);
 
 	// can't figure out how to tell a null from a 0 in the json library we use
-	ui::Label *age = new ui::Label(ui::Point(14+ageTitle->Size.X, currentY), ui::Point(40, 15), info.age ? String::Build(info.age) : "\b제공되지 않음");
+	ui::Label *age = new ui::Label(ui::Point(2+ageTitle->Size.X, currentY), ui::Point(40, 15), info.age ? String::Build(info.age) : "\b제공되지 않음");
 	age->Appearance.HorizontalAlign = ui::Appearance::AlignLeft;
 	scrollPanel->AddChild(age);
 
 	currentY += 20;
 
 	// location
-	ui::Label * locationTitle = new ui::Label(ui::Point(4, currentY), ui::Point(45, 15), "지역:");
+	ui::Label * locationTitle = new ui::Label(ui::Point(4, currentY), ui::Point(30, 15), "지역:");
 	locationTitle->Appearance.HorizontalAlign = ui::Appearance::AlignLeft;
 	locationTitle->SetTextColour(ui::Colour(180, 180, 180));
 	scrollPanel->AddChild(locationTitle);
 
 	if (editable)
-		location = new ui::Textbox(ui::Point(locationTitle->Size.X-13, currentY-1), ui::Point(Size.X-locationTitle->Size.X+3, 17), info.location);
+	{
+		location = new ui::Textbox(ui::Point(2+locationTitle->Size.X, currentY-1), ui::Point(Size.X-locationTitle->Size.X-11, 17), info.location);
+		((ui::Textbox*)location)->SetLimit(40);
+	}
 	else
-		location = new ui::Label(ui::Point(14+locationTitle->Size.X, currentY), ui::Point(Size.X-locationTitle->Size.X-14, 17), info.location);
+	{
+		location = new ui::Label(ui::Point(2+locationTitle->Size.X, currentY), ui::Point(Size.X-locationTitle->Size.X-14, 15), info.location);
+	}
 	location->Appearance.HorizontalAlign = ui::Appearance::AlignLeft;
 	scrollPanel->AddChild(location);
 
 	currentY += 20;
 
 	// website
-	ui::Label * websiteTitle = new ui::Label(ui::Point(4, currentY), ui::Point(38, 15), "홈페이지:");
+	ui::Label * websiteTitle = new ui::Label(ui::Point(4, currentY), ui::Point(50, 15), "홈페이지:");
 	websiteTitle->Appearance.HorizontalAlign = ui::Appearance::AlignLeft;
 	websiteTitle->SetTextColour(ui::Colour(180, 180, 180));
 	scrollPanel->AddChild(websiteTitle);
 
-	ui::Label *website = new ui::Label(ui::Point(websiteTitle->Size.X+14, currentY), ui::Point(Size.X-websiteTitle->Size.X-16, 15), info.website.FromUtf8());
+	ui::Label *website = new ui::Label(ui::Point(2+websiteTitle->Size.X, currentY), ui::Point(Size.X-websiteTitle->Size.X-11, 15), info.website.FromUtf8());
 	website->Appearance.HorizontalAlign = ui::Appearance::AlignLeft;
 	scrollPanel->AddChild(website);
 
@@ -179,7 +184,7 @@ void ProfileActivity::setUserInfo(UserInfo newInfo)
 
 	if (editable)
 	{
-		bio = new ui::Textbox(ui::Point(7, currentY), ui::Point(Size.X-17, -1), info.biography);
+		bio = new ui::Textbox(ui::Point(7, currentY), ui::Point(Size.X-16, -1), info.biography);
 		((ui::Textbox*)bio)->SetInputType(ui::Textbox::Multiline);
 		((ui::Textbox*)bio)->SetActionCallback({ [this] { ResizeArea(); } });
 		((ui::Textbox*)bio)->SetLimit(20000);
