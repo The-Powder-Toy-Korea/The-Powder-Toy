@@ -28,7 +28,7 @@ void Element::Element_LOLZ()
 
 	DefaultProperties.temp = 373.0f;
 	HeatConduct = 40;
-	Description = "ㅋㅋㅋㅋㅋㅋㅋㅋ";
+	Description = "ㅋㅋㅋㅋㅋㅋㅋㅋ"; // <-- 뭐에요?
 
 	Properties = TYPE_SOLID;
 

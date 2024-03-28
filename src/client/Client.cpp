@@ -27,7 +27,7 @@
 #include <set>
 
 Client::Client():
-	messageOfTheDay("Fetching the message of the day..."),
+	messageOfTheDay("오늘의 메세지를 가져오는 중..."),
 	usingAltUpdateServer(false),
 	updateAvailable(false),
 	authUser(0, "")
@@ -117,7 +117,7 @@ void Client::Tick()
 	{
 		if (versionCheckRequest->StatusCode() == 618)
 		{
-			AddServerNotification({ "Failed to load SSL certificates", ByteString::Build(SCHEME, SERVER, "/FAQ.html") });
+			AddServerNotification({ "인증서를 불러오는데 실패했습니다. ", ByteString::Build(SCHEME, SERVER, "/FAQ.html") });
 		}
 		try
 		{
@@ -141,7 +141,7 @@ void Client::Tick()
 		{
 			if (!usingAltUpdateServer)
 			{
-				SetMessageOfTheDay(ByteString::Build("Error while fetching MotD: ", ex.what()).FromUtf8());
+				SetMessageOfTheDay(ByteString::Build("MotD를 갖오는데 실패함: ", ex.what()).FromUtf8());
 			}
 		}
 		versionCheckRequest.reset();
@@ -161,7 +161,7 @@ void Client::Tick()
 		}
 		catch (const http::RequestError &ex)
 		{
-			SetMessageOfTheDay(ByteString::Build("Error while checking for updates: ", ex.what()).FromUtf8());
+			SetMessageOfTheDay(ByteString::Build("업데이트를 확인할 수 없습니다: ", ex.what()).FromUtf8());
 		}
 		alternateVersionCheckRequest.reset();
 	}
@@ -294,13 +294,13 @@ void Client::RenameStamp(ByteString stampID, ByteString newName)
 
 	if (Platform::FileExists(newPath))
 	{
-		new ErrorMessage("Error renaming stamp", "A stamp with this name already exists.");
+		new ErrorMessage("Stamp의 이름을 바꾸는데 실패했습니다. ", "이미 동일한 이름이 존재합니다.");
 		return;
 	}
 
 	if (!Platform::RenameFile(oldPath, newPath, false))
 	{
-		new ErrorMessage("Error renaming stamp", "Could not rename the stamp.");
+		new ErrorMessage("Stamp의 이름을 바꾸는데 실패했습니다. ", "변경이 허용되지 않습니다. ");
 		return;
 	}
 
@@ -422,7 +422,7 @@ std::unique_ptr<SaveFile> Client::LoadSaveFile(ByteString filename)
 			}
 			else
 			{
-				err = "failed to open";
+				err = "열기 실패";
 			}
 		}
 		catch (const ParseException &e)
@@ -432,7 +432,7 @@ std::unique_ptr<SaveFile> Client::LoadSaveFile(ByteString filename)
 	}
 	else
 	{
-		err = "does not exist";
+		err = "존재하지 않음";
 	}
 	if (err.size())
 	{
@@ -547,7 +547,7 @@ String Client::DoMigration(ByteString fromDir, ByteString toDir)
 		toDir = toDir + '/';
 
 	std::ofstream logFile(fromDir + "/migrationlog.txt", std::ios::out);
-	logFile << "Running migration of data from " << fromDir + " to " << toDir << std::endl;
+	logFile << fromDir + "에서 " << toDir << "로 데이터를 이동하는 중..." << std::endl;
 
 	// Get lists of files to migrate
 	auto stamps = Platform::DirectorySearch(fromDir + "stamps", "", { ".stm" });
@@ -561,8 +561,8 @@ String Client::DoMigration(ByteString fromDir, ByteString toDir)
 
 	if (stamps.empty() && saves.empty() && scripts.empty() && downloadedScripts.empty() && screenshots.empty() && !hasAutorun && !hasPref)
 	{
-		logFile << "Nothing to migrate.";
-		return "Nothing to migrate. This button is used to migrate data from pre-96.0 TPT installations to the shared directory";
+		logFile << "이전시킬 것이 없습니다";
+		return "이전시킬 것이 없습니다. 이 버튼은 pre-96.0 TPT 설치에서 디렉터리를 이전하기 위해 사용됩니다.";
 	}
 
 	StringBuilder result;
@@ -583,25 +583,25 @@ String Client::DoMigration(ByteString fromDir, ByteString toDir)
 				if (Platform::RenameFile(from, to, false))
 				{
 					failedCount++;
-					logFile << "failed to move " << from << " to " << to << std::endl;
+					logFile << "이동 실패: " << from << " --> " << to << std::endl;
 				}
 				else
 				{
 					migratedCount++;
-					logFile << "moved " << from << " to " << to << std::endl;
+					logFile << "이동됨: " << from << " --> " << to << std::endl;
 				}
 			}
 			else
 			{
-				logFile << "skipping " << from << "(already exists)" << std::endl;
+				logFile << " 무시 " << from << "(이미 존재함)" << std::endl;
 			}
 		}
 
 		dirsToDelete.push(directory);
-		result << "\bt" << migratedCount << " migratated\x0E, \br" << failedCount << " failed\x0E";
+		result << "\bt" << migratedCount << " 이전됨\x0E, \br" << failedCount << " 실패\x0E";
 		int duplicates = list.size() - migratedCount - failedCount;
 		if (duplicates)
-			result << ", " << list.size() - migratedCount - failedCount << " skipped (duplicate)";
+			result << ", " << list.size() - migratedCount - failedCount << " 무시 (중복)";
 	};
 
 	// Migrate a single file
@@ -612,23 +612,23 @@ String Client::DoMigration(ByteString fromDir, ByteString toDir)
 		{
 			if (Platform::RenameFile(from, to, false))
 			{
-				logFile << "failed to move " << from << " to " << to << std::endl;
-				result << "\n\br" << filename.FromUtf8() << " migration failed\x0E";
+				logFile << "이동 실패: " << from << " --> " << to << std::endl;
+				result << "\n\br" << filename.FromUtf8() << " 이전 실패\x0E";
 			}
 			else
 			{
-				logFile << "moved " << from << " to " << to << std::endl;
-				result << '\n' << filename.FromUtf8() << " migrated";
+				logFile << "이동됨: " << from << " --> " << to << std::endl;
+				result << '\n' << filename.FromUtf8() << " 이전됨";
 			}
 		}
 		else
 		{
-			logFile << "skipping " << from << "(already exists)" << std::endl;
-			result << '\n' << filename.FromUtf8() << " skipped (already exists)";
+			logFile << "무시 " << from << "(중복)" << std::endl;
+			result << '\n' << filename.FromUtf8() << "무시함  (중복)";
 		}
 
 		if (!Platform::RemoveFile(fromDir + filename)) {
-			logFile << "failed to delete " << filename << std::endl;
+			logFile << "삭제 실패 " << filename << std::endl;
 		}
 	};
 
@@ -656,7 +656,7 @@ String Client::DoMigration(ByteString fromDir, ByteString toDir)
 	{
 		ByteString toDelete = dirsToDelete.top();
 		if (!Platform::DeleteDirectory(fromDir + toDelete)) {
-			logFile << "failed to delete " << toDelete << std::endl;
+			logFile << "삭제 실패 " << toDelete << std::endl;
 		}
 		dirsToDelete.pop();
 	}
@@ -666,7 +666,7 @@ String Client::DoMigration(ByteString fromDir, ByteString toDir)
 
 	RescanStamps();
 
-	logFile << std::endl << std::endl << "Migration complete. Results: " << result.Build().ToUtf8();
+	logFile << std::endl << std::endl << "데이터 이전에 성공했습니다.. 결과: " << result.Build().ToUtf8();
 	logFile.close();
 
 	return result.Build();

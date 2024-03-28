@@ -29,7 +29,7 @@ void Element::Element_SHLD3()
 	Weight = 100;
 
 	HeatConduct = 0;
-	Description = "Shield lvl 3.";
+	Description = "쉴드 레벨 v3.";
 
 	Properties = TYPE_SOLID|PROP_LIFE_DEC;
 

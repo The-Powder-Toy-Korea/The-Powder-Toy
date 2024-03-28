@@ -111,7 +111,7 @@ void SDLOpen()
 {
 	if (SDL_InitSubSystem(SDL_INIT_VIDEO) < 0)
 	{
-		fprintf(stderr, "Initializing SDL (video subsystem): %s\n", SDL_GetError());
+		fprintf(stderr, " SDL 초기화중: %s\n", SDL_GetError());
 		Platform::Exit(-1);
 	}
 	Clipboard::Init();

@@ -31,7 +31,7 @@ void Element::Element_WOOD()
 	Weight = 100;
 
 	HeatConduct = 164;
-	Description = "나무: 가연성입니다.";
+	Description = "나무: 불에 잘 탑니다.";
 
 	Properties = TYPE_SOLID | PROP_NEUTPENETRATE;
 

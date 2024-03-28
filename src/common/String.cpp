@@ -9,7 +9,7 @@
 ByteString ConversionError::formatError(ByteString::value_type const *at, ByteString::value_type const *upto)
 {
 	std::stringstream ss;
-	ss << "Could not convert sequence to UTF-8:";
+	ss << " UTF-8로 변환할 수 없습니다:";
 	for(int i = 0; i < 4 && at + i < upto; i++)
 		ss << " " << std::hex << (unsigned int)std::make_unsigned<ByteString::value_type>::type(at[i]);
 	return ss.str();

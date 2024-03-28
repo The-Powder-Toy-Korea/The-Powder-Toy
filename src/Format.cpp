@@ -163,7 +163,7 @@ static std::unique_ptr<PlaneAdapter<std::vector<uint32_t>>> readPNG(
 	auto const end = data.end();
 	auto readFn = [&it, end](png_structp png, png_bytep data, size_t length) {
 		if (size_t(end - it) < length)
-			png_error(png, "Tried to read beyond the buffer");
+			png_error(png, "버퍼를 초과하여 읽을 수 없습니다.");
 		std::copy_n(it, length, data);
 		it += length;
 	};
@@ -381,7 +381,7 @@ float format::StringToTemperature(String str, int defaultScale)
 		throw std::out_of_range("empty string");
 	}
 	auto out = str.ToNumber<float>();
-	switch (scale)
+	:switch (scale)
 	{
 	case 1:
 		out = out + 273.15;

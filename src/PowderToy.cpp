@@ -86,9 +86,9 @@ void LargeScreenDialog()
 {
 	StringBuilder message;
 	auto scale = ui::Engine::Ref().windowFrameOps.scale;
-	message << "대화면이 감지되어 픽셀을 " << scale << "x 크기로 전환합니다: ";
-	message << desktopWidth << "x" << desktopHeight << " 감지됨, " << WINDOWW * scale << "x" << WINDOWH * scale << " 요구됨";
-	message << "\n취소하려면 취소 단추를 누르십시오. 나중에 설정에서 언제든지 바꿀 수 있습니다.";
+	message << "큰 화면에 맞춰 " << scale << "x 크기로 전환합니다: ";
+	message << desktopWidth << "x" << desktopHeight << " 감지됨, " << WINDOWW * scale << "x" << WINDOWH * scale << " 필요함.";
+	message << "\n취소하려면 취소 단추를 누르세요. 나중에 설정에서 언제든지 바꿀 수 있습니다.";
 	new ConfirmPrompt("대화면 감지됨", message.Build(), { nullptr, []() {
 		GlobalPrefs::Ref().Set("Scale", 1);
 		ui::Engine::Ref().windowFrameOps.scale = 1;
@@ -111,9 +111,10 @@ static void BlueScreen(String detailMessage, std::optional<std::vector<String>> 
 
 	StringBuilder crashInfo;
 	crashInfo << "ERROR - Details: " << detailMessage << "\n";
-	crashInfo << "An unrecoverable fault has occurred, please report it by visiting the website below\n\n  " << SCHEME << SERVER << "\n\n";
-	crashInfo << "An attempt will be made to save all of this information to " << crashLogPath.FromUtf8() << " in your data folder.\n";
-	crashInfo << "Please attach this file to your report.\n\n";
+	crashInfo << "복구 불가능한 오류가 발생했습니다. 공식 홈페이지에서 제보해주세요.\n\n  " << SCHEME << SERVER << "\n\n";
+	crashInfo << "데이터 폴더에 있는 " << crashLogPath.FromUtf8() << " 파일의 정보가 모두 저장됩니다. \n";
+	// 적절한 의미를 못찾겠어요
+	crashInfo << "버그를 제보하려면 파일을 첨부해야 합니다.\n\n";
 	crashInfo << "Version: " << VersionInfo().FromUtf8() << "\n";
 	crashInfo << "Tag: " << VCS_TAG << "\n";
 	crashInfo << "Date: " << format::UnixtimeToDate(time(NULL), "%Y-%m-%dT%H:%M:%SZ", false).FromUtf8() << "\n";
@@ -168,16 +169,16 @@ static struct
 	int sig;
 	const char *message;
 } signalMessages[] = {
-	{ SIGSEGV, "Memory read/write error" },
-	{ SIGFPE, "Floating point exception" },
-	{ SIGILL, "Program execution exception" },
-	{ SIGABRT, "Unexpected program abort" },
+	{ SIGSEGV, "메모리 읽기/쓰기 오류" }, 
+	{ SIGFPE, "실수값 연산 중 오류" },
+	{ SIGILL, "프로그램 오류 발생" },
+	{ SIGABRT, "예상치 못한 프로그램 중단" },
 	{ 0, nullptr },
 };
 
 static void SigHandler(int signal)
 {
-	const char *message = "Unknown signal";
+	const char *message = "알 수 없는 신호";
 	for (auto *msg = signalMessages; msg->message; ++msg)
 	{
 		if (msg->sig == signal)
@@ -202,11 +203,11 @@ static void TerminateHandler()
 	}
 	catch (const std::exception &e)
 	{
-		err = "unhandled exception: " + ByteString(e.what());
+		err = "처리할 수 없는 오류: " + ByteString(e.what());
 	}
 	catch (...)
 	{
-		err = "unhandled exception not derived from std::exception, cannot determine reason";
+		err = "알 수 없는 문제가 발생했습니다."; // cannot determine reason of the error
 	}
 	BlueScreen(err.FromUtf8(), Platform::StackTrace());
 }
@@ -267,7 +268,7 @@ int Main(int argc, char *argv[])
 	// https://bugzilla.libsdl.org/show_bug.cgi?id=3796
 	if (SDL_Init(0) < 0)
 	{
-		fprintf(stderr, "Initializing SDL: %s\n", SDL_GetError());
+		fprintf(stderr, "SDL 준비중: %s\n", SDL_GetError());
 		return 1;
 	}
 
@@ -304,7 +305,7 @@ int Main(int argc, char *argv[])
 			}
 			else
 			{
-				std::cerr << "no value provided for command line parameter " << str << std::endl;
+				std::cerr << "명령줄 인자의 값이 필요합니다: " << str << std::endl;
 			}
 		}
 		else
@@ -319,7 +320,7 @@ int Main(int argc, char *argv[])
 		if (Platform::ChangeDir(ddirArg.value()))
 			Platform::sharedCwd = Platform::GetCwd();
 		else
-			perror("failed to chdir to requested ddir");
+			perror("내부적인 오류가 발생했습니다."); // failed to chdir to requested ddir
 	}
 	else
 	{
@@ -330,7 +331,7 @@ int Main(int argc, char *argv[])
 			{
 				if (!Platform::ChangeDir(ddir))
 				{
-					perror("failed to chdir to default ddir");
+					perror("내부적인 오류가 발생했습니다."); // faild to chdir to default ddir
 					ddir = {};
 				}
 			}
@@ -486,7 +487,7 @@ int Main(int argc, char *argv[])
 	{
 		if constexpr (DEBUG)
 		{
-			std::cout << "Loading " << openArg.value() << std::endl;
+			std::cout << openArg.value() << " 불러오는 중..." << std::endl;
 		}
 		if (Platform::FileExists(openArg.value()))
 		{
@@ -495,7 +496,7 @@ int Main(int argc, char *argv[])
 				std::vector<char> gameSaveData;
 				if (!Platform::ReadFile(gameSaveData, openArg.value()))
 				{
-					new ErrorMessage("Error", "Could not read file");
+					new ErrorMessage("Error", "파일을 읽을 수 없습니다.");
 				}
 				else
 				{
@@ -508,12 +509,12 @@ int Main(int argc, char *argv[])
 			}
 			catch (std::exception & e)
 			{
-				new ErrorMessage("Error", "Could not open save file:\n" + ByteString(e.what()).FromUtf8()) ;
+				new ErrorMessage("Error", "세이브파일을 불러오는데 실패했습니다:\n" + ByteString(e.what()).FromUtf8()) ;
 			}
 		}
 		else
 		{
-			new ErrorMessage("Error", "Could not open file");
+			new ErrorMessage("Error", "파일을 열 수 없습니다.");
 		}
 	}
 
@@ -532,14 +533,14 @@ int Main(int argc, char *argv[])
 			if (ByteString::Split split = ptsaveArg.value().SplitBy(':'))
 			{
 				if (split.Before() != "ptsave")
-					throw std::runtime_error("Not a ptsave link");
+					throw std::runtime_error("ptsave가 아닙니다.");
 				saveIdPart = split.After().SplitBy('#').Before();
 			}
 			else
-				throw std::runtime_error("Invalid save link");
+				throw std::runtime_error("잘못된 세이브 링크");
 
 			if (!saveIdPart.size())
-				throw std::runtime_error("No Save ID");
+				throw std::runtime_error("세이브 ID가 없습니다.");
 			if constexpr (DEBUG)
 			{
 				std::cout << "Got Ptsave: id: " << saveIdPart << std::endl;
