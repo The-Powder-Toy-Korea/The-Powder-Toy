@@ -1418,7 +1418,7 @@ void GameView::OnKeyPress(int key, int scan, bool repeat, bool shift, bool ctrl,
 			doScreenshot = true;
 		break;
 	case SDL_SCANCODE_F3:
-		SetDebugHUD(!GetDebugHUD());
+		c->SetDebugHUD(!GetDebugHUD());
 		break;
 	case SDL_SCANCODE_F5:
 		c->ReloadSim();
@@ -2485,6 +2485,9 @@ void GameView::OnDraw()
 				fpsInfo << ", 입자량: " << ren->foundElements << "/" << sample.NumParts;
 			else
 				fpsInfo << ", 총 입자량: " << sample.NumParts;
+			fpsInfo << ", 소리: " << sample.SoundsPlaying;
+			if (sample.SoundsPlaying == 69)
+				fpsInfo << " (좋아)";
 		}
 		if (c->GetReplaceModeFlags()&REPLACE_MODE)
 			fpsInfo << " [물질 변경]";
