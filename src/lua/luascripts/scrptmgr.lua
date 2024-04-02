@@ -963,7 +963,7 @@ local function step()
 	if requiresrestart then
 		tpt.drawtext(302, 58, "스크립트를 비활성화하려면 다시 시작해야 합니다.", 255, 50, 50)
 	else
-		tpt.drawtext(292, 58, "스크립트를 클릭하여 토글하고 ".. (online and icons["download"] or icons["accept"]) .. " 단추를 누르십시오.")
+		tpt.drawtext(282, 58, "스크립트를 클릭하여 토글하고 ".. (online and icons["download"] or icons["accept"]) .. " 단추를 누르십시오.")
 	end
 	tpt.drawtext(302,75,"콘솔 출력:")
 	tooltip:draw()
