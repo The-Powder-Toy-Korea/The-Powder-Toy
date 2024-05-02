@@ -31,7 +31,7 @@ void Element::Element_GBMB()
 
 	DefaultProperties.temp = R_TEMP - 2.0f + 273.15f;
 	HeatConduct = 29;
-	Description = "중력 폭탄: 자기 자신에 닿은 모든 물질을 끌어당긴 후 순간적으로 강한 중력을 발생시킵니다.";
+	Description = "중력 폭탄: 처음으로 닿은 물질에 붙어 순간적으로 끌어당긴 후 강한 반중력을 발생시킵니다.";
 
 	Properties = TYPE_PART|PROP_LIFE_DEC|PROP_LIFE_KILL_DEC;
 
