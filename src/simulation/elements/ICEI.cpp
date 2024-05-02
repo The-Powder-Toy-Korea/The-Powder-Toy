@@ -34,6 +34,7 @@ void Element::Element_ICEI()
 	Description = "얼음: 압력에 의해 파괴될 수 있으며 공기를 식힙니다.";
 
 	Properties = TYPE_SOLID|PROP_LIFE_DEC|PROP_NEUTPASS;
+	CarriesTypeIn = 1U << FIELD_CTYPE;
 
 	LowPressure = IPL;
 	LowPressureTransition = NT;

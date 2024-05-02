@@ -33,7 +33,7 @@ void Element::Element_PCLN()
 	HeatConduct = 251;
 	Description = "전원식 복제기: 활성화하였을 때 닿은 물질을 복제합니다.";
 
-	Properties = TYPE_SOLID | PROP_NOCTYPEDRAW;
+	Properties = TYPE_SOLID | PROP_PHOTPASS | PROP_NOCTYPEDRAW;
 	CarriesTypeIn = 1U << FIELD_CTYPE;
 
 	LowPressure = IPL;

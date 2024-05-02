@@ -32,7 +32,7 @@ void Element::Element_ISOZ()
 	HeatConduct = 29;
 	Description = "동위원소-Z: 음압 상태이거나 광자에 닿으면 광자를 방출하며 소멸합니다.";
 
-	Properties = TYPE_LIQUID|PROP_NEUTPENETRATE;
+	Properties = TYPE_LIQUID | PROP_NEUTPENETRATE | PROP_PHOTPASS;
 
 	LowPressure = IPL;
 	LowPressureTransition = NT;

@@ -33,7 +33,7 @@ void Element::Element_FILT()
 	HeatConduct = 251;
 	Description = "필터: PHOT이 통과할 때 색깔을 바꾸며, 온도에 따라 색이 변합니다.";
 
-	Properties = TYPE_SOLID | PROP_NOAMBHEAT | PROP_LIFE_DEC;
+	Properties = TYPE_SOLID | PROP_PHOTPASS | PROP_NOAMBHEAT | PROP_LIFE_DEC;
 
 	LowPressure = IPL;
 	LowPressureTransition = NT;

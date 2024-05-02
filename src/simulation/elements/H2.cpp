@@ -31,7 +31,7 @@ void Element::Element_H2()
 	HeatConduct = 251;
 	Description = "수소: OXYG와 함께 연소하면 WATR를 생성합니다. 고온 고압의 환경에서 핵융합합니다.";
 
-	Properties = TYPE_GAS;
+	Properties = TYPE_GAS | PROP_PHOTPASS;
 
 	LowPressure = IPL;
 	LowPressureTransition = NT;

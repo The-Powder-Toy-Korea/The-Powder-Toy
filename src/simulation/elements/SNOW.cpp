@@ -35,6 +35,7 @@ void Element::Element_SNOW()
 	Description = "눈: 얼음이 압력에 의해 파괴될 때 생성되는 낮은 질량의 물질입니다.";
 
 	Properties = TYPE_PART|PROP_NEUTPASS;
+	CarriesTypeIn = 1U << FIELD_CTYPE;
 
 	LowPressure = IPL;
 	LowPressureTransition = NT;

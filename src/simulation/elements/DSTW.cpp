@@ -33,7 +33,7 @@ void Element::Element_DSTW()
 	LatentHeat = 7500;
 	Description = "증류수: 전기를 전도하지 않습니다.";
 
-	Properties = TYPE_LIQUID|PROP_NEUTPASS;
+	Properties = TYPE_LIQUID | PROP_NEUTPASS | PROP_PHOTPASS;
 
 	LowPressure = IPL;
 	LowPressureTransition = NT;

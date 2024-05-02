@@ -33,7 +33,7 @@ void Element::Element_WATR()
 	LatentHeat = 7500;
 	Description = "물: 불을 끄고, 전류를 전도하며, 저온에서 응고합니다.";
 
-	Properties = TYPE_LIQUID|PROP_CONDUCTS|PROP_LIFE_DEC|PROP_NEUTPASS;
+	Properties = TYPE_LIQUID | PROP_CONDUCTS | PROP_LIFE_DEC | PROP_NEUTPASS | PROP_PHOTPASS;
 
 	LowPressure = IPL;
 	LowPressureTransition = NT;

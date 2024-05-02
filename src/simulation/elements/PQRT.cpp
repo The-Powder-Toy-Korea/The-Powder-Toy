@@ -32,7 +32,7 @@ void Element::Element_PQRT()
 	HeatConduct = 3;
 	Description = "석영 가루: 석영이 부서지면 생성됩니다.";
 
-	Properties = TYPE_PART| PROP_HOT_GLOW;
+	Properties = TYPE_PART | PROP_PHOTPASS | PROP_HOT_GLOW;
 
 	LowPressure = IPL;
 	LowPressureTransition = NT;

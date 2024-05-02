@@ -32,7 +32,7 @@ void Element::Element_QRTZ()
 	HeatConduct = 3;
 	Description = "석영: 깨질 수 있고 전기를 전도할 수 있습니다. 저온에서 더 깨지기 쉽습니다.";
 
-	Properties = TYPE_SOLID|PROP_HOT_GLOW|PROP_LIFE_DEC;
+	Properties = TYPE_SOLID | PROP_PHOTPASS | PROP_HOT_GLOW | PROP_LIFE_DEC;
 
 	LowPressure = IPL;
 	LowPressureTransition = NT;

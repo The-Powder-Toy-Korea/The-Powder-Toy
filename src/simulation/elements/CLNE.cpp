@@ -31,7 +31,7 @@ void Element::Element_CLNE()
 	HeatConduct = 251;
 	Description = "복제기: 접촉하는 물질을 복제합니다.";
 
-	Properties = TYPE_SOLID | PROP_NOCTYPEDRAW;
+	Properties = TYPE_SOLID | PROP_PHOTPASS | PROP_NOCTYPEDRAW;
 	CarriesTypeIn = 1U << FIELD_CTYPE;
 
 	LowPressure = IPL;

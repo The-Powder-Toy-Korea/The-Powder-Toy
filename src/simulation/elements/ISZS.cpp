@@ -32,7 +32,7 @@ void Element::Element_ISZS()
 	HeatConduct = 251;
 	Description = "고체 동위원소-Z: 극저온의 상태를 가지고 있으며 스스로 광자를 방출하며 소멸합니다.";
 
-	Properties = TYPE_SOLID;
+	Properties = TYPE_SOLID | PROP_PHOTPASS;
 
 	LowPressure = IPL;
 	LowPressureTransition = NT;

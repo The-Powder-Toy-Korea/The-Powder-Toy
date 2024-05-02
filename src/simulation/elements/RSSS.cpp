@@ -33,6 +33,7 @@ void Element::Element_RSSS()
 	Description = "고형 저항체: 압력을 차단하고 전기를 절연하며, 중성자와 접촉하면 액체화합니다.";
 
 	Properties = TYPE_SOLID|PROP_NEUTPASS;
+	CarriesTypeIn = (1U << FIELD_CTYPE) | (1U << FIELD_TMP);
 
 	LowPressure = IPL;
 	LowPressureTransition = NT;

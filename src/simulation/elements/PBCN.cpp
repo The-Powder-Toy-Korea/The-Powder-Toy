@@ -33,7 +33,7 @@ void Element::Element_PBCN()
 	HeatConduct = 251;
 	Description = "파괴 가능한 전원식 복제기입니다.";
 
-	Properties = TYPE_SOLID | PROP_NOCTYPEDRAW;
+	Properties = TYPE_SOLID | PROP_PHOTPASS | PROP_NOCTYPEDRAW;
 	CarriesTypeIn = 1U << FIELD_CTYPE;
 
 	LowPressure = IPL;
