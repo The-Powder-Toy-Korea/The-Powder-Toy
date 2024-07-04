@@ -54,7 +54,7 @@ option(
 	'build_num',
 	type: 'integer',
 	min: 0,
-	value: 366,
+	value: 367,
 	description: 'Build number, should be strictly monotonously increasing across public releases'
 )
 option(
@@ -75,7 +75,7 @@ option(
 	'upstream_build_num',
 	type: 'integer',
 	min: 0,
-	value: 366,
+	value: 367,
 	description: 'Upstream build number, mod owners should not change this but merge upstream changes to it'
 )
 option(
@@ -95,7 +95,7 @@ option(
 option(
 	'x86_sse',
 	type: 'combo',
-	choices: [ 'none', 'sse', 'sse2', 'sse3', 'auto' ],
+	choices: [ 'none', 'sse', 'sse2', 'sse3', 'sse4.1', 'sse4.2', 'avx', 'avx2', 'avx512', 'auto' ],
 	value: 'auto',
 	description: 'Enable SSE (available only on x86)'
 )

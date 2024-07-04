@@ -100,6 +100,8 @@ void TickClient()
 	Client::Ref().Tick();
 }
 
+int main(int argc, char *argv[]);
+
 static void BlueScreen(String detailMessage, std::optional<std::vector<String>> stackTrace)
 {
 	auto &engine = ui::Engine::Ref();
@@ -111,7 +113,7 @@ static void BlueScreen(String detailMessage, std::optional<std::vector<String>> 
 
 	StringBuilder crashInfo;
 	crashInfo << "ERROR - Details: " << detailMessage << "\n";
-	crashInfo << "An unrecoverable fault has occurred, please report it by visiting the website below\n\n  " << SCHEME << SERVER << "\n\n";
+	crashInfo << "An unrecoverable fault has occurred, please report it by visiting the website below\n\n  " << SERVER << "\n\n";
 	crashInfo << "An attempt will be made to save all of this information to " << crashLogPath.FromUtf8() << " in your data folder.\n";
 	crashInfo << "Please attach this file to your report.\n\n";
 	crashInfo << "Version: " << VersionInfo().FromUtf8() << "\n";
@@ -119,7 +121,7 @@ static void BlueScreen(String detailMessage, std::optional<std::vector<String>> 
 	crashInfo << "Date: " << format::UnixtimeToDate(time(NULL), "%Y-%m-%dT%H:%M:%SZ", false).FromUtf8() << "\n";
 	if (stackTrace)
 	{
-		crashInfo << "Stack trace:\n";
+		crashInfo << "Stack trace; main is at 0x" << Format::Hex() << intptr_t(main) << ":\n";
 		for (auto &item : *stackTrace)
 		{
 			crashInfo << " - " << item << "\n";
@@ -155,7 +157,7 @@ static void BlueScreen(String detailMessage, std::optional<std::vector<String>> 
 	}
 
 	// Don't use Platform::Exit, we're practically zombies at this point anyway.
-#if defined(__MINGW32__) || defined(__APPLE__) || defined(__EMSCRIPTEN__)
+#if defined(__MINGW32__) || defined(__APPLE__) || defined(__EMSCRIPTEN__) || defined(__OpenBSD__)
 	// Come on...
 	exit(-1);
 #else
@@ -455,7 +457,7 @@ int Main(int argc, char *argv[])
 		if (engine.windowFrameOps.scale != guessed)
 		{
 			engine.windowFrameOps.scale = guessed;
-			prefs.Set("Scale", windowFrameOps.scale);
+			prefs.Set("Scale", guessed);
 			showLargeScreenDialog = true;
 		}
 	}

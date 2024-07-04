@@ -427,6 +427,7 @@ void PreviewView::OnTick(float dt)
 	{
 		try
 		{
+			addCommentRequest->Finish();
 			addCommentBox->SetText("");
 			c->CommentAdded();
 		}
@@ -434,7 +435,8 @@ void PreviewView::OnTick(float dt)
 		{
 			new ErrorMessage("댓글을 게시하는 데 오류가 발생함", ByteString(ex.what()).FromUtf8());
 		}
-		submitCommentButton->Enabled = true;
+		isSubmittingComment = false;
+		CheckCommentSubmitEnabled();
 		commentBoxAutoHeight();
 		addCommentRequest.reset();
 		CheckComment();
@@ -600,20 +602,34 @@ void PreviewView::submitComment()
 	if (addCommentBox)
 	{
 		String comment = addCommentBox->GetText();
-		if (comment.length() < 4)
+		if (comment.length() == 0)
+		{
+			c->RefreshComments();
+			isRefreshingComments = true;
+		}
+		else if (comment.length() < 4)
 		{
 			new ErrorMessage("오류", "댓글이 너무 짧습니다.");
-			return;
+		}
+		else
+		{
+			isSubmittingComment = true;
+			FocusComponent(NULL);
+
+			addCommentRequest = std::make_unique<http::AddCommentRequest>(c->SaveID(), comment);
+			addCommentRequest->Start();
+
+			CheckComment();
 		}
 
-		submitCommentButton->Enabled = false;
-		FocusComponent(NULL);
-
-		addCommentRequest = std::make_unique<http::AddCommentRequest>(c->SaveID(), comment);
-		addCommentRequest->Start();
-
-		CheckComment();
+		CheckCommentSubmitEnabled();
 	}
+}
+
+void PreviewView::CheckCommentSubmitEnabled()
+{
+	if (submitCommentButton)
+		submitCommentButton->Enabled = !isRefreshingComments && !isSubmittingComment;
 }
 
 void PreviewView::NotifyCommentBoxEnabledChanged(PreviewModel * sender)
@@ -648,7 +664,6 @@ void PreviewView::NotifyCommentBoxEnabledChanged(PreviewModel * sender)
 		AddComponent(addCommentBox);
 		submitCommentButton = new ui::Button(ui::Point(Size.X-40, Size.Y-19), ui::Point(40, 19), "게시");
 		submitCommentButton->SetActionCallback({ [this] { submitComment(); } });
-		//submitCommentButton->Enabled = false;
 		AddComponent(submitCommentButton);
 
 		commentWarningLabel = new ui::Label(ui::Point((XRES/2)+4, Size.Y-19), ui::Point(Size.X-(XRES/2)-48, 16), "If you see this it is a bug");
@@ -689,6 +704,9 @@ void PreviewView::NotifyCommentsChanged(PreviewModel * sender)
 	commentComponents.clear();
 	commentTextComponents.clear();
 	commentsPanel->InnerSize = ui::Point(0, 0);
+
+	isRefreshingComments = false;
+	CheckCommentSubmitEnabled();
 
 	if (commentsPtr)
 	{

@@ -1,6 +1,7 @@
 #include "Simulation.h"
 #include "Air.h"
 #include "ElementClasses.h"
+#include "TransitionConstants.h"
 #include "gravity/Gravity.h"
 #include "ToolClasses.h"
 #include "SimulationData.h"
@@ -260,6 +261,7 @@ void Simulation::Load(const GameSave *save, bool includePressure, Vec2<int> bloc
 			signs.push_back(tempSign);
 		}
 	}
+	auto useGravityMaps = save->hasGravityMaps && grav;
 	for (auto bpos : RectSized(blockP, save->blockSize) & CELLS.OriginRect())
 	{
 		auto spos = bpos - blockP;
@@ -283,10 +285,21 @@ void Simulation::Load(const GameSave *save, bool includePressure, Vec2<int> bloc
 			}
 			if (save->hasBlockAirMaps)
 			{
-				air->bmap_blockair[bpos.Y][bpos.X] = save->blockAir[spos];
+				air->bmap_blockair [bpos.Y][bpos.X] = save->blockAir [spos];
 				air->bmap_blockairh[bpos.Y][bpos.X] = save->blockAirh[spos];
 			}
 		}
+		if (useGravityMaps)
+		{
+			gravIn.mass   [bpos] = save->gravMass  [spos];
+			gravIn.mask   [bpos] = save->gravMask  [spos];
+			gravOut.forceX[bpos] = save->gravForceX[spos];
+			gravOut.forceY[bpos] = save->gravForceY[spos];
+		}
+	}
+	if (useGravityMaps)
+	{
+		ResetNewtonianGravity(gravIn, gravOut);
 	}
 
 	gravWallChanged = true;
@@ -397,6 +410,21 @@ std::unique_ptr<GameSave> Simulation::Save(bool includePressure, Rect<int> partR
 			newSave->blockAir[bpos] = air->bmap_blockair[bpos.Y + blockP.Y][bpos.X + blockP.X];
 			newSave->blockAirh[bpos] = air->bmap_blockairh[bpos.Y + blockP.Y][bpos.X + blockP.X];
 		}
+		if (grav)
+		{
+			newSave->gravMass  [bpos] = gravIn.mass   [bpos + blockP];
+			newSave->gravMask  [bpos] = gravIn.mask   [bpos + blockP];
+			newSave->gravForceX[bpos] = gravOut.forceX[bpos + blockP];
+			newSave->gravForceY[bpos] = gravOut.forceY[bpos + blockP];
+		}
+	}
+	if (includePressure)
+	{
+		newSave->hasBlockAirMaps = true;
+	}
+	if (grav)
+	{
+		newSave->hasGravityMaps = true;
 	}
 	if (includePressure || ensureDeterminism)
 	{
@@ -432,7 +460,7 @@ void Simulation::SaveSimOptions(GameSave &gameSave)
 	gameSave.edgeMode = edgeMode;
 	gameSave.legacyEnable = legacy_enable;
 	gameSave.waterEEnabled = water_equal_test;
-	gameSave.gravityEnable = grav->IsEnabled();
+	gameSave.gravityEnable = bool(grav);
 	gameSave.aheatEnable = aheat_enable;
 }
 
@@ -1004,8 +1032,7 @@ void Simulation::clear_sim(void)
 	//memset(fire_b, 0, sizeof(fire_b));
 	//if(gravmask)
 		//memset(gravmask, 0xFFFFFFFF, NCELL*sizeof(unsigned));
-	if(grav)
-		grav->Clear();
+	ResetNewtonianGravity({}, {});
 	if(air)
 	{
 		air->Clear();
@@ -1958,8 +1985,8 @@ void Simulation::GetGravityField(int x, int y, float particleGrav, float newtonG
 	}
 	if (newtonGrav)
 	{
-		pGravX += newtonGrav*gravx[(y/CELL)*XCELLS+(x/CELL)];
-		pGravY += newtonGrav*gravy[(y/CELL)*XCELLS+(x/CELL)];
+		pGravX += newtonGrav * gravOut.forceX[Vec2{ x, y } / CELL];
+		pGravY += newtonGrav * gravOut.forceY[Vec2{ x, y } / CELL];
 	}
 }
 
@@ -2467,11 +2494,11 @@ void Simulation::UpdateParticles(int start, int end)
 					if ((t==PT_ICEI || t==PT_SNOW) && (!sd.IsElement(parts[i].ctype) || parts[i].ctype==PT_ICEI || parts[i].ctype==PT_SNOW))
 						parts[i].ctype = PT_WATR;
 
-					if (elements[t].HighTemperatureTransition>-1 && ctemph>=elements[t].HighTemperature)
+					if (elements[t].HighTemperatureTransition != NT && ctemph>=elements[t].HighTemperature)
 					{
 						// particle type change due to high temperature
 						float dbt = ctempl - pt;
-						if (elements[t].HighTemperatureTransition != PT_NUM)
+						if (elements[t].HighTemperatureTransition != ST)
 						{
 							if constexpr (LATENTHEAT)
 							{
@@ -2581,11 +2608,11 @@ void Simulation::UpdateParticles(int start, int end)
 						else
 							s = 0;
 					}
-					else if (elements[t].LowTemperatureTransition > -1 && ctempl<elements[t].LowTemperature)
+					else if (elements[t].LowTemperatureTransition != NT && ctempl<elements[t].LowTemperature)
 					{
 						// particle type change due to low temperature
 						float dbt = ctempl - pt;
-						if (elements[t].LowTemperatureTransition != PT_NUM)
+						if (elements[t].LowTemperatureTransition != ST)
 						{
 							if constexpr (LATENTHEAT)
 							{
@@ -2790,10 +2817,11 @@ void Simulation::UpdateParticles(int start, int end)
 
 			{
 				auto s = 1;
-				auto gravtot = fabs(gravy[(y/CELL)*XCELLS+(x/CELL)])+fabs(gravx[(y/CELL)*XCELLS+(x/CELL)]);
-				if (elements[t].HighPressureTransition>-1 && pv[y/CELL][x/CELL]>elements[t].HighPressure) {
+				auto gravtot = std::abs(gravOut.forceX[Vec2{ x, y } / CELL]) +
+				               std::abs(gravOut.forceY[Vec2{ x, y } / CELL]);
+				if (elements[t].HighPressureTransition != NT && pv[y/CELL][x/CELL]>elements[t].HighPressure) {
 					// particle type change due to high pressure
-					if (elements[t].HighPressureTransition!=PT_NUM)
+					if (elements[t].HighPressureTransition != ST)
 						t = elements[t].HighPressureTransition;
 					else if (t==PT_BMTL) {
 						if (pv[y/CELL][x/CELL]>2.5f)
@@ -2803,14 +2831,14 @@ void Simulation::UpdateParticles(int start, int end)
 						else s = 0;
 					}
 					else s = 0;
-				} else if (elements[t].LowPressureTransition>-1 && pv[y/CELL][x/CELL]<elements[t].LowPressure && gravtot<=(elements[t].LowPressure/4.0f)) {
+				} else if (elements[t].LowPressureTransition != NT && pv[y/CELL][x/CELL]<elements[t].LowPressure && gravtot<=(elements[t].LowPressure/4.0f)) {
 					// particle type change due to low pressure
-					if (elements[t].LowPressureTransition!=PT_NUM)
+					if (elements[t].LowPressureTransition != ST)
 						t = elements[t].LowPressureTransition;
 					else s = 0;
-				} else if (elements[t].HighPressureTransition>-1 && gravtot>(elements[t].HighPressure/4.0f)) {
+				} else if (elements[t].HighPressureTransition != NT && gravtot>(elements[t].HighPressure/4.0f)) {
 					// particle type change due to high gravity
-					if (elements[t].HighPressureTransition!=PT_NUM)
+					if (elements[t].HighPressureTransition != ST)
 						t = elements[t].HighPressureTransition;
 					else if (t==PT_BMTL) {
 						if (gravtot>0.625f)
@@ -3170,7 +3198,7 @@ killed:
 								goto movedone;
 							}
 						}
-						if (elements[t].Falldown>1 && !grav->IsEnabled() && gravityMode==GRAV_VERTICAL && parts[i].vy>fabsf(parts[i].vx))
+						if (elements[t].Falldown>1 && !grav && gravityMode==GRAV_VERTICAL && parts[i].vy>fabsf(parts[i].vx))
 						{
 							auto s = 0;
 							// stagnant is true if FLAG_STAGNANT was set for this particle in previous frame
@@ -3674,6 +3702,48 @@ void Simulation::CheckStacking()
 	}
 }
 
+void Simulation::UpdateGravityMask()
+{
+	for (auto p : CELLS.OriginRect())
+	{
+		gravIn.mask[p] = 0;
+	}
+	std::stack<Vec2<int>> toCheck;
+	auto check = [this, &toCheck](Vec2<int> p) {
+		if (!(bmap[p.Y][p.X] == WL_GRAV || gravIn.mask[p]))
+		{
+			gravIn.mask[p] = UINT32_C(0xFFFFFFFF);
+			for (auto o : RectSized<int>({ -1, -1 }, { 3, 3 }))
+			{
+				if ((o.X + o.Y) & 1) // i.e. immediate neighbours but not diagonal ones
+				{
+					auto q = p + o;
+					if (CELLS.OriginRect().Contains(q))
+					{
+						toCheck.push(q);
+					}
+				}
+			}
+		}
+	};
+	for (auto x = 0; x < CELLS.X; ++x)
+	{
+		check({ x, 0           });
+		check({ x, CELLS.Y - 1 });
+	}
+	for (auto y = 1; y < CELLS.Y - 1; ++y) // corners already checked in the previous loop
+	{
+		check({ 0          , y });
+		check({ CELLS.X - 1, y });
+	}
+	while (!toCheck.empty())
+	{
+		auto p = toCheck.top();
+		toCheck.pop();
+		check(p);
+	}
+}
+
 //updates pmap, gol, and some other simulation stuff (but not particles)
 void Simulation::BeforeSim()
 {
@@ -3684,16 +3754,9 @@ void Simulation::BeforeSim()
 		if(aheat_enable)
 			air->update_airh();
 
-		if(grav->IsEnabled())
-		{
-			grav->gravity_update_async();
+		DispatchNewtonianGravity();
+		gravIn = {};
 
-			//Get updated buffer pointers for gravity
-			gravx = &grav->gravx[0];
-			gravy = &grav->gravy[0];
-			gravp = &grav->gravp[0];
-			gravmap = &grav->gravmap[0];
-		}
 		if(emp_decor>0)
 			emp_decor -= emp_decor/25+2;
 		if(emp_decor < 0)
@@ -3713,7 +3776,7 @@ void Simulation::BeforeSim()
 
 	if (gravWallChanged)
 	{
-		grav->gravity_mask();
+		UpdateGravityMask();
 		gravWallChanged = false;
 	}
 
@@ -3922,16 +3985,6 @@ Simulation::Simulation():
 	std::fill(elementCount, elementCount+PT_NUM, 0);
 	elementRecount = true;
 
-	//Create and attach gravity simulation
-	grav = Gravity::Create();
-	//Give air sim references to our data
-	grav->bmap = bmap;
-	//Gravity sim gives us maps to use
-	gravx = &grav->gravx[0];
-	gravy = &grav->gravy[0];
-	gravp = &grav->gravp[0];
-	gravmap = &grav->gravmap[0];
-
 	//Create and attach air simulation
 	air = std::make_unique<Air>(*this);
 	//Give air sim references to our data
@@ -3950,7 +4003,40 @@ Simulation::Simulation():
 
 	clear_sim();
 
-	grav->gravity_mask();
+	UpdateGravityMask();
+}
+
+void Simulation::DispatchNewtonianGravity()
+{
+	if (grav)
+	{
+		grav->Exchange(gravOut, gravIn);
+	}
+}
+
+void Simulation::ResetNewtonianGravity(GravityInput newGravIn, GravityOutput newGravOut)
+{
+	gravIn = newGravIn;
+	DispatchNewtonianGravity();
+	if (grav)
+	{
+		gravOut = newGravOut;
+		gravWallChanged = true;
+	}
+}
+
+void Simulation::EnableNewtonianGravity(bool enable)
+{
+	if (grav && !enable)
+	{
+		grav.reset();
+		gravOut = {}; // reset as per the invariant
+	}
+	if (!grav && enable)
+	{
+		grav = Gravity::Create();
+		DispatchNewtonianGravity();
+	}
 }
 
 constexpr size_t ce_log2(size_t n)
