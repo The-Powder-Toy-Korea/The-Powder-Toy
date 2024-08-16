@@ -250,7 +250,7 @@ void GameController::Install()
 {
 	if constexpr (CAN_INSTALL)
 	{
-		new ConfirmPrompt(String(APPNAME) + " 설치", "이 컴퓨터에 " + String(APPNAME) + "를 설치하시겠습니까?\n설치하면 세이브 파일을 웹 사이트에서 바로 열 수 있습니다.", { [] {
+		new ConfirmPrompt(String(APPNAME) + " 설치", "이 컴퓨터에 " + String(APPNAME) + "를 설치하시겠습니까?\n설치하면 세이브 파일을 웹사이트에서 바로 열 수 있습니다.", { [] {
 			if (Platform::Install())
 			{
 				new InformationMessage("완료", "설치가 완료되었습니다.", false);
@@ -1615,7 +1615,7 @@ void GameController::NotifyUpdateAvailable(Client * sender)
 			}
 			else
 			{
-				updateMessage << "\"계속\"을 눌러 웹 사이트에서 최신 버전을 내려받습니다. \n\n현재 버전:\n ";
+				updateMessage << "\"계속\"을 눌러 웹사이트에서 최신 버전을 내려받습니다. \n\n현재 버전:\n ";
 			}
 
 			if constexpr (MOD)
