@@ -307,7 +307,7 @@ AnyType CommandInterface::tptS_set(std::deque<String> * words)
 	AnyType value = eval(words);
 
 	Simulation * sim = m->GetSimulation();
-	unsigned char * partsBlock = (unsigned char*)&sim->parts[0];
+	unsigned char * partsBlock = reinterpret_cast<unsigned char *>(&sim->parts[0]);
 
 	int returnValue = 0;
 
@@ -619,7 +619,7 @@ AnyType CommandInterface::tptS_reset(std::deque<String> * words)
 		for (int nx = 0; nx < XCELLS; nx++)
 			for (int ny = 0; ny < YCELLS; ny++)
 			{
-				sim->air->pv[ny][nx] = 0;
+				sim->pv[ny][nx] = 0;
 			}
 	}
 	else if (resetStr == "velocity")
@@ -627,8 +627,8 @@ AnyType CommandInterface::tptS_reset(std::deque<String> * words)
 		for (int nx = 0; nx < XCELLS; nx++)
 			for (int ny = 0; ny < YCELLS; ny++)
 			{
-				sim->air->vx[ny][nx] = 0;
-				sim->air->vy[ny][nx] = 0;
+				sim->vx[ny][nx] = 0;
+				sim->vy[ny][nx] = 0;
 			}
 	}
 	else if (resetStr == "sparks")

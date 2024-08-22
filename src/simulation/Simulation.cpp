@@ -14,6 +14,7 @@
 #include "elements/STKM.h"
 #include "elements/PIPE.h"
 #include "elements/FILT.h"
+#include "elements/PRTI.h"
 #include <iostream>
 #include <set>
 
@@ -3951,55 +3952,13 @@ void Simulation::AfterSim()
 
 Simulation::~Simulation() = default;
 
-Simulation::Simulation():
-	replaceModeSelected(0),
-	replaceModeFlags(0),
-	debug_nextToUpdate(0),
-	ISWIRE(0),
-	force_stacking_check(false),
-	emp_decor(0),
-	emp_trigger_count(0),
-	etrd_count_valid(false),
-	etrd_life0_count(0),
-	lightningRecreate(0),
-	gravWallChanged(false),
-	CGOL(0),
-	GSPEED(1),
-	edgeMode(EDGE_VOID),
-	gravityMode(GRAV_VERTICAL),
-	customGravityX(0),
-	customGravityY(0),
-	legacy_enable(0),
-	aheat_enable(0),
-	water_equal_test(0),
-	sys_pause(0),
-	framerender(0),
-	pretty_powder(0),
-	sandcolour_frame(0),
-	deco_space(DECOSPACE_SRGB)
+Simulation::Simulation()
 {
-	int tportal_rx[] = {-1, 0, 1, 1, 1, 0,-1,-1};
-	int tportal_ry[] = {-1,-1,-1, 0, 1, 1, 1, 0};
-
-	memcpy(portal_rx, tportal_rx, sizeof(tportal_rx));
-	memcpy(portal_ry, tportal_ry, sizeof(tportal_ry));
-
-	currentTick = 0;
 	std::fill(elementCount, elementCount+PT_NUM, 0);
 	elementRecount = true;
 
 	//Create and attach air simulation
 	air = std::make_unique<Air>(*this);
-	//Give air sim references to our data
-	air->bmap = bmap;
-	air->emap = emap;
-	air->fvx = fvx;
-	air->fvy = fvy;
-	//Air sim gives us maps to use
-	vx = air->vx;
-	vy = air->vy;
-	pv = air->pv;
-	hv = air->hv;
 
 	player.comm = 0;
 	player2.comm = 0;
@@ -4042,13 +4001,5 @@ void Simulation::EnableNewtonianGravity(bool enable)
 	}
 }
 
-constexpr size_t ce_log2(size_t n)
-{
-	return ((n < 2) ? 1 : 1 + ce_log2(n / 2));
-}
-static_assert(PMAPBITS <= 16, "PMAPBITS is too large");
-// * This will technically fail in some cases where (XRES * YRES) << PMAPBITS would
-//   fit in 31 bits but multiplication is evil and wraps around without you knowing it.
-// * Whoever runs into a problem with this (e.g. with XRES = 612, YRES = 384 and
-//   PMAPBITS = 13) should just remove the check and take responsibility otherwise.
-static_assert(ce_log2(XRES) + ce_log2(YRES) + PMAPBITS <= 31, "not enough space in pmap");
+// we want XRES * YRES <= (1 << (31 - PMAPBITS)), but we do a division because multiplication could silently overflow
+static_assert(uint32_t(XRES) <= (UINT32_C(1) << (31 - PMAPBITS)) / uint32_t(YRES), "not enough space in pmap");

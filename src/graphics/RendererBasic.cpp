@@ -4,119 +4,85 @@
 #include "Renderer.h"
 #include "simulation/ElementClasses.h"
 #include "simulation/ElementGraphics.h"
-#include "simulation/Simulation.h"
 
-constexpr auto VIDXRES = WINDOWW;
-constexpr auto VIDYRES = WINDOWH;
-
-void Renderer::RenderBegin()
-{
-	draw_grav();
-	DrawWalls();
-	render_parts();
-	
-	if(display_mode & DISPLAY_PERS)
+const std::vector<RenderPreset> Renderer::renderModePresets = {
 	{
-		std::transform(video.RowIterator({ 0, 0 }), video.RowIterator({ 0, YRES }), persistentVideo.begin(), [](pixel p) {
-			return RGB<uint8_t>::Unpack(p).Decay().Pack();
-		});
-	}
+		"대체 속도 디스플레이",
+		RENDER_EFFE | RENDER_BASC,
+		DISPLAY_AIRC,
+		0,
+	},
+	{
+		"공기 속도 디스플레이",
+		RENDER_EFFE | RENDER_BASC,
+		DISPLAY_AIRV,
+		0,
+	},
+	{
+		"압력 디스플레이",
+		RENDER_EFFE | RENDER_BASC,
+		DISPLAY_AIRP,
+		0,
+	},
+	{
+		"잔상 디스플레이",
+		RENDER_EFFE | RENDER_BASC,
+		DISPLAY_PERS,
+		0,
+	},
+	{
+		"불꽃 디스플레이",
+		RENDER_FIRE | RENDER_SPRK | RENDER_EFFE | RENDER_BASC,
+		0,
+		0,
+	},
+	{
+		"흐리기 디스플레이",
+		RENDER_FIRE | RENDER_SPRK | RENDER_EFFE | RENDER_BLOB,
+		0,
+		0,
+	},
+	{
+		"열 디스플레이",
+		RENDER_BASC,
+		DISPLAY_AIRH,
+		COLOUR_HEAT,
+	},
+	{
+		"화려한 디스플레이",
+		RENDER_FIRE | RENDER_SPRK | RENDER_GLOW | RENDER_BLUR | RENDER_EFFE | RENDER_BASC,
+		DISPLAY_WARP,
+		0,
+	},
+	{
+		"일반 디스플레이",
+		RENDER_BASC,
+		0,
+		0,
+	},
+	{
+		"열 줄무늬 디스플레이",
+		RENDER_BASC,
+		0,
+		COLOUR_GRAD,
+	},
+	{
+		"라이프 줄무늬 디스플레이",
+		RENDER_BASC,
+		0,
+		COLOUR_LIFE,
+	},
+};
 
-	render_fire();
-	draw_other();
-	draw_grav_zones();
-	DrawSigns();
-
-	FinaliseParts();
-}
-
-void Renderer::RenderEnd()
+void Renderer::Clear()
 {
-	RenderZoom();
-}
-
-void Renderer::SetSample(Vec2<int> pos)
-{
-	sampleColor = GetPixel(pos);
-}
-
-void Renderer::clearScreen() {
-	if(display_mode & DISPLAY_PERS)
+	if(displayMode & DISPLAY_PERS)
 	{
 		std::copy(persistentVideo.begin(), persistentVideo.end(), video.RowIterator({ 0, 0 }));
 	}
 	else
 	{
-		std::fill_n(video.data(), VIDXRES * YRES, 0);
-	}
-}
-
-void Renderer::FinaliseParts()
-{
-	if(display_mode & DISPLAY_WARP)
-	{
-		warpVideo = video;
-		std::fill_n(video.data(), VIDXRES * YRES, 0);
-		render_gravlensing(warpVideo);
-	}
-}
-
-void Renderer::RenderZoom()
-{
-	if(!zoomEnabled)
-		return;
-	{
-		int x, y, i, j;
-		pixel pix;
-
-		DrawFilledRect(RectSized(zoomWindowPosition, { zoomScopeSize * ZFACTOR, zoomScopeSize * ZFACTOR }), 0x000000_rgb);
-		DrawRect(RectSized(zoomWindowPosition - Vec2{ 2, 2 }, Vec2{ zoomScopeSize*ZFACTOR+3, zoomScopeSize*ZFACTOR+3 }), 0xC0C0C0_rgb);
-		DrawRect(RectSized(zoomWindowPosition - Vec2{ 1, 1 }, Vec2{ zoomScopeSize*ZFACTOR+1, zoomScopeSize*ZFACTOR+1 }), 0x000000_rgb);
-		for (j=0; j<zoomScopeSize; j++)
-			for (i=0; i<zoomScopeSize; i++)
-			{
-				pix = video[{ i + zoomScopePosition.X, j + zoomScopePosition.Y }];
-				for (y=0; y<ZFACTOR-1; y++)
-					for (x=0; x<ZFACTOR-1; x++)
-						video[{ i * ZFACTOR + x + zoomWindowPosition.X, j * ZFACTOR + y + zoomWindowPosition.Y }] = pix;
-			}
-		if (zoomEnabled)
-		{
-			for (j=-1; j<=zoomScopeSize; j++)
-			{
-				XorPixel(zoomScopePosition + Vec2{ j, -1 });
-				XorPixel(zoomScopePosition + Vec2{ j, zoomScopeSize });
-			}
-			for (j=0; j<zoomScopeSize; j++)
-			{
-				XorPixel(zoomScopePosition + Vec2{ -1, j });
-				XorPixel(zoomScopePosition + Vec2{ zoomScopeSize, j });
-			}
-		}
-	}
-}
-
-
-void Renderer::render_gravlensing(const Video &source)
-{
-	for (auto p : RES.OriginRect())
-	{
-		auto cp = p / CELL;
-		auto rp = Vec2{ int(p.X - sim->gravOut.forceX[cp] * 0.75f  + 0.5f), int(p.Y - sim->gravOut.forceY[cp] * 0.75f  + 0.5f) };
-		auto gp = Vec2{ int(p.X - sim->gravOut.forceX[cp] * 0.875f + 0.5f), int(p.Y - sim->gravOut.forceY[cp] * 0.875f + 0.5f) };
-		auto bp = Vec2{ int(p.X - sim->gravOut.forceX[cp]          + 0.5f), int(p.Y - sim->gravOut.forceY[cp]          + 0.5f) };
-		if (RES.OriginRect().Contains(rp) &&
-		    RES.OriginRect().Contains(gp) &&
-		    RES.OriginRect().Contains(bp))
-		{
-			auto v = RGB<uint8_t>::Unpack(video[p]);
-			auto s = RGB<uint8_t>::Unpack(source[rp]);
-			video[p] = RGB<uint8_t>(
-				std::min(0xFF, s.Red   + v.Red  ),
-				std::min(0xFF, s.Green + v.Green),
-				std::min(0xFF, s.Blue  + v.Blue )
-			).Pack();
-		}
+		std::fill_n(video.data(), WINDOWW * YRES, 0);
 	}
 }
 
@@ -155,13 +121,6 @@ void Renderer::prepare_alpha(int size, float intensity)
 
 }
 
-pixel Renderer::GetPixel(Vec2<int> pos) const
-{
-	if (pos.X<0 || pos.Y<0 || pos.X>=VIDXRES || pos.Y>=VIDYRES)
-		return 0;
-	return video[pos];
-}
-
 std::vector<RGB<uint8_t>> Renderer::flameTable;
 std::vector<RGB<uint8_t>> Renderer::plasmaTable;
 std::vector<RGB<uint8_t>> Renderer::heatTable;
@@ -175,20 +134,20 @@ void Renderer::PopulateTables()
 	if (!tablesPopulated)
 	{
 		tablesPopulated = true;
-		flameTable = Graphics::Gradient({
+		flameTable = Gradient({
 			{ 0x000000_rgb, 0.00f },
 			{ 0x60300F_rgb, 0.50f },
 			{ 0xDFBF6F_rgb, 0.90f },
 			{ 0xAF9F0F_rgb, 1.00f },
 		}, 200);
-		plasmaTable = Graphics::Gradient({
+		plasmaTable = Gradient({
 			{ 0x000000_rgb, 0.00f },
 			{ 0x301040_rgb, 0.25f },
 			{ 0x301060_rgb, 0.50f },
 			{ 0xAFFFFF_rgb, 0.90f },
 			{ 0xAFFFFF_rgb, 1.00f },
 		}, 200);
-		heatTable = Graphics::Gradient({
+		heatTable = Gradient({
 			{ 0x2B00FF_rgb, 0.00f },
 			{ 0x003CFF_rgb, 0.01f },
 			{ 0x00C0FF_rgb, 0.05f },
@@ -200,7 +159,7 @@ void Renderer::PopulateTables()
 			{ 0xFF0000_rgb, 0.71f },
 			{ 0xFF00DC_rgb, 1.00f },
 		}, 1024);
-		clfmTable = Graphics::Gradient({
+		clfmTable = Gradient({
 			{ 0x000000_rgb, 0.00f },
 			{ 0x0A0917_rgb, 0.10f },
 			{ 0x19163C_rgb, 0.20f },
@@ -210,7 +169,7 @@ void Renderer::PopulateTables()
 			{ 0x57A0B4_rgb, 0.80f },
 			{ 0x5EC4C6_rgb, 1.00f },
 		}, 200);
-		firwTable = Graphics::Gradient({
+		firwTable = Gradient({
 			{ 0xFF00FF_rgb, 0.00f },
 			{ 0x0000FF_rgb, 0.20f },
 			{ 0x00FFFF_rgb, 0.40f },
@@ -221,25 +180,7 @@ void Renderer::PopulateTables()
 	}
 }
 
-Renderer::Renderer(Simulation *newSim):
-	sim(newSim),
-	render_mode(0),
-	colour_mode(0),
-	display_mode(0),
-	gravityZonesEnabled(false),
-	gravityFieldEnabled(false),
-	decorations_enable(1),
-	blackDecorations(false),
-	debugLines(false),
-	sampleColor(0xFFFFFFFF),
-    foundElements(0),
-	mousePos(0, 0),
-	zoomWindowPosition(0, 0),
-	zoomScopePosition(0, 0),
-	zoomScopeSize(32),
-	zoomEnabled(false),
-	ZFACTOR(8),
-	gridSize(0)
+Renderer::Renderer()
 {
 	PopulateTables();
 
@@ -248,91 +189,8 @@ Renderer::Renderer(Simulation *newSim):
 	memset(fire_b, 0, sizeof(fire_b));
 
 	//Set defauly display modes
-	ResetModes();
-
-	//Render mode presets. Possibly load from config in future?
-	renderModePresets.push_back({
-		"대체 속도 디스플레이",
-		{ RENDER_EFFE, RENDER_BASC },
-		{ DISPLAY_AIRC },
-		0
-	});
-	renderModePresets.push_back({
-		"공기 속도 디스플레이",
-		{ RENDER_EFFE, RENDER_BASC },
-		{ DISPLAY_AIRV },
-		0
-	});
-	renderModePresets.push_back({
-		"압력 디스플레이",
-		{ RENDER_EFFE, RENDER_BASC },
-		{ DISPLAY_AIRP },
-		0
-	});
-	renderModePresets.push_back({
-		"잔상 디스플레이",
-		{ RENDER_EFFE, RENDER_BASC },
-		{ DISPLAY_PERS },
-		0
-	});
-	renderModePresets.push_back({
-		"불꽃 디스플레이",
-		{ RENDER_FIRE, RENDER_SPRK, RENDER_EFFE, RENDER_BASC },
-		{ },
-		0
-	});
-	renderModePresets.push_back({
-		"흐리기 디스플레이",
-		{ RENDER_FIRE, RENDER_SPRK, RENDER_EFFE, RENDER_BLOB },
-		{ },
-		0
-	});
-	renderModePresets.push_back({
-		"열 디스플레이",
-		{ RENDER_BASC },
-		{ DISPLAY_AIRH },
-		COLOUR_HEAT
-	});
-	renderModePresets.push_back({
-		"화려한 디스플레이",
-		{ RENDER_FIRE, RENDER_SPRK, RENDER_GLOW, RENDER_BLUR, RENDER_EFFE, RENDER_BASC },
-		{ DISPLAY_WARP },
-		0
-	});
-	renderModePresets.push_back({
-		"일반 디스플레이",
-		{ RENDER_BASC },
-		{ },
-		0
-	});
-	renderModePresets.push_back({
-		"열 줄무늬 디스플레이",
-		{ RENDER_BASC },
-		{ },
-		COLOUR_GRAD
-	});
-	renderModePresets.push_back({
-		"라이프 줄무늬 디스플레이",
-		{ RENDER_BASC },
-		{ },
-		COLOUR_LIFE
-	});
-
 	prepare_alpha(CELL, 1.0f);
-}
-
-void Renderer::CompileRenderMode()
-{
-	int old_render_mode = render_mode;
-	render_mode = 0;
-	for (size_t i = 0; i < render_modes.size(); i++)
-		render_mode |= render_modes[i];
-
-	//If firemode is removed, clear the fire display
-	if(!(render_mode & FIREMODE) && (old_render_mode & FIREMODE))
-	{
-		ClearAccumulation();
-	}
+	ClearAccumulation();
 }
 
 void Renderer::ClearAccumulation()
@@ -343,118 +201,49 @@ void Renderer::ClearAccumulation()
 	std::fill(persistentVideo.begin(), persistentVideo.end(), 0);
 }
 
-void Renderer::AddRenderMode(unsigned int mode)
+void Renderer::ApplySettings(const RendererSettings &newSettings)
 {
-	for (size_t i = 0; i < render_modes.size(); i++)
-	{
-		if(render_modes[i] == mode)
-		{
-			return;
-		}
-	}
-	render_modes.push_back(mode);
-	CompileRenderMode();
-}
-
-void Renderer::RemoveRenderMode(unsigned int mode)
-{
-	for (size_t i = 0; i < render_modes.size(); i++)
-	{
-		if(render_modes[i] == mode)
-		{
-			render_modes.erase(render_modes.begin() + i);
-			i = 0;
-		}
-	}
-	CompileRenderMode();
-}
-
-void Renderer::SetRenderMode(std::vector<unsigned int> render)
-{
-	render_modes = render;
-	CompileRenderMode();
-}
-
-std::vector<unsigned int> Renderer::GetRenderMode()
-{
-	return render_modes;
-}
-
-void Renderer::CompileDisplayMode()
-{
-	int old_display_mode = display_mode;
-	display_mode = 0;
-	for (size_t i = 0; i < display_modes.size(); i++)
-		display_mode |= display_modes[i];
-	if (!(display_mode & DISPLAY_PERS) && (old_display_mode & DISPLAY_PERS))
+	if (!(newSettings.renderMode & FIREMODE) && (renderMode & FIREMODE))
 	{
 		ClearAccumulation();
 	}
-}
-
-void Renderer::AddDisplayMode(unsigned int mode)
-{
-	for (size_t i = 0; i < display_modes.size(); i++)
+	if (!(newSettings.displayMode & DISPLAY_PERS) && (displayMode & DISPLAY_PERS))
 	{
-		if (display_modes[i] == mode)
-		{
-			return;
-		}
-		if (display_modes[i] & DISPLAY_AIR)
-		{
-			display_modes.erase(display_modes.begin()+i);
-		}
+		ClearAccumulation();
 	}
-	display_modes.push_back(mode);
-	CompileDisplayMode();
-}
-
-void Renderer::RemoveDisplayMode(unsigned int mode)
-{
-	for (size_t i = 0; i < display_modes.size(); i++)
-	{
-		if (display_modes[i] == mode)
-		{
-			display_modes.erase(display_modes.begin() + i);
-			i = 0;
-		}
-	}
-	CompileDisplayMode();
-}
-
-void Renderer::SetDisplayMode(std::vector<unsigned int> display)
-{
-	display_modes = display;
-	CompileDisplayMode();
-}
-
-std::vector<unsigned int> Renderer::GetDisplayMode()
-{
-	return display_modes;
-}
-
-void Renderer::SetColourMode(unsigned int mode)
-{
-	colour_mode = mode;
-}
-
-unsigned int Renderer::GetColourMode()
-{
-	return colour_mode;
-}
-
-void Renderer::ResetModes()
-{
-	SetRenderMode({ RENDER_BASC, RENDER_FIRE, RENDER_SPRK, RENDER_EFFE });
-	SetDisplayMode({ });
-	SetColourMode(COLOUR_DEFAULT);
-}
-
-VideoBuffer Renderer::DumpFrame()
-{
-	VideoBuffer newBuffer(RES);
-	newBuffer.BlendImage(video.data(), 0xFF, Size().OriginRect());
-	return newBuffer;
+	static_cast<RendererSettings &>(*this) = newSettings;
 }
 
 template struct RasterDrawMethods<Renderer>;
+
+bool Renderer::GradientStop::operator <(const GradientStop &other) const
+{
+	return point < other.point;
+}
+
+std::vector<RGB<uint8_t>> Renderer::Gradient(std::vector<GradientStop> stops, int resolution)
+{
+	std::vector<RGB<uint8_t>> table(resolution, 0x000000_rgb);
+	if (stops.size() >= 2)
+	{
+		std::sort(stops.begin(), stops.end());
+		auto stop = -1;
+		for (auto i = 0; i < resolution; ++i)
+		{
+			auto point = i / (float)resolution;
+			while (stop < (int)stops.size() - 1 && stops[stop + 1].point <= point)
+			{
+				++stop;
+			}
+			if (stop < 0 || stop >= (int)stops.size() - 1)
+			{
+				continue;
+			}
+			auto &left = stops[stop];
+			auto &right = stops[stop + 1];
+			auto f = (point - left.point) / (right.point - left.point);
+			table[i] = left.color.Blend(right.color.WithAlpha(uint8_t(f * 0xFF)));
+		}
+	}
+	return table;
+}

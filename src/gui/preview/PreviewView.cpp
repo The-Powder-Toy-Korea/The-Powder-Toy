@@ -30,6 +30,7 @@
 #include "Format.h"
 #include "Misc.h"
 
+#include "graphics/VideoBuffer.h"
 #include "SimulationConfig.h"
 #include <SDL.h>
 
@@ -574,7 +575,9 @@ void PreviewView::NotifySaveChanged(PreviewModel * sender)
 		if(save->GetGameSave())
 		{
 			missingElements = save->GetGameSave()->missingElements;
-			savePreview = SaveRenderer::Ref().Render(save->GetGameSave(), false, true);
+			RendererSettings rendererSettings;
+			rendererSettings.decorationLevel = RendererSettings::decorationAntiClickbait;
+			savePreview = SaveRenderer::Ref().Render(save->GetGameSave(), true, rendererSettings);
 			if (savePreview)
 				savePreview->ResizeToFit(RES / 2, true);
 			missingElementsButton->Visible = missingElements;

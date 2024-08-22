@@ -8,7 +8,7 @@
 #include "graphics/Renderer.h"
 #include "gui/Style.h"
 #include "simulation/ElementDefs.h"
-#include "simulation/SimulationData.h"
+#include "simulation/SimulationSettings.h"
 #include "client/Client.h"
 #include "gui/dialogues/ConfirmPrompt.h"
 #include "gui/dialogues/InformationMessage.h"
@@ -139,7 +139,7 @@ OptionsView::OptionsView() : ui::Window(ui::Point(-1, -1), ui::Point(320, 340))
 		}});
 		ambientAirTemp->SetLimit(9);
 		scrollPanel->AddChild(ambientAirTemp);
-		ambientAirTempPreview = new ui::Button(ui::Point(Size.X-31, currentY), ui::Point(16, 16), "", "Preview");
+		ambientAirTempPreview = new ui::Button(ui::Point(Size.X-31, currentY), ui::Point(16, 16), "", "미리 보기");
 		scrollPanel->AddChild(ambientAirTempPreview);
 		auto *label = new ui::Label(ui::Point(8, currentY), ui::Point(Size.X-105, 16), "기본 복사열 온도");
 		label->Appearance.HorizontalAlign = ui::Appearance::AlignLeft;
@@ -318,6 +318,9 @@ OptionsView::OptionsView() : ui::Window(ui::Point(-1, -1), ui::Point(320, 340))
 		}
 		currentY += 4; // and then undo the undo
 	}
+	threadedRendering = addCheckbox(0, "렌더링 스레드 분리", "화려한 효과를 사용할 때 프레임 속도가 증가할 수 있습니다.", [this] {
+		c->SetThreadedRendering(threadedRendering->GetChecked());
+	});
 	decoSpace = addDropDown("도색 도구에서 사용할 색 공간", {
 		{ "sRGB", DECOSPACE_SRGB },
 		{ "Linear", DECOSPACE_LINEAR },
@@ -501,6 +504,7 @@ void OptionsView::NotifySettingsChanged(OptionsModel * sender)
 	includePressure->SetChecked(sender->GetIncludePressure());
 	perfectCircle->SetChecked(sender->GetPerfectCircle());
 	graveExitsConsole->SetChecked(sender->GetGraveExitsConsole());
+	threadedRendering->SetChecked(sender->GetThreadedRendering());
 	momentumScroll->SetChecked(sender->GetMomentumScroll());
 }
 

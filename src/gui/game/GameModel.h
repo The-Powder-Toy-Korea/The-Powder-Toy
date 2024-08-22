@@ -2,6 +2,7 @@
 #include "gui/interface/Colour.h"
 #include "client/User.h"
 #include "gui/interface/Point.h"
+#include "graphics/RendererSettings.h"
 #include <vector>
 #include <deque>
 #include <memory>
@@ -66,6 +67,7 @@ private:
 
 	Simulation * sim;
 	Renderer * ren;
+	RendererSettings rendererSettings;
 	std::vector<Menu*> menuList;
 	std::vector<QuickOption*> quickOptions;
 	int activeMenu;
@@ -128,6 +130,7 @@ private:
 	void SaveToSimParameters(const GameSave &saveData);
 
 	std::optional<int> queuedVote;
+	bool threadedRendering = false;
 
 public:
 	GameModel();
@@ -141,6 +144,11 @@ public:
 	inline int GetTemperatureScale() const
 	{
 		return temperatureScale;
+	}
+	void SetThreadedRendering(bool newThreadedRendering);
+	bool GetThreadedRendering() const
+	{
+		return threadedRendering;
 	}
 	void SetAmbientAirTemperature(float ambientAirTemp);
 	float GetAmbientAirTemperature();
@@ -231,6 +239,10 @@ public:
 	void SetUser(User user);
 	Simulation * GetSimulation();
 	Renderer * GetRenderer();
+	RendererSettings &GetRendererSettings()
+	{
+		return rendererSettings;
+	}
 	void SetZoomEnabled(bool enabled);
 	bool GetZoomEnabled();
 	void SetZoomSize(int size);
@@ -273,4 +285,6 @@ public:
 	void UpdateUpTo(int upTo);
 	void BeforeSim();
 	void AfterSim();
+
+	GameView *view = nullptr;
 };

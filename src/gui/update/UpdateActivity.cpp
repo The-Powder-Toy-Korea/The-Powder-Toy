@@ -93,7 +93,7 @@ private:
 		std::vector<char> res(uncompressedLength);
 
 		int dstate;
-		dstate = BZ2_bzBuffToBuffDecompress(&res[0], (unsigned *)&uncompressedLength, &data[8], data.size()-8, 0, 0);
+		dstate = BZ2_bzBuffToBuffDecompress(res.data(), (unsigned *)&uncompressedLength, &data[8], data.size()-8, 0, 0);
 		if (dstate)
 		{
 			return niceNotifyError(String::Build("업데이트 파일을 압축 해제할 수 없음: ", dstate));
