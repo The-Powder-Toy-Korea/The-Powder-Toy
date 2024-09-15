@@ -5,11 +5,11 @@
 #include "common/String.h"
 #include "MenuSection.h"
 #include "BuiltinGOL.h"
-#include "SimTool.h"
 #include "Element.h"
 #include "Particle.h"
 #include "WallType.h"
 #include "graphics/gcache_item.h"
+#include "CustomGOLData.h"
 #include <cstdint>
 #include <vector>
 #include <array>
@@ -141,23 +141,11 @@ constexpr int NGT_BRAN = 23;
 constexpr auto REPLACE_MODE    = UINT32_C(0x00000001);
 constexpr auto SPECIFIC_DELETE = UINT32_C(0x00000002);
 
-struct CustomGOLData
-{
-	int rule, colour1, colour2;
-	String nameString, ruleString;
-
-	inline bool operator <(const CustomGOLData &other) const
-	{
-		return rule < other.rule;
-	}
-};
-
 class SimulationData : public ExplicitSingleton<SimulationData>
 {
 public:
 	std::array<Element, PT_NUM> elements;
 	std::array<gcache_item, PT_NUM> graphicscache;
-	std::vector<SimTool> tools;
 	std::vector<wall_type> wtypes;
 	std::vector<menu_section> msections;
 	char can_move[PT_NUM][PT_NUM];

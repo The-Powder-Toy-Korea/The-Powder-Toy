@@ -10,7 +10,8 @@
 #include "Notification.h"
 #include "QuickOptions.h"
 #include "RenderPreset.h"
-#include "Tool.h"
+#include "tool/PropertyTool.h"
+#include "tool/GOLTool.h"
 
 #include "GameControllerEvents.h"
 #include "lua/CommandInterface.h"
@@ -339,11 +340,6 @@ ui::Point GameController::PointTranslate(ui::Point point)
 	return gameModel->AdjustZoomCoords(point);
 }
 
-ui::Point GameController::PointTranslateNoClamp(ui::Point point)
-{
-	return gameModel->AdjustZoomCoords(point);
-}
-
 ui::Point GameController::NormaliseBlockCoord(ui::Point point)
 {
 	return (point/CELL)*CELL;
@@ -370,7 +366,7 @@ void GameController::DrawLine(int toolSelection, ui::Point point1, ui::Point poi
 	if (!activeTool)
 		return;
 	activeTool->Strength = 1.0f;
-	activeTool->DrawLine(sim, cBrush, point1, point2);
+	activeTool->DrawLine(sim, cBrush, point1, point2, false);
 }
 
 void GameController::DrawFill(int toolSelection, ui::Point point)
@@ -434,6 +430,16 @@ void GameController::ToolClick(int toolSelection, ui::Point point)
 	if (!activeTool)
 		return;
 	activeTool->Click(sim, cBrush, point);
+}
+
+void GameController::ToolDrag(int toolSelection, ui::Point point1, ui::Point point2)
+{
+	Simulation * sim = gameModel->GetSimulation();
+	Tool * activeTool = gameModel->GetActiveTool(toolSelection);
+	Brush &cBrush = gameModel->GetBrush();
+	if (!activeTool)
+		return;
+	activeTool->Drag(sim, cBrush, point1, point2);
 }
 
 static Rect<int> SaneSaveRect(Vec2<int> point1, Vec2<int> point2)
@@ -1093,7 +1099,7 @@ int GameController::GetNumMenus(bool onlyEnabled)
 
 void GameController::RebuildFavoritesMenu()
 {
-	gameModel->BuildFavoritesMenu();
+	gameModel->BuildMenus();
 }
 
 Tool * GameController::GetActiveTool(int selection)
@@ -1124,7 +1130,7 @@ void GameController::SetActiveTool(int toolSelection, Tool * tool)
 	}
 	if(tool->Identifier == "DEFAULT_UI_ADDLIFE")
 	{
-		((GOLTool *)tool)->OpenWindow(gameModel->GetSimulation(), toolSelection);
+		static_cast<GOLTool *>(tool)->OpenWindow(gameModel->GetSimulation(), toolSelection);
 	}
 }
 
@@ -1320,24 +1326,15 @@ void GameController::OpenProfile()
 
 void GameController::OpenElementSearch()
 {
-	std::vector<Tool*> toolList;
-	std::vector<Menu*> menuList = gameModel->GetMenuList();
-	for (auto i = 0U; i < menuList.size(); ++i)
+	std::vector<Tool *> toolList;
+	for (auto &ptr : gameModel->GetTools())
 	{
-		if (i == SC_FAVORITES)
+		if (!ptr)
 		{
 			continue;
 		}
-		auto *mm = menuList[i];
-		if(!mm)
-			continue;
-		std::vector<Tool*> menuToolList = mm->GetToolList();
-		if(!menuToolList.size())
-			continue;
-		toolList.insert(toolList.end(), menuToolList.begin(), menuToolList.end());
+		toolList.push_back(ptr.get());
 	}
-	std::vector<Tool*> hiddenTools = gameModel->GetUnlistedTools();
-	toolList.insert(toolList.end(), hiddenTools.begin(), hiddenTools.end());
 	new ElementSearchActivity(this, toolList);
 }
 
@@ -1713,9 +1710,9 @@ bool GameController::GetMouseClickRequired()
 	return gameModel->GetMouseClickRequired();
 }
 
-void GameController::RemoveCustomGOLType(const ByteString &identifier)
+void GameController::RemoveCustomGol(const ByteString &identifier)
 {
-	gameModel->RemoveCustomGOLType(identifier);
+	gameModel->RemoveCustomGol(identifier);
 }
 
 void GameController::BeforeSimDraw()
@@ -1731,4 +1728,12 @@ void GameController::AfterSimDraw()
 bool GameController::ThreadedRenderingAllowed()
 {
 	return gameModel->GetThreadedRendering() && !commandInterface->HaveSimGraphicsEventHandlers();
+}
+
+void GameController::SetToolIndex(ByteString identifier, std::optional<int> index)
+{
+	if (commandInterface)
+	{
+		commandInterface->SetToolIndex(identifier, index);
+	}
 }

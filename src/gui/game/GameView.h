@@ -61,7 +61,6 @@ private:
 	bool wallBrush;
 	bool toolBrush;
 	bool decoBrush;
-	bool windTool;
 	int toolIndex;
 	int currentSaveType;
 	int lastMenu;
@@ -172,6 +171,7 @@ private:
 	void DispatchRendererThread();
 	std::unique_ptr<RenderableSimulation> rendererThreadSim;
 	std::unique_ptr<RendererFrame> rendererThreadResult;
+	int foundParticles = 0;
 	const RendererFrame *rendererFrame = nullptr;
 
 public:
@@ -215,7 +215,7 @@ public:
 	void NotifySaveChanged(GameModel * sender);
 	void NotifyBrushChanged(GameModel * sender);
 	void NotifyMenuListChanged(GameModel * sender);
-	void NotifyToolListChanged(GameModel * sender);
+	void NotifyActiveMenuToolListChanged(GameModel * sender);
 	void NotifyActiveToolsChanged(GameModel * sender);
 	void NotifyUserChanged(GameModel * sender);
 	void NotifyZoomChanged(GameModel * sender);

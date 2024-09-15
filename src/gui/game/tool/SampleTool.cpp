@@ -1,16 +1,14 @@
-#include "Tool.h"
-
+#include "SampleTool.h"
+#include "PropertyTool.h"
+#include "GOLTool.h"
 #include "graphics/Graphics.h"
 #include "graphics/Renderer.h"
-
 #include "gui/game/GameModel.h"
 #include "gui/game/GameView.h"
 #include "gui/interface/Colour.h"
-
 #include "simulation/Simulation.h"
 #include "simulation/ElementClasses.h"
-
-#include "Menu.h"
+#include "gui/game/Menu.h"
 
 std::unique_ptr<VideoBuffer> SampleTool::GetIcon(int toolID, Vec2<int> size)
 {
@@ -66,8 +64,9 @@ void SampleTool::Draw(Simulation * sim, Brush const &brush, ui::Point position)
 			}
 			else
 			{
-				if (auto elementTool = gameModel.GetElementTool(part->type))
-					gameModel.SetActiveTool(0, elementTool);
+				auto &sd = SimulationData::Ref();
+				auto &elements = sd.elements;
+				gameModel.SetActiveTool(0, gameModel.GetToolFromIdentifier(elements[part->type].Identifier));
 			}
 		}
 	}

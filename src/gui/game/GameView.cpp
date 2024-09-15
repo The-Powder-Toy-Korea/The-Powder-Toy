@@ -1,7 +1,8 @@
 #include "GameView.h"
 
 #include "Brush.h"
-#include "DecorationTool.h"
+#include "tool/DecorationTool.h"
+#include "tool/PropertyTool.h"
 #include "Favorite.h"
 #include "Format.h"
 #include "GameController.h"
@@ -21,6 +22,7 @@
 #include "common/platform/Platform.h"
 #include "graphics/Graphics.h"
 #include "graphics/Renderer.h"
+#include "graphics/VideoBuffer.h"
 #include "gui/Style.h"
 #include "simulation/ElementClasses.h"
 #include "simulation/ElementDefs.h"
@@ -178,7 +180,6 @@ GameView::GameView():
 	wallBrush(false),
 	toolBrush(false),
 	decoBrush(false),
-	windTool(false),
 	toolIndex(0),
 	currentSaveType(0),
 	lastMenu(-1),
@@ -535,7 +536,7 @@ void GameView::NotifyLastToolChanged(GameModel * sender)
 	}
 }
 
-void GameView::NotifyToolListChanged(GameModel * sender)
+void GameView::NotifyActiveMenuToolListChanged(GameModel * sender)
 {
 	for (size_t i = 0; i < menuButtons.size(); i++)
 	{
@@ -554,7 +555,7 @@ void GameView::NotifyToolListChanged(GameModel * sender)
 		delete toolButtons[i];
 	}
 	toolButtons.clear();
-	std::vector<Tool*> toolList = sender->GetToolList();
+	std::vector<Tool*> toolList = sender->GetActiveMenuToolList();
 	int currentX = 0;
 	for (size_t i = 0; i < toolList.size(); i++)
 	{
@@ -564,7 +565,7 @@ void GameView::NotifyToolListChanged(GameModel * sender)
 
 		//get decotool texture manually, since it changes depending on it's own color
 		if (sender->GetActiveMenu() == SC_DECO)
-			tempTexture = ((DecorationTool*)tool)->GetIcon(tool->ToolID, Vec2(26, 14));
+			tempTexture = static_cast<DecorationTool *>(tool)->GetIcon(tool->ToolID, Vec2(26, 14));
 
 		if (tempTexture)
 			tempButton = new ToolButton(ui::Point(currentX, YRES+1), ui::Point(30, 18), "", tool->Identifier, tool->Description);
@@ -603,7 +604,7 @@ void GameView::NotifyToolListChanged(GameModel * sender)
 					else if (identifier.BeginsWith("DEFAULT_PT_LIFECUST_"))
 					{
 						new ConfirmPrompt("사용자 지정 생명 게임 제거", identifier.Substr(20).FromUtf8() + "을(를) 정말로 제거하시겠습니까?", { [this, identifier]() {
-							c->RemoveCustomGOLType(identifier);
+							c->RemoveCustomGol(identifier);
 						} });
 					}
 				}
@@ -730,7 +731,7 @@ void GameView::NotifyColourSelectorColourChanged(GameModel * sender)
 {
 	colourPicker->Appearance.BackgroundInactive = sender->GetColourSelectorColour();
 	colourPicker->Appearance.BackgroundHover = sender->GetColourSelectorColour();
-	NotifyToolListChanged(sender);
+	NotifyActiveMenuToolListChanged(sender);
 }
 
 void GameView::NotifyRendererChanged(GameModel * sender)
@@ -1154,7 +1155,6 @@ void GameView::OnMouseDown(int x, int y, unsigned button)
 				return;
 			Tool *lastTool = c->GetActiveTool(toolIndex);
 			c->SetLastTool(lastTool);
-			windTool = lastTool->Identifier == "DEFAULT_UI_WIND";
 			decoBrush = lastTool->Identifier.BeginsWith("DEFAULT_DECOR_");
 
 			UpdateDrawMode();
@@ -1725,12 +1725,12 @@ void GameView::OnTick(float dt)
 		{
 			c->DrawFill(toolIndex, c->PointTranslate(currentMouse));
 		}
-		else if (windTool && drawMode == DrawLine)
+		else if (drawMode == DrawLine)
 		{
 			ui::Point drawPoint2 = currentMouse;
 			if (altBehaviour)
 				drawPoint2 = lineSnapCoords(c->PointTranslate(drawPoint1), currentMouse);
-			c->DrawLine(toolIndex, c->PointTranslate(drawPoint1), c->PointTranslateNoClamp(drawPoint2));
+			c->ToolDrag(toolIndex, c->PointTranslate(drawPoint1), c->PointTranslate(drawPoint2));
 		}
 	}
 
@@ -2160,6 +2160,7 @@ void GameView::OnDraw()
 	{
 		StartRendererThread();
 		WaitForRendererThread();
+		foundParticles = ren->GetFoundParticles();
 		*rendererThreadResult = ren->GetVideo();
 		rendererFrame = rendererThreadResult.get();
 		DispatchRendererThread();
@@ -2169,6 +2170,7 @@ void GameView::OnDraw()
 		PauseRendererThread();
 		ren->ApplySettings(*rendererSettings);
 		RenderSimulation(*sim, true);
+		foundParticles = ren->GetFoundParticles();
 		rendererFrame = &ren->GetVideo();
 	}
 
@@ -2176,7 +2178,7 @@ void GameView::OnDraw()
 
 	if (showBrush && selectMode == SelectNone && (!zoomEnabled || zoomCursorFixed) && activeBrush && (isMouseDown || (currentMouse.X >= 0 && currentMouse.X < XRES && currentMouse.Y >= 0 && currentMouse.Y < YRES)))
 	{
-		ui::Point finalCurrentMouse = windTool ? c->PointTranslateNoClamp(currentMouse) : c->PointTranslate(currentMouse);
+		ui::Point finalCurrentMouse = c->PointTranslate(currentMouse);
 		ui::Point initialDrawPoint = drawPoint1;
 
 		if (wallBrush)
@@ -2515,7 +2517,7 @@ void GameView::OnDraw()
 		if (showDebug)
 		{
 			if (rendererSettings->findingElement)
-				fpsInfo << ", 입자량: " << rendererSettings->foundElements << "/" << sample.NumParts;
+				fpsInfo << ", 입자량: " << foundParticles << "/" << sample.NumParts;
 			else
 				fpsInfo << ", 총 입자량: " << sample.NumParts;
 		}

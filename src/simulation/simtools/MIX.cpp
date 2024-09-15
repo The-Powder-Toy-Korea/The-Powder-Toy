@@ -3,18 +3,18 @@
 #include "common/tpt-rand.h"
 #include <cmath>
 
-static int perform(Simulation * sim, Particle * cpart, int x, int y, int brushX, int brushY, float strength);
+static int perform(SimTool *tool, Simulation * sim, Particle * cpart, int x, int y, int brushX, int brushY, float strength);
 
 void SimTool::Tool_MIX()
 {
 	Identifier = "DEFAULT_TOOL_MIX";
 	Name = "MIX";
 	Colour = 0xFFD090_rgb;
-	Description = "입자를 섞습니다.";
+	Description = "섞기 도구: 입자를 섞습니다.";
 	Perform = &perform;
 }
 
-static int perform(Simulation * sim, Particle * cpart, int x, int y, int brushX, int brushY, float strength)
+static int perform(SimTool *tool, Simulation * sim, Particle * cpart, int x, int y, int brushX, int brushY, float strength)
 {
 	auto &sd = SimulationData::CRef();
 	auto &elements = sd.elements;

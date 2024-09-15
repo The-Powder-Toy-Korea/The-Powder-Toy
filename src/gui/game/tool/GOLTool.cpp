@@ -1,11 +1,9 @@
-#include "Tool.h"
-
+#include "GOLTool.h"
 #include "prefs/GlobalPrefs.h"
 #include "client/Client.h"
 #include "common/tpt-rand.h"
 #include "simulation/GOLString.h"
 #include "simulation/SimulationData.h"
-
 #include "gui/Style.h"
 #include "gui/interface/Button.h"
 #include "gui/interface/Label.h"
@@ -14,7 +12,6 @@
 #include "gui/colourpicker/ColourPickerActivity.h"
 #include "gui/dialogues/ErrorMessage.h"
 #include "gui/game/GameModel.h"
-
 #include "graphics/Graphics.h"
 
 class GOLWindow: public ui::Window
@@ -162,9 +159,7 @@ void GOLWindow::validate()
 		prefs.Set("CustomGOL.Rule", ruleString);
 	}
 
-	auto color1 = (((highColour.Red << 8) | highColour.Green) << 8) | highColour.Blue;
-	auto color2 = (((lowColour.Red << 8) | lowColour.Green) << 8) | lowColour.Blue;
-	if (!AddCustomGol(ruleString, nameString, color1, color2))
+	if (!gameModel.AddCustomGol(ruleString, nameString, highColour.NoAlpha(), lowColour.NoAlpha()))
 	{
 		new ErrorMessage("새 생명 게임을 추가할 수 없음", "이 이름을 이미 사용하였습니다.");
 		return;
