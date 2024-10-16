@@ -28,7 +28,7 @@ void Element::Element_PSCN()
 	Weight = 100;
 
 	HeatConduct = 251;
-	Description = "P형 실리콘: 아무 전도체에 전류를 전달할 수 있습니다.";
+	Description = "P형 실리콘: 아무 도체에 전류를 전달할 수 있습니다.";
 
 	Properties = TYPE_SOLID|PROP_CONDUCTS|PROP_LIFE_DEC;
 

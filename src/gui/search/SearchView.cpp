@@ -38,7 +38,7 @@ SearchView::SearchView():
 	pageTextbox = new ui::Textbox(ui::Point(283, WINDOWH-18), ui::Point(41, 16), "");
 	pageTextbox->SetActionCallback({ [this] { textChanged(); } });
 	pageTextbox->SetInputType(ui::Textbox::Number);
-	pageLabel = new ui::Label(ui::Point(0, WINDOWH-18), ui::Point(30, 16), "페이지"); //page [TEXTBOX] of y
+	pageLabel = new ui::Label(ui::Point(0, WINDOWH-18), ui::Point(34, 16), "페이지"); //page [TEXTBOX] of y
 	pageLabel->Appearance.HorizontalAlign = ui::Appearance::AlignRight;
 	pageCountLabel = new ui::Label(ui::Point(WINDOWW/2+6, WINDOWH-18), ui::Point(50, 16), "");
 	pageCountLabel->Appearance.HorizontalAlign = ui::Appearance::AlignLeft;
@@ -169,33 +169,34 @@ void SearchView::doSearch()
 void SearchView::searchHelp()
 {
 	String info =
-		"Type in the search bar to begin automatically searching save titles and tags. Search terms are ORed together.\n"
+		"검색 상자에 입력하면 세이브 제목과 태그를 자동으로 검색합니다. 검색어는 OR 방식으로 묶입니다.\n"
 		"\n"
-		"Sorting: click the \bt\"By Votes\"\bw / \bt\"By Date\"\bw buttons to change the order saves are displayed in\n"
-		"Categories: If you're logged in, use \bt\"My Own\"\bw to view only your own saves, or click the Star icon to view your favorited saves\n"
-		"Date Range: Click the dropdown to the right of the search box to select the date range for your search\n"
+		"정렬: \bt\"좋아요\"\bw/\bt\"날짜\"\bw 단추를 눌러 세이브가 표시되는 순서를 바꿉니다.\n"
+		"카테고리: The Powder Toy 계정에 로그인한 경우, \bt\"내 세이브\"\bw 단추를 눌러 내 세이브만을 보거나, 별 모양 아이콘을 클릭하여 즐겨 찾는 세이브를 볼 수 있습니다.\n"
+		"날짜 범위: 검색 상자 오른쪽의 드롭다운 메뉴를 눌러 검색할 날짜 범위를 선택합니다.\n"
 		"\n"
-		"Special search terms:\n"
-		"\btid:#######\bw - search by save id\n"
-		"\bthistory:#######\bw - see previous versions for a save id\n"
-		"\btuser:XXXXXX\bw - search for saves by a specific user\n"
-		"\btbefore:YYYY-MM-DD\bw - all saves originally created before a certain date. Month and Day portions are both optional\n"
-		"\btafter:YYYY-MM-DD\bw - all saves originally created after a certain date. Month and Day portions are both optional\n"
+		"특수 검색어:\n"
+		"\btid:#######\bw - 세이브 ID로 검색합니다.\n"
+		"\bthistory:#######\bw - 해당 ID 세이브의 이전 버전을 검색합니다.\n"
+		"\btuser:XXXXXX\bw - 해당 사용자의 세이브를 검색합니다.\n"
+		"\btbefore:YYYY-MM-DD\bw - 해당 날짜 이전에 생성된 모든 세이브를 검색합니다.\n"
+		"\btafter:YYYY-MM-DD\bw - 해당 날짜 이후에 생성된 모든 세이브를 검색합니다.\n"
+		"위 두 검색어에서 월 또는 일은 선택적으로 입력할 수 있습니다.\n"
 		"\n"
-		"Advanced search:\n"
-		"Start a search with \bt~\bw to do an advanced search. This search works across save titles, descriptions, usernames, and tags, rather than only save titles and tags."
-		" It also concatenates search terms with AND instead of OR.\n"
-		"Use \bt|\bw to OR together search terms, for example \bg~bomb | nuke | explosive\bw\n"
-		"Use \bt!\bw to negate terms, for example \bg~city !destroyable !desert\bw\n"
-		"Use \bt\"\bw to create multi-word search terms, for example \bg~\"power plant\" uran | plut | polo\bw\n"
-		"Use \bt@title\bw to limit search to only save titles, for example \bg~@title subframe\bw\n"
-		"Use \bt@description\bw to limit search to only save descriptions, for example \bg~@description \"No description provided\"\bw\n"
-		"Use \bt@user\bw to limit search to only specific users, for example \bg~@user 117n00b | Catelite | Fluttershy @title laser\bw\n"
-		"Use \bt@tags\bw to limit search to just save tags, for example \bg~@tags resistcup @title printer | @description spider before:2024-06\bw\n"
-		"Parenthesis can be used to further complicate your searches. For example: \bg~(@user MG99 @description complete) | (@user goglesq @tags tutorial)\bw"
+		"고급 검색:\n"
+		"\bt~\bw를 입력하여 고급 검색을 시작합니다. 이 검색은 세이브 제목과 태그뿐만 아니라 설명, 사용자 이름 전체에 걸쳐 작동합니다."
+		" 또한 검색어가 OR 대신 AND 방식으로 묶입니다.\n"
+		"\bt|\bw를 사용하여 검색어를 OR 방식으로 묶습니다. 예시: \bg~bomb | nuke | explosive\bw\n"
+		"\bt!\bw를 사용하여 검색 대상에서 제외합니다. 예시: \bg~city !destroyable !desert\bw\n"
+		"\bt\"\bw를 사용하여 다중 단어 검색어를 사용합니다.\n예시: \bg~\"power plant\" uran | plut | polo\bw\n"
+		"\bt@title\bw을 사용하여 세이브 제목만을 검색합니다. 예시: \bg~@title subframe\bw\n"
+		"\bt@description\bw을 사용하여 세이브 설명만을 검색합니다.\n예시: \bg~@description \"No description provided\"\bw\n"
+		"\bt@user\bw를 사용하여 해당 사용자만을 검색합니다.\n예시: \bg~@user 117n00b | Catelite | Fluttershy @title laser\bw\n"
+		"\bt@tags\bw를 사용하여 세이브 태그만을 검색합니다.\n예시: \bg~@tags resistcup @title printer | @description spider before:2024-06\bw\n"
+		"괄호를 사용하여 더욱 복잡한 검색도 수행할 수 있습니다.\n예시: \bg~(@user MG99 @description complete) | (@user goglesq @tags tutorial)\bw"
 		;
 
-	new InformationMessage("Search Help", info, true);
+	new InformationMessage("검색 도움말", info, true);
 }
 
 void SearchView::clearSearch()
@@ -264,7 +265,7 @@ void SearchView::NotifySortChanged(SearchModel * sender)
 	else
 	{
 		sortButton->SetToggleState(true);
-		sortButton->SetText("날짜 순");
+		sortButton->SetText("날짜");
 		sortButton->SetIcon(IconDateSort);
 	}
 }

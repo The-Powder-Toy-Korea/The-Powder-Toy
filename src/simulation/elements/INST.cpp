@@ -27,7 +27,7 @@ void Element::Element_INST()
 	Weight = 100;
 
 	HeatConduct = 251;
-	Description = "고속 전도체: 전류를 PSCN에서 받아 NSCN으로 즉시 전송할 수 있습니다.";
+	Description = "고속 도체: 전류를 PSCN에서 받아 NSCN으로 즉시 전송할 수 있습니다.";
 
 	Properties = TYPE_SOLID|PROP_LIFE_DEC;
 
