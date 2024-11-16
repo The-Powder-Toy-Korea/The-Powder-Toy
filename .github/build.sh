@@ -32,6 +32,8 @@ x86_64-windows-msvc-static) ;;
 x86_64-windows-msvc-dynamic) ;;
 x86-windows-msvc-static) ;;
 x86-windows-msvc-dynamic) ;;
+aarch64-windows-msvc-static) ;;
+aarch64-windows-msvc-dynamic) ;;
 x86_64-darwin-macos-static) ;;
 x86_64-darwin-macos-dynamic) ;;
 aarch64-darwin-macos-static) ;;
@@ -86,11 +88,14 @@ if [[ -z ${BSH_NO_PACKAGES-} ]]; then
 		else
 			sudo apt install libluajit-5.1-dev libcurl4-openssl-dev libfftw3-dev zlib1g-dev libsdl2-dev libbz2-dev libjsoncpp-dev
 		fi
+		if [[ $PACKAGE_MODE == appimage ]]; then
+			sudo apt install libfuse2
+		fi
 		;;
 	darwin)
-		brew install pkg-config binutils
+		brew install binutils # pkg-config
 		if [[ $BSH_STATIC_DYNAMIC != static ]]; then
-			brew install luajit curl fftw zlib sdl2 bzip2 jsoncpp
+			brew install luajit fftw zlib sdl2 bzip2 jsoncpp # curl
 		fi
 		;;
 	emscripten)
@@ -116,10 +121,11 @@ function inplace_sed() {
 
 if [[ $BSH_HOST_PLATFORM-$BSH_HOST_LIBC == windows-msvc ]]; then
 	case $BSH_HOST_ARCH in
-	x86_64) vs_env_arch=x64;;
-	x86)    vs_env_arch=x86;;
+	x86_64)  vs_env_arch=x64      ; vcvars_ver=14.29;;
+	x86)     vs_env_arch=x86      ; vcvars_ver=14.29;;
+	aarch64) vs_env_arch=x64_arm64; vcvars_ver=14.29;;
 	esac
-	VS_ENV_PARAMS=$vs_env_arch$'\t'-vcvars_ver=14.1
+	VS_ENV_PARAMS=$vs_env_arch$'\t'-vcvars_ver=${BSH_VS_TOOLSET-$vcvars_ver}
 	. ./.github/vs-env.sh
 elif [[ $BSH_HOST_PLATFORM == darwin ]]; then
 	# may need export SDKROOT=$(xcrun --show-sdk-path --sdk macosx11.1)
@@ -225,14 +231,10 @@ if [[ $PACKAGE_MODE == backendvs ]]; then
 fi
 if [[ $BSH_STATIC_DYNAMIC == static ]]; then
 	meson_configure+=$'\t'-Dstatic=prebuilt
-	if [[ $BSH_HOST_PLATFORM == windows ]]; then
-		if [[ $BSH_HOST_LIBC == msvc ]]; then
-			meson_configure+=$'\t'-Db_vscrt=static_from_buildtype
-		else
-			c_link_args+=\'-static\',
-			c_link_args+=\'-static-libgcc\',
-			c_link_args+=\'-static-libstdc++\',
-		fi
+	if [[ $BSH_HOST_PLATFORM-$BSH_HOST_LIBC == windows-mingw ]]; then
+		c_link_args+=\'-static\',
+		c_link_args+=\'-static-libgcc\',
+		c_link_args+=\'-static-libstdc++\',
 	elif [[ $BSH_HOST_PLATFORM == linux ]]; then
 		c_link_args+=\'-static-libgcc\',
 		c_link_args+=\'-static-libstdc++\',
@@ -309,6 +311,9 @@ if [[ $BSH_DEBUG_RELEASE-$BSH_STATIC_DYNAMIC == release-static ]]; then
 fi
 if [[ $BSH_HOST_PLATFORM-$BSH_HOST_ARCH == darwin-aarch64 ]]; then
 	meson_configure+=$'\t'--cross-file=.github/macaa64-ghactions.ini
+fi
+if [[ $BSH_HOST_ARCH-$BSH_HOST_PLATFORM-$BSH_HOST_LIBC == aarch64-windows-msvc ]]; then
+	meson_configure+=$'\t'--cross-file=.github/msvca64-ghactions.ini
 fi
 if [[ $BSH_HOST_PLATFORM == emscripten ]]; then
 	meson_configure+=$'\t'--cross-file=.github/emscripten-ghactions.ini
@@ -435,7 +440,7 @@ if [[ $BSH_BUILD_PLATFORM == windows ]] && [[ $PACKAGE_MODE != backendvs ]]; the
 	cat $APP_EXE.exe.rsp
 	[[ $ninja_code == 0 ]];
 	echo # rsps don't usually have a newline at the end
-	if [[ "$BSH_HOST_PLATFORM-$BSH_STATIC_DYNAMIC $BSH_BUILD_PLATFORM" == "windows-dynamic windows" ]]; then
+	if [[ "$BSH_HOST_PLATFORM-$BSH_STATIC_DYNAMIC $BSH_BUILD_PLATFORM" == "windows-dynamic windows" ]] && [[ $BSH_HOST_ARCH != aarch64 ]]; then
 		# on windows we provide the dynamic dependencies also; makes sense to check for their presence
 		# msys ldd works fine but only on windows build machines
 		if ldd $APP_EXE | grep "not found"; then

@@ -220,11 +220,18 @@ require_preload__["tptmp.client"] = function()
 				return prof:should_ignore_mouse()
 			end,
 		})
-		local cmd = localcmd.new({
+		local cmd
+		cmd = localcmd.new({
 			window_status_func = get_window_status,
 			window_set_floating_func = set_floating,
 			client_func = function()
 				return cli and cli:registered() and cli
+			end,
+			cancel_reconnect_func = function(params)
+				if should_reconnect_at then
+					should_reconnect_at = nil
+					return true
+				end
 			end,
 			new_client_func = function(params)
 				should_reconnect_at = nil
@@ -236,8 +243,9 @@ require_preload__["tptmp.client"] = function()
 				params.get_qa_func       = get_qa
 				params.log_event_func    = log_event
 				params.handle_error_func = handle_error
-				params.should_reconnect_func = function()
+				params.should_reconnect_func = function(reconnect_info)
 					should_reconnect = true
+					cmd:reconnect_commit(reconnect_info)
 				end
 				params.should_not_reconnect_func = function()
 					should_reconnect = false
@@ -265,7 +273,9 @@ require_preload__["tptmp.client"] = function()
 			begin_chat_func = begin_chat,
 			window_status_func = get_window_status,
 			sync_func = function()
+				win:set_silent(true)
 				cmd:parse("/sync")
+				win:set_silent(false)
 			end,
 		})
 	
@@ -712,6 +722,15 @@ require_preload__["tptmp.client.client"] = function()
 		return bit.rshift(d24, 12), bit.band(d24, 0xFFF)
 	end
 	
+	function client_i:read_elemlist_()
+		local length = self:read_24be_()
+		local cstr = self:read_str24_()
+		return {
+			length = length,
+			cstr = cstr,
+		}
+	end
+	
 	function client_i:handle_disconnect_reason_2_()
 		local reason = self:read_str8_()
 		self.should_not_reconnect_func_()
@@ -776,11 +795,14 @@ require_preload__["tptmp.client.client"] = function()
 			local id = self:read_bytes_(1)
 			local nick = self:read_str8_()
 			self:add_member_(id, nick)
+			local member = self.id_to_member[id]
+			self:parse_elemlist_(member)
 		end
+		self:rehash_supported_elements_()
 		self:reformat_nicks_()
 		self:push_names("Joined ")
 		self.window_:set_subtitle("room", self.room_name_)
-		self.localcmd_:reconnect_commit({
+		self.should_reconnect_func_({
 			room = self.room_name_,
 			host = self.host_,
 			port = self.port_,
@@ -790,8 +812,21 @@ require_preload__["tptmp.client.client"] = function()
 	end
 	
 	function client_i:user_sync_()
-		self:send_elemlist(util.element_identifiers())
 		self.profile_:user_sync()
+	end
+	
+	function client_i:parse_elemlist_(member)
+		local elemlist = self:read_elemlist_()
+		local str, _, err = bz2.decompress(elemlist.cstr, elemlist.length)
+		local identifiers = {}
+		if str then
+			for name in str:gmatch("[^ ]+") do
+				identifiers[name] = true
+			end
+		else
+			self.log_event_func_(colours.commonstr.error .. "Failed to parse supported element list from " .. member.formatted_nick .. colours.commonstr.error .. ": " .. err)
+		end
+		member.identifiers = identifiers
 	end
 	
 	function client_i:handle_join_17_()
@@ -799,8 +834,10 @@ require_preload__["tptmp.client.client"] = function()
 		local nick = self:read_str8_()
 		self:add_member_(id, nick)
 		self:reformat_nicks_()
-		self.window_:backlog_push_join(self.id_to_member[id].formatted_nick)
+		local member = self.id_to_member[id]
+		self:parse_elemlist_(member)
 		self:rehash_supported_elements_()
+		self.window_:backlog_push_join(member.formatted_nick)
 		self:user_sync_()
 	end
 	
@@ -836,23 +873,6 @@ require_preload__["tptmp.client.client"] = function()
 	function client_i:handle_server_22_()
 		local msg = self:read_str8_()
 		self.window_:backlog_push_server(msg)
-	end
-	
-	function client_i:handle_elemlist_23_()
-		local member = self:member_prefix_()
-		local length = self:read_24be_()
-		local cstr = self:read_str24_()
-		local str, _, err = bz2.decompress(cstr, length)
-		local identifiers = {}
-		if str then
-			for name in str:gmatch("[^ ]+") do
-				identifiers[name] = true
-			end
-		else
-			self.log_event_func_(colours.commonstr.error .. "Failed to parse supported element list from " .. member.formatted_nick .. colours.commonstr.error .. ": " .. err)
-		end
-		member.identifiers = identifiers
-		self:rehash_supported_elements_()
 	end
 	
 	function client_i:rehash_supported_elements_()
@@ -1414,7 +1434,19 @@ require_preload__["tptmp.client.client"] = function()
 			conn_status = self:read_bytes_(1)
 		end
 		if conn_status == 1 then
-			self.should_reconnect_func_()
+			do
+				local arr = {}
+				for name in pairs(util.element_identifiers()) do
+					table.insert(arr, name)
+				end
+				local str = table.concat(arr, " ")
+				local cstr = bz2.compress(str)
+				self:write_elemlist_({
+					length = #str,
+					cstr = cstr,
+				})
+				self:write_flush_()
+			end
 			self.registered_ = true
 			self.nick_ = self:read_str8_()
 			self:reformat_nicks_()
@@ -1451,19 +1483,6 @@ require_preload__["tptmp.client.client"] = function()
 	function client_i:send_say3rd(str)
 		self:write_("\20")
 		self:write_str8_(str)
-		self:write_flush_()
-	end
-	
-	function client_i:send_elemlist(identifiers)
-		self:write_("\23")
-		local arr = {}
-		for name in pairs(identifiers) do
-			table.insert(arr, name)
-		end
-		local str = table.concat(arr, " ")
-		local cstr = bz2.compress(str)
-		self:write_24be_(#str)
-		self:write_str24_(cstr)
 		self:write_flush_()
 	end
 	
@@ -2038,6 +2057,11 @@ require_preload__["tptmp.client.client"] = function()
 		self:write_24be_(bit.bor(bit.lshift(x, 12), y))
 	end
 	
+	function client_i:write_elemlist_(elemlist)
+		self:write_24be_(elemlist.length)
+		self:write_str24_(elemlist.cstr)
+	end
+	
 	function client_i:nick()
 		return self.nick_
 	end
@@ -2112,7 +2136,6 @@ require_preload__["tptmp.client.client"] = function()
 			status_                    = "ready",
 			window_                    = params.window,
 			profile_                   = params.profile,
-			localcmd_                  = params.localcmd,
 			initial_room_              = params.initial_room,
 			set_id_func_               = params.set_id_func,
 			get_id_func_               = params.get_id_func,
@@ -2224,7 +2247,7 @@ require_preload__["tptmp.client.config"] = function()
 
 	local common_config = require("tptmp.common.config")
 	
-	local versionstr = "v2.1.0"
+	local versionstr = "v2.1.2"
 	
 	local config = {
 		-- ***********************************************************************
@@ -2604,7 +2627,6 @@ require_preload__["tptmp.client.localcmd"] = function()
 							port = port and tonumber(port:gsub("[^0-9]", ""):sub(1, 5)) or config.default_port,
 							secure = secure,
 							initial_room = words[2],
-							localcmd = localcmd,
 						})
 						new_cli:nick_colour_seed(localcmd.nick_colour_seed_)
 						new_cli:fps_sync(localcmd.fps_sync_)
@@ -2622,6 +2644,8 @@ require_preload__["tptmp.client.localcmd"] = function()
 					local cli = localcmd.client_func_()
 					if cli then
 						localcmd.kill_client_func_()
+					elseif localcmd.cancel_reconnect_func_() then
+						localcmd.window_:backlog_push_error("Reconnection attempt cancelled")
 					else
 						localcmd.window_:backlog_push_error("Not connected, cannot disconnect")
 					end
@@ -2789,6 +2813,7 @@ require_preload__["tptmp.client.localcmd"] = function()
 			window_status_func_ = params.window_status_func,
 			window_set_floating_func_ = params.window_set_floating_func,
 			client_func_ = params.client_func,
+			cancel_reconnect_func_ = params.cancel_reconnect_func,
 			new_client_func_ = params.new_client_func,
 			kill_client_func_ = params.kill_client_func,
 			nick_colour_seed_ = manager.get("nickColourSeed", "0"),
@@ -3665,14 +3690,14 @@ require_preload__["tptmp.client.profile.vanilla"] = function()
 		end
 		if self.registered_func_() then
 			local new_tool = self.xidr_.to_tool[self[index_to_lrax[self.last_toolslot_]]]
-		local new_tool_id = self[index_to_lraxid[self.last_toolslot_]]
+			local new_tool_id = self[index_to_lraxid[self.last_toolslot_]]
 			if self.last_toolid_ ~= new_tool_id then
-			if not new_tool_id:find("^DEFAULT_PT_LIFECUST_") then
-				if toolwarn_tools[new_tool] then
-					self.display_toolwarn_[toolwarn_tools[new_tool]] = true
+				if not new_tool_id:find("^DEFAULT_PT_LIFECUST_") then
+					if toolwarn_tools[new_tool] then
+						self.display_toolwarn_[toolwarn_tools[new_tool]] = true
 						self.display_toolwarn_identifier_ = new_tool_id
+					end
 				end
-			end
 				self.last_toolid_ = new_tool_id
 			end
 		end
@@ -3891,28 +3916,30 @@ require_preload__["tptmp.client.profile.vanilla"] = function()
 							if key == "unknown" then
 								local identifier = self.display_toolwarn_identifier_
 								local ids = self.xidr_unsupported_[identifier]
-								local display_as = identifier
-								if elem[identifier] then
-									display_as = elem.property(elem[identifier], "Name")
-								end
-								self.log_event_func_(("The following users in the room cannot use %s, please avoid using it while connected"):format(display_as))
-								local str = ""
-								local function commit()
-									self.log_event_func_(" - " .. str)
-									str = ""
-								end
-								for i = 1, #ids do
-									str = str .. self.client_.id_to_member[ids[i]].formatted_nick
-									if i < #ids then
-										str = str .. "\bw, "
+								if ids then -- TODO: remove; this should always be a table but there's some sequencing problem that I can't figure out
+									local display_as = identifier
+									if elem[identifier] then
+										display_as = elem.property(elem[identifier], "Name")
 									end
-									if gfx.textSize(str) > gfx.WIDTH / 2 then
-										commit()
+									self.log_event_func_(("The following users in the room cannot use %s, please avoid using it while connected"):format(display_as))
+									local str = ""
+									local function commit()
+										self.log_event_func_(" - " .. str)
+										str = ""
 									end
+									for i = 1, #ids do
+										str = str .. self.client_.id_to_member[ids[i]].formatted_nick
+										if i < #ids then
+											str = str .. "\bw, "
+										end
+										if gfx.textSize(str) > gfx.WIDTH / 2 then
+											commit()
+										end
+									end
+									commit()
 								end
-								commit()
 							else
-							self.log_event_func_(toolwarn_messages[key])
+								self.log_event_func_(toolwarn_messages[key])
 							end
 						end
 					end
@@ -4781,28 +4808,28 @@ require_preload__["tptmp.client.util"] = function()
 			return false
 		end)
 		local xid_first = {}
-	local xid_class = {}
+		local xid_class = {}
 		local from_tool = {}
 		local to_tool = {}
-	for i = 1, #tools do
-		local xtype = 0x2000 + i
-		local tool = tools[i]
-		from_tool[tool] = xtype
-		to_tool[xtype] = tool
-		local class = tool:match("^[^_]+_(.-)_[^_]+$")
-		xid_class[xtype] = class
-		xid_first[class] = math.min(xid_first[class] or math.huge, xtype)
-	end
+		for i = 1, #tools do
+			local xtype = 0x2000 + i
+			local tool = tools[i]
+			from_tool[tool] = xtype
+			to_tool[xtype] = tool
+			local class = tool:match("^[^_]+_(.-)_[^_]+$")
+			xid_class[xtype] = class
+			xid_first[class] = math.min(xid_first[class] or math.huge, xtype)
+		end
 		for key, value in pairs(supported) do
 			assert(not to_tool[key])
 			assert(not from_tool[value])
 			to_tool[key] = value
 			from_tool[value] = key
-	end
-	local unknown_xid = 0x3FFF
-	assert(not to_tool[unknown_xid])
-	from_tool["UNKNOWN"] = unknown_xid
-	to_tool[unknown_xid] = "UNKNOWN"
+		end
+		local unknown_xid = 0x3FFF
+		assert(not to_tool[unknown_xid])
+		from_tool["UNKNOWN"] = unknown_xid
+		to_tool[unknown_xid] = "UNKNOWN"
 		local function assign_if_supported(tbl)
 			local res = {}
 			for key, value in pairs(tbl) do
@@ -4814,28 +4841,28 @@ require_preload__["tptmp.client.util"] = function()
 		end
 		local create_override = assign_if_supported({
 			[ "DEFAULT_PT_STKM" ] = function(rx, ry, c)
-			return 0, 0, c
-		end,
+				return 0, 0, c
+			end,
 			[ "DEFAULT_PT_LIGH" ] = function(rx, ry, c)
-			local tmp = rx + ry
-			if tmp > 55 then
-				tmp = 55
-			end
-			return 0, 0, c + bit.lshift(tmp, PMAPBITS)
-		end,
+				local tmp = rx + ry
+				if tmp > 55 then
+					tmp = 55
+				end
+				return 0, 0, c + bit.lshift(tmp, PMAPBITS)
+			end,
 			[ "DEFAULT_PT_TESC" ] = function(rx, ry, c)
-			local tmp = rx * 4 + ry * 4 + 7
-			if tmp > 300 then
-				tmp = 300
-			end
-			return rx, ry, c + bit.lshift(tmp, PMAPBITS)
-		end,
+				local tmp = rx * 4 + ry * 4 + 7
+				if tmp > 300 then
+					tmp = 300
+				end
+				return rx, ry, c + bit.lshift(tmp, PMAPBITS)
+			end,
 			[ "DEFAULT_PT_STKM2" ] = function(rx, ry, c)
-			return 0, 0, c
-		end,
+				return 0, 0, c
+			end,
 			[ "DEFAULT_PT_FIGH" ] = function(rx, ry, c)
-			return 0, 0, c
-		end,
+				return 0, 0, c
+			end,
 		})
 		local no_flood = assign_if_supported({
 			[ "DEFAULT_PT_SPRK"  ] = true,
@@ -5687,6 +5714,9 @@ require_preload__["tptmp.client.window"] = function()
 	end
 	
 	function window_i:backlog_push_(collect, important)
+		if self.silent_ then
+			important = false
+		end
 		self.backlog_unique_ = self.backlog_unique_ + 1
 		local msg = {
 			unique = self.backlog_unique_,
@@ -5713,6 +5743,10 @@ require_preload__["tptmp.client.window"] = function()
 			end
 			self:backlog_push_(collect, important)
 		end
+	end
+	
+	function window_i:backlog_mark_seen()
+		self.backlog_last_seen_ = self.backlog_last_wrapped_
 	end
 	
 	function window_i:backlog_bump_marker()
@@ -5787,7 +5821,7 @@ require_preload__["tptmp.client.window"] = function()
 		local now = socket.gettime()
 	
 		if self.backlog_auto_scroll_ and not floating then
-			self.backlog_last_seen_ = self.backlog_last_wrapped_
+			self:backlog_mark_seen()
 		else
 			if self.backlog_last_seen_ < self.backlog_unique_ and not self.backlog_enable_marker_ then
 				self:backlog_bump_marker()
@@ -5972,10 +6006,15 @@ require_preload__["tptmp.client.window"] = function()
 		end
 	end
 	
+	function window_i:hide_window()
+		self:backlog_mark_seen()
+		self.hide_window_func_()
+	end
+	
 	function window_i:handle_mouseup(px, py, button)
 		if button == ui.SDL_BUTTON_LEFT then
 			if self.close_active_ then
-				self.hide_window_func_()
+				self:hide_window()
 			end
 			self.resizer_active_ = false
 			self.dragger_active_ = false
@@ -6044,7 +6083,7 @@ require_preload__["tptmp.client.window"] = function()
 						self:input_reset_()
 					end
 					if shift or force_hide then
-						self.hide_window_func_()
+						self:hide_window()
 					end
 				else
 					self.in_focus = true
@@ -6175,7 +6214,7 @@ require_preload__["tptmp.client.window"] = function()
 						if self.hide_when_chat_done then
 							self.hide_when_chat_done = false
 							self.in_focus = false
-							self.hide_window_func_()
+							self:hide_window()
 						end
 					end
 				else
@@ -6262,7 +6301,7 @@ require_preload__["tptmp.client.window"] = function()
 			return not modkey_scan[scan]
 		else
 			if not ctrl and not alt and scan == ui.SDL_SCANCODE_ESCAPE then
-				self.hide_window_func_()
+				self:hide_window()
 				return true
 			end
 		end
@@ -6315,6 +6354,10 @@ require_preload__["tptmp.client.window"] = function()
 		local pos_x = math.min(math.max(1, new_pos_x), sim.XRES - width)
 		local pos_y = math.min(math.max(1, new_pos_y), sim.YRES - height)
 		return width, height, pos_x, pos_y
+	end
+	
+	function window_i:set_silent(silent)
+		self.silent_ = silent
 	end
 	
 	function window_i:set_size(new_width, new_height)
@@ -6519,6 +6562,7 @@ require_preload__["tptmp.client.window"] = function()
 		local title_width = gfx.textSize(title)
 		local win = setmetatable({
 			in_focus = false,
+			silent_ = false,
 			pos_x_ = pos_x,
 			pos_y_ = pos_y,
 			width_ = width,
@@ -6802,7 +6846,7 @@ require_preload__["tptmp.common.config"] = function()
 		-- ***********************************************************************
 	
 		-- * Protocol version, between 0 and 254. 255 is reserved for future use.
-		version = 33,
+		version = 34,
 	
 		-- * Client-to-server message size limit, between 0 and 255, the latter
 		--   limit being imposted by the protocol.

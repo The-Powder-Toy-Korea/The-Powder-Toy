@@ -32,8 +32,8 @@ Engine::~Engine()
 	//Dispose of any Windows.
 	while (!windows.empty())
 	{
-		delete windows.top();
-		windows.pop();
+		delete windows.back();
+		windows.pop_back();
 	}
 }
 
@@ -66,13 +66,20 @@ void Engine::Exit()
 
 void Engine::ConfirmExit()
 {
-	new ConfirmPrompt("The Powder Toy에서 나가기", "정말로 프로그램을 종료하시겠습니까?", { [] {
-		ui::Engine::Ref().Exit();
-	} });
+	if (!confirmingExit)
+	{
+		confirmingExit = true;
+		new ConfirmPrompt("The Powder Toy에서 나가기", "정말로 프로그램을 종료하시겠습니까?", { [] {
+			ui::Engine::Ref().Exit();
+		}, [this] {
+			confirmingExit = false;
+		} });
+	}
 }
 
 void Engine::ShowWindow(Window * window)
 {
+	CloseWindowAndEverythingAbove(window);
 	if (state_)
 		ignoreEvents = true;
 	if(window->Position.X==-1)
@@ -95,7 +102,7 @@ void Engine::ShowWindow(Window * window)
 		frozenGraphics.emplace(FrozenGraphics{0, std::make_unique<pixel []>(g->Size().X * g->Size().Y)});
 		std::copy_n(g->Data(), g->Size().X * g->Size().Y, frozenGraphics.top().screen.get());
 
-		windows.push(state_);
+		windows.push_back(state_);
 		mousePositions.push(ui::Point(mousex_, mousey_));
 	}
 	if(state_)
@@ -105,13 +112,31 @@ void Engine::ShowWindow(Window * window)
 
 }
 
+void Engine::CloseWindowAndEverythingAbove(Window *window)
+{
+	if (window == state_)
+	{
+		CloseWindow();
+		return;
+	}
+	auto it = std::find(windows.begin(), windows.end(), window);
+	if (it != windows.end())
+	{
+		auto toPop = int(windows.end() - it) + 1; // including state_
+		for (int i = 0; i < toPop; ++i)
+		{
+			CloseWindow();
+		}
+	}
+}
+
 int Engine::CloseWindow()
 {
 	if(!windows.empty())
 	{
 		frozenGraphics.pop();
-		state_ = windows.top();
-		windows.pop();
+		state_ = windows.back();
+		windows.pop_back();
 
 		if(state_)
 			state_->DoFocus();

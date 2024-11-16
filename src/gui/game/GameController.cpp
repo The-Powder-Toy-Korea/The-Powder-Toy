@@ -83,12 +83,11 @@ GameController::GameController():
 	HasDone(false)
 {
 	gameView = new GameView();
-	gameModel = new GameModel();
+	gameModel = new GameModel(gameView); // mvc is a joke
 	gameModel->BuildQuickOptionMenu(this);
 
 	gameView->AttachController(this);
 	gameModel->AddObserver(gameView);
-	gameModel->view = gameView; // mvc is a joke
 
 	gameView->SetDebugHUD(GlobalPrefs::Ref().Get("Renderer.DebugMode", false));
 
@@ -150,10 +149,8 @@ GameController::~GameController()
 	}
 	commandInterface.reset();
 	delete gameModel;
-	if (gameView->CloseActiveWindow())
-	{
-		delete gameView;
-	}
+	gameView->CloseActiveWindow();
+	delete gameView;
 }
 
 bool GameController::HistoryRestore()
