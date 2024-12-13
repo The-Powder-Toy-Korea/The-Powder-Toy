@@ -147,10 +147,11 @@ GameController::~GameController()
 	{
 		delete *iter;
 	}
-	commandInterface.reset();
-	delete gameModel;
+	gameView->PauseRendererThread();
 	gameView->CloseActiveWindow();
 	delete gameView;
+	commandInterface.reset();
+	delete gameModel;
 }
 
 bool GameController::HistoryRestore()
@@ -1121,14 +1122,7 @@ void GameController::SetActiveTool(int toolSelection, Tool * tool)
 			gameModel->GetRendererSettings().gravityZonesEnabled = true;
 		}
 	}
-	if (tool->Identifier == "DEFAULT_UI_PROPERTY")
-	{
-		static_cast<PropertyTool *>(tool)->OpenWindow(gameModel->GetSimulation(), std::nullopt);
-	}
-	if(tool->Identifier == "DEFAULT_UI_ADDLIFE")
-	{
-		static_cast<GOLTool *>(tool)->OpenWindow(gameModel->GetSimulation(), toolSelection);
-	}
+	tool->Select(toolSelection);
 }
 
 void GameController::SetActiveTool(int toolSelection, ByteString identifier)

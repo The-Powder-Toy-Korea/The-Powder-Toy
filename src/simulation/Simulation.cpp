@@ -296,6 +296,7 @@ void Simulation::Load(const GameSave *save, bool includePressure, Vec2<int> bloc
 			gravIn.mask   [bpos] = save->gravMask  [spos];
 			gravOut.forceX[bpos] = save->gravForceX[spos];
 			gravOut.forceY[bpos] = save->gravForceY[spos];
+			gravForceRecalc = true; // gravOut changed outside DispatchNewtonianGravity
 		}
 	}
 	if (useGravityMaps)
@@ -1438,14 +1439,11 @@ int Simulation::try_move(int i, int x, int y, int nx, int ny)
 
 		if (pmap[ny][nx] && ID(pmap[ny][nx]) == ri)
 			pmap[ny][nx] = 0;
-		parts[ri].x += float(x - nx);
-		parts[ri].y += float(y - ny);
+		parts[ri].x = parts[i].x;
+		parts[ri].y = parts[i].y;
 		int rx = int(parts[ri].x + 0.5f);
 		int ry = int(parts[ri].y + 0.5f);
-		// This check will never fail unless the pmap array has already been corrupted via another bug
-		// In that case, r's position is inaccurate (not actually at nx/ny) and rx/ry may be out of bounds
-		if (InBounds(rx, ry))
-			pmap[ry][rx] = PMAP(ri, parts[ri].type);
+		pmap[ry][rx] = PMAP(ri, parts[ri].type);
 	}
 	return 1;
 }
@@ -3740,6 +3738,7 @@ void Simulation::BeforeSim()
 			air->update_airh();
 
 		DispatchNewtonianGravity();
+		// gravIn is now potentially garbage, which is ok, we were going to clear it for the frame anyway
 		for (auto p : gravIn.mass.Size().OriginRect())
 		{
 			gravIn.mass[p] = 0.f;
@@ -3956,7 +3955,8 @@ void Simulation::DispatchNewtonianGravity()
 {
 	if (grav)
 	{
-		grav->Exchange(gravOut, gravIn);
+		grav->Exchange(gravOut, gravIn, gravForceRecalc);
+		gravForceRecalc = false;
 	}
 }
 
@@ -3964,9 +3964,12 @@ void Simulation::ResetNewtonianGravity(GravityInput newGravIn, GravityOutput new
 {
 	gravIn = newGravIn;
 	DispatchNewtonianGravity();
+	// gravIn is now potentially garbage, set it again
+	gravIn = newGravIn;
 	if (grav)
 	{
 		gravOut = newGravOut;
+		gravForceRecalc = true; // gravOut changed outside DispatchNewtonianGravity
 		gravWallChanged = true;
 	}
 }
@@ -3977,11 +3980,15 @@ void Simulation::EnableNewtonianGravity(bool enable)
 	{
 		grav.reset();
 		gravOut = {}; // reset as per the invariant
+		gravForceRecalc = true; // gravOut changed outside DispatchNewtonianGravity
 	}
 	if (!grav && enable)
 	{
 		grav = Gravity::Create();
+		auto oldGravIn = gravIn;
 		DispatchNewtonianGravity();
+		// gravIn is now potentially garbage, set it again
+		gravIn = std::move(oldGravIn);
 	}
 }
 

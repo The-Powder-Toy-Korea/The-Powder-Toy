@@ -286,6 +286,9 @@ OptionsView::OptionsView() : ui::Window(ui::Point(-1, -1), ui::Point(320, 340))
 		fastquit = addCheckbox(0, "빠른 종료", "닫기 단추를 누르면 바로 종료합니다.", [this] {
 			c->SetFastQuit(fastquit->GetChecked());
 		});
+		globalQuit = addCheckbox(0, "빠른 종료 단축키", "[Ctrl] + [Q]를 누르면 바로 종료합니다.", [this] {
+			c->SetGlobalQuit(globalQuit->GetChecked());
+		});
 	}
 	showAvatars = addCheckbox(0, "프로필 사진 표시", "댓글에서 프로필 사진을 표시합니다.", [this] {
 		c->SetShowAvatars(showAvatars->GetChecked());
@@ -331,7 +334,7 @@ OptionsView::OptionsView() : ui::Window(ui::Point(-1, -1), ui::Point(320, 340))
 	});
 
 	currentY += 4;
-	if (ALLOW_DATA_FOLDER)
+	if constexpr (ALLOW_DATA_FOLDER)
 	{
 		auto *dataFolderButton = new ui::Button(ui::Point(10, currentY), ui::Point(90, 16), "데이터 폴더 열기");
 		dataFolderButton->SetActionCallback({ [] {
@@ -346,16 +349,19 @@ OptionsView::OptionsView() : ui::Window(ui::Point(-1, -1), ui::Point(320, 340))
 			}
 		} });
 		scrollPanel->AddChild(dataFolderButton);
-		auto *migrationButton = new ui::Button(ui::Point(Size.X - 178, currentY), ui::Point(163, 16), "공유 데이터 디렉터리로 이동");
-		migrationButton->SetActionCallback({ [] {
-			ByteString from = Platform::originalCwd;
-			ByteString to = Platform::sharedCwd;
-			new ConfirmPrompt("디렉터리를 이동합니까?", "\bt" + from.FromUtf8() + "\bw\n에 있는 모든 스탬프, 세이브, 스크립트를 디렉터리\n\bt" + to.FromUtf8() + "\n\bw로 이동합니다.\n\n", { [from, to]() {
-				String ret = Client::Ref().DoMigration(from, to);
-				new InformationMessage("이동됨", ret, false);
+		if constexpr (SHARED_DATA_FOLDER)
+		{
+			auto *migrationButton = new ui::Button(ui::Point(Size.X - 178, currentY), ui::Point(163, 16), "공유 데이터 디렉터리로 이동");
+			migrationButton->SetActionCallback({ [] {
+				ByteString from = Platform::originalCwd;
+				ByteString to = Platform::sharedCwd;
+				new ConfirmPrompt("디렉터리를 이동합니까?", "\bt" + from.FromUtf8() + "\bw\n에 있는 모든 스탬프, 세이브, 스크립트를 디렉터리\n\bt" + to.FromUtf8() + "\n\bw로 이동합니다.\n\n" + "이미 존재하는 파일은 덮어쓰지 않습니다.", { [from, to]() {
+					String ret = Client::Ref().DoMigration(from, to);
+					new InformationMessage("이동 완료", ret, false);
+				} });
 			} });
-		} });
-		scrollPanel->AddChild(migrationButton);
+			scrollPanel->AddChild(migrationButton);
+		}
 		currentY += 26;
 	}
 	{
@@ -494,6 +500,10 @@ void OptionsView::NotifySettingsChanged(OptionsModel * sender)
 	if (fastquit)
 	{
 		fastquit->SetChecked(sender->GetFastQuit());
+	}
+	if (globalQuit)
+	{
+		globalQuit->SetChecked(sender->GetGlobalQuit());
 	}
 	if (nativeClipoard)
 	{

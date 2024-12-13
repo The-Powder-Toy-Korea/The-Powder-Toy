@@ -60,6 +60,7 @@ struct CustomElement
 
 struct CustomTool
 {
+	bool valid = false;
 	LuaSmartRef perform;
 	LuaSmartRef click;
 	LuaSmartRef drag;
@@ -67,6 +68,7 @@ struct CustomTool
 	LuaSmartRef drawLine;
 	LuaSmartRef drawRect;
 	LuaSmartRef drawFill;
+	LuaSmartRef select;
 };
 
 class LuaScriptInterface : public CommandInterface
