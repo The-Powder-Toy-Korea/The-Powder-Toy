@@ -2,9 +2,9 @@
 #include "client/http/Request.h"
 #include "common/platform/Platform.h"
 #include "common/tpt-rand.h"
-#include "compat.lua.h"
-#include "scrptmgr.lua.h"
-#include "multimgr.lua.h"
+#include "compat_lua.h"
+#include "scrptmgr_lua.h"
+#include "multimgr_lua.h"
 #include "gui/game/GameController.h"
 #include "gui/game/GameModel.h"
 #include "gui/game/GameView.h"
@@ -178,15 +178,18 @@ LuaScriptInterface::LuaScriptInterface(GameController *newGameController, GameMo
 		ref.Assign(L, -1);
 		lua_pop(L, 1);
 	}
-	if (luaL_loadbuffer(L, (const char *)compat_lua, compat_lua_size, "@[built-in compat.lua]") || tpt_lua_pcall(L, 0, 0, 0, eventTraitNone))
+	auto compatSpan = compat_lua.AsCharSpan();
+	auto scriptManagerSpan = scrptmgr_lua.AsCharSpan();
+	auto multiplayManagerSpan = multimgr_lua.AsCharSpan();
+	if (luaL_loadbuffer(L, compatSpan.data(), compatSpan.size(), "@[built-in compat.lua]") || tpt_lua_pcall(L, 0, 0, 0, eventTraitNone))
 	{
 		throw std::runtime_error(ByteString("내장 Compat을 불러오는 데 실패함: ") + tpt_lua_toByteString(L, -1));
 	}
-	if (luaL_loadbuffer(L, (const char *)scrptmgr_lua, scrptmgr_lua_size, "@[built-in scrptmgr.lua]") || tpt_lua_pcall(L, 0, 0, 0, eventTraitNone))
+	if (luaL_loadbuffer(L, scriptManagerSpan.data(), scriptManagerSpan.size(), "@[built-in scrptmgr.lua]") || tpt_lua_pcall(L, 0, 0, 0, eventTraitNone))
 	{
 		throw std::runtime_error(ByteString("내장 스크립트 관리자를 불러오는 데 실패함: ") + tpt_lua_toByteString(L, -1));
 	}
-	if (luaL_loadbuffer(L, (const char *)multimgr_lua, multimgr_lua_size, "@[built-in multimgr.lua]") || tpt_lua_pcall(L, 0, 0, 0, eventTraitNone))
+	if (luaL_loadbuffer(L, multiplayManagerSpan.data(), multiplayManagerSpan.size(), "@[built-in multimgr.lua]") || tpt_lua_pcall(L, 0, 0, 0, eventTraitNone))
 	{
 		throw std::runtime_error(ByteString("내장 멀티플레이 관리자를 불러오는 데 실패함: ") + tpt_lua_toByteString(L, -1));
 	}

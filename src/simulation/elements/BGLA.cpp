@@ -29,7 +29,7 @@ void Element::Element_BGLA()
 	HeatConduct = 150;
 	Description = "유리 가루: 유리가 높은 압력에 의해 파괴될 때 생성되는 질량이 높은 물질입니다. 융해될 수 있습니다.";
 
-	Properties = TYPE_PART | PROP_NEUTPASS | PROP_PHOTPASS | PROP_HOT_GLOW;
+	Properties = TYPE_PART | PROP_NEUTPASS | PROP_PHOTPASS | PROP_HOT_GLOW | PROP_DEADLY;
 
 	LowPressure = IPL;
 	LowPressureTransition = NT;

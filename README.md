@@ -1,4 +1,4 @@
-The Powder Toy - 2024년 4월
+The Powder Toy - 2024년 12월
 ==========================
 
 [The Powder Toy 공식 홈페이지](https://powdertoy.co.uk/Download.html)에서 최신 버전의 오리지널 TPT를 내려받으십시오.
@@ -23,7 +23,7 @@ TPT를 빌드하려면 [The Powder Toy 공식 위키](https://powdertoy.co.uk/Wi
 * 스타니슬라프 K. 스코브로네크 (오리지널 The Powder Toy를 디자인함)
 * 사이먼 로버트쇼
 * 스크레사노우 사벨리
-* cracker64
+* Pilihp64
 * Catelite
 * 빅토리아 호일
 * 네이선 커즌스

@@ -10,6 +10,7 @@
 #include "simulation/ElementDefs.h"
 #include "simulation/SimulationSettings.h"
 #include "client/Client.h"
+#include "gui/credits/Credits.h"
 #include "gui/dialogues/ConfirmPrompt.h"
 #include "gui/dialogues/InformationMessage.h"
 #include "gui/interface/Button.h"
@@ -17,6 +18,7 @@
 #include "gui/interface/DropDown.h"
 #include "gui/interface/Engine.h"
 #include "gui/interface/Label.h"
+#include "gui/interface/Separator.h"
 #include "gui/interface/Textbox.h"
 #include "gui/interface/DirectionSelector.h"
 #include "PowderToySDL.h"
@@ -41,19 +43,7 @@ OptionsView::OptionsView() : ui::Window(ui::Point(-1, -1), ui::Point(320, 340))
 		AddComponent(label);
 	}
 
-	class Separator : public ui::Component
-	{
-		public:
-		Separator(ui::Point position, ui::Point size) : Component(position, size){}
-		virtual ~Separator(){}
-
-		void Draw(const ui::Point& screenPos) override
-		{
-			GetGraphics()->BlendRect(RectSized(screenPos, Size), 0xFFFFFF_rgb .WithAlpha(180));
-		}		
-	};
-	
-	Separator *tmpSeparator = new Separator(ui::Point(0, 22), ui::Point(Size.X, 1));
+	auto *tmpSeparator = new ui::Separator(ui::Point(0, 22), ui::Point(Size.X, 1));
 	AddComponent(tmpSeparator);
 
 	scrollPanel = new ui::ScrollPanel(ui::Point(1, 23), ui::Point(Size.X-2, Size.Y-39));
@@ -103,7 +93,7 @@ OptionsView::OptionsView() : ui::Window(ui::Point(-1, -1), ui::Point(320, 340))
 	};
 	auto addSeparator = [this, &currentY]() {
 		currentY += 6;
-		auto *separator = new Separator(ui::Point(0, currentY), ui::Point(Size.X, 1));
+		auto *separator = new ui::Separator(ui::Point(0, currentY), ui::Point(Size.X, 1));
 		scrollPanel->AddChild(separator);
 		currentY += 11;
 	};
@@ -180,7 +170,7 @@ OptionsView::OptionsView() : ui::Window(ui::Point(-1, -1), ui::Point(320, 340))
 				tempLabel->Appearance.VerticalAlign = ui::Appearance::AlignMiddle;
 				AddComponent(tempLabel);
 
-				Separator * tempSeparator = new Separator(ui::Point(0, 22), ui::Point(Size.X, 1));
+				auto * tempSeparator = new ui::Separator(ui::Point(0, 22), ui::Point(Size.X, 1));
 				AddComponent(tempSeparator);
 
 				labelValues = new ui::Label(ui::Point(0, (radius * 5 / 2) + 37), ui::Point(Size.X, 16), String::Build(Format::Precision(1), "X:", x, " Y:", y, " 세기:", std::hypot(x, y)));
@@ -364,6 +354,22 @@ OptionsView::OptionsView() : ui::Window(ui::Point(-1, -1), ui::Point(320, 340))
 		}
 		currentY += 26;
 	}
+
+	{
+		addSeparator();
+
+		auto *creditsButton = new ui::Button(ui::Point(10, currentY), ui::Point(90, 16), "크레딧");
+		creditsButton->SetActionCallback({ [] {
+			auto *credits = new Credits();
+			ui::Engine::Ref().ShowWindow(credits);
+		} });
+		scrollPanel->AddChild(creditsButton);
+
+		addLabel(5, " - The Powder Toy 기여자를 확인합니다.");
+		currentY += 13;
+	}
+
+
 	{
 		ui::Button *ok = new ui::Button(ui::Point(0, Size.Y-16), ui::Point(Size.X, 16), "확인");
 		ok->SetActionCallback({ [this] {
@@ -380,7 +386,7 @@ void OptionsView::UpdateAmbientAirTempPreview(float airTemp, bool isValid)
 {
 	if (isValid)
 	{
-		ambientAirTempPreview->Appearance.BackgroundInactive = RGB<uint8_t>::Unpack(HeatToColour(airTemp)).WithAlpha(0xFF);
+		ambientAirTempPreview->Appearance.BackgroundInactive = RGB::Unpack(HeatToColour(airTemp)).WithAlpha(0xFF);
 		ambientAirTempPreview->SetText("");
 	}
 	else
