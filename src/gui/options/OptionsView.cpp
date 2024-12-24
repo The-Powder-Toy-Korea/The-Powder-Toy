@@ -276,7 +276,7 @@ OptionsView::OptionsView() : ui::Window(ui::Point(-1, -1), ui::Point(320, 340))
 		fastquit = addCheckbox(0, "빠른 종료", "닫기 단추를 누르면 바로 종료합니다.", [this] {
 			c->SetFastQuit(fastquit->GetChecked());
 		});
-		globalQuit = addCheckbox(0, "빠른 종료 단축키", "[Ctrl] + [Q]를 누르면 바로 종료합니다.", [this] {
+		globalQuit = addCheckbox(0, "빠른 종료 단축키", "<Ctrl+Q>로 어디에서든 바로 종료합니다.", [this] {
 			c->SetGlobalQuit(globalQuit->GetChecked());
 		});
 	}
@@ -295,7 +295,7 @@ OptionsView::OptionsView() : ui::Window(ui::Point(-1, -1), ui::Point(320, 340))
 	perfectCircle = addCheckbox(0, "정확한 원 브러시", "브러시의 원을 정확하게 조정합니다.", [this] {
 		c->SetPerfectCircle(perfectCircle->GetChecked());
 	});
-	graveExitsConsole = addCheckbox(0, "[Esc] 밑의 키로 콘솔 끄기", "이 키가 귀하의 자판에서 [0]일 경우 비활성화하십시오.", [this] {
+	graveExitsConsole = addCheckbox(0, "<Esc> 밑의 키로 콘솔 끄기", "이 키가 귀하의 자판에서 <0> 키일 경우 비활성화하십시오.", [this] {
 		c->SetGraveExitsConsole(graveExitsConsole->GetChecked());
 	});
 	if constexpr (PLATFORM_CLIPBOARD)
@@ -311,7 +311,7 @@ OptionsView::OptionsView() : ui::Window(ui::Point(-1, -1), ui::Point(320, 340))
 		}
 		currentY += 4; // and then undo the undo
 	}
-	threadedRendering = addCheckbox(0, "렌더링 스레드 분리", "화려한 효과를 사용할 때 프레임 속도가 증가할 수 있습니다.", [this] {
+	threadedRendering = addCheckbox(0, "렌더링 스레드 분리", "화려한 효과를 사용할 때 프레임률이 증가할 수 있습니다.", [this] {
 		c->SetThreadedRendering(threadedRendering->GetChecked());
 	});
 	decoSpace = addDropDown("도색 도구에서 사용할 색 공간", {
@@ -354,18 +354,21 @@ OptionsView::OptionsView() : ui::Window(ui::Point(-1, -1), ui::Point(320, 340))
 		}
 		currentY += 26;
 	}
+	redirectStd = addCheckbox(0, "오류 및 기타 메시지를 파일로 저장", "개발자가 문제 해결을 위하여 이것을 요청할 수 있습니다.", [this] {
+		c->SetRedirectStd(redirectStd->GetChecked());
+	});
 
 	{
 		addSeparator();
 
-		auto *creditsButton = new ui::Button(ui::Point(10, currentY), ui::Point(90, 16), "크레딧");
+		auto *creditsButton = new ui::Button(ui::Point(10, currentY), ui::Point(90, 16), "제작진");
 		creditsButton->SetActionCallback({ [] {
 			auto *credits = new Credits();
 			ui::Engine::Ref().ShowWindow(credits);
 		} });
 		scrollPanel->AddChild(creditsButton);
 
-		addLabel(5, " - The Powder Toy 기여자를 확인합니다.");
+		addLabel(5, " - The Powder Toy의 기여자를 확인합니다.");
 		currentY += 13;
 	}
 
@@ -522,6 +525,7 @@ void OptionsView::NotifySettingsChanged(OptionsModel * sender)
 	graveExitsConsole->SetChecked(sender->GetGraveExitsConsole());
 	threadedRendering->SetChecked(sender->GetThreadedRendering());
 	momentumScroll->SetChecked(sender->GetMomentumScroll());
+	redirectStd->SetChecked(sender->GetRedirectStd());
 }
 
 void OptionsView::AttachController(OptionsController * c_)

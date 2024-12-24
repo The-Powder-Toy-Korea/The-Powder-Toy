@@ -22,7 +22,7 @@ void SandEffectOption::perform()
 
 
 DrawGravOption::DrawGravOption(GameModel * m):
-QuickOption("G", "중력장 표시 \bg[Ctrl] + [G]", m, Toggle)
+QuickOption("G", "중력장 표시 \bg(Ctrl+G)", m, Toggle)
 {
 
 }
@@ -38,7 +38,7 @@ void DrawGravOption::perform()
 
 
 DecorationsOption::DecorationsOption(GameModel * m):
-QuickOption("D", "물질 도색 효과 표시 \bg[Ctrl] + [B]", m, Toggle)
+QuickOption("D", "물질 도색 효과 표시 \bg(Ctrl+B)", m, Toggle)
 {
 
 }
@@ -54,7 +54,7 @@ void DecorationsOption::perform()
 
 
 NGravityOption::NGravityOption(GameModel * m):
-QuickOption("N", "뉴턴 중력 활성화 \bg[N]", m, Toggle)
+QuickOption("N", "뉴턴 중력 활성화 \bg(N)", m, Toggle)
 {
 
 }
@@ -70,7 +70,7 @@ void NGravityOption::perform()
 
 
 AHeatOption::AHeatOption(GameModel * m):
-QuickOption("A", "복사열 활성화 \bg[U]", m, Toggle)
+QuickOption("A", "복사열 활성화 \bg(U)", m, Toggle)
 {
 
 }
@@ -86,7 +86,7 @@ void AHeatOption::perform()
 
 
 ConsoleShowOption::ConsoleShowOption(GameModel * m, GameController * c_):
-QuickOption("C", "콘솔 표시 \bg[~]", m, Toggle)
+QuickOption("C", "콘솔 표시 \bg(~)", m, Toggle)
 {
 	c = c_;
 }

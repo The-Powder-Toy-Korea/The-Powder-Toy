@@ -127,7 +127,7 @@ Credits::Credits():
 	}
 
 
-	addHeader("다음 사용자는 초창기부터 인트로 텍스트에 크레딧을 받았습니다.\n"
+	addHeader("이 사람들은 초창기부터 시작 화면에 기재되어 있었습니다.\n"
 			"The Powder Toy의 시작에 이바지한 이들의 공헌은 오늘날의 The Powder Toy를 형성하는 데 큰 도움이 되었습니다.");
 
 	auto OrigCredits = root["OrigCredits"];

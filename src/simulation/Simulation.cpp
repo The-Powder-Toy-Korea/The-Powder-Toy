@@ -39,7 +39,7 @@ void Simulation::Load(const GameSave *save, bool includePressure, Vec2<int> bloc
 	};
 	std::vector<ExistingParticle> existingParticles;
 	auto pasteArea = RES.OriginRect() & RectSized(partP, save->blockSize * CELL);
-	for (int i = 0; i <= parts_lastActiveIndex; i++)
+	for (int i = 0; i <= parts.lastActiveIndex; i++)
 	{
 		if (parts[i].type)
 		{
@@ -132,8 +132,8 @@ void Simulation::Load(const GameSave *save, bool includePressure, Vec2<int> bloc
 		auto i = pfree;
 		pfree = parts[i].life;
 		NUM_PARTS += 1;
-		if (i > parts_lastActiveIndex)
-			parts_lastActiveIndex = i;
+		if (i > parts.lastActiveIndex)
+			parts.lastActiveIndex = i;
 		parts[i] = tempPart;
 		elementCount[tempPart.type]++;
 
@@ -219,7 +219,7 @@ void Simulation::Load(const GameSave *save, bool includePressure, Vec2<int> bloc
 			parts[i].tmp3 = 0;
 		}
 	}
-	parts_lastActiveIndex = NPART-1;
+	parts.lastActiveIndex = NPART-1;
 	force_stacking_check = true;
 	Element_PPIP_ppip_changed = 1;
 
@@ -992,7 +992,7 @@ void Simulation::clear_sim(void)
 	parts[NPART-1].life = -1;
 	pfree = 0;
 	NUM_PARTS = 0;
-	parts_lastActiveIndex = 0;
+	parts.lastActiveIndex = 0;
 	memset(pmap, 0, sizeof(pmap));
 	memset(fvx, 0, sizeof(fvx));
 	memset(fvy, 0, sizeof(fvy));
@@ -1568,7 +1568,7 @@ int Simulation::is_blocking(int t, int x, int y) const
 		return 0;
 	}
 
-	return !eval_move(t, x, y, NULL);
+	return !eval_move(t, x, y, nullptr);
 }
 
 int Simulation::is_boundary(int pt, int x, int y) const
@@ -1860,7 +1860,7 @@ int Simulation::create_part(int p, int x, int y, int t, int v)
 			// If there isn't a particle but there is a wall, check whether the new particle is allowed to be in it
 			//   (not "!=2" for wall check because eval_move returns 1 for moving into empty space)
 			// If there's no particle and no wall, assume creation is allowed
-			if (pmap[y][x] ? (eval_move(t, x, y, NULL) != 2) : (bmap[y/CELL][x/CELL] && eval_move(t, x, y, NULL) == 0))
+			if (pmap[y][x] ? (eval_move(t, x, y, nullptr) != 2) : (bmap[y/CELL][x/CELL] && eval_move(t, x, y, nullptr) == 0))
 			{
 				return -1;
 			}
@@ -1890,7 +1890,7 @@ int Simulation::create_part(int p, int x, int y, int t, int v)
 		i = p;
 	}
 
-	if (i>parts_lastActiveIndex) parts_lastActiveIndex = i;
+	if (i>parts.lastActiveIndex) parts.lastActiveIndex = i;
 
 	parts[i] = elements[t].DefaultProperties;
 	parts[i].type = t;
@@ -1993,7 +1993,7 @@ void Simulation::create_gain_photon(int pp)//photons from PHOT going through GLO
 
 	pfree = parts[i].life;
 	NUM_PARTS += 1;
-	if (i>parts_lastActiveIndex) parts_lastActiveIndex = i;
+	if (i>parts.lastActiveIndex) parts.lastActiveIndex = i;
 
 	parts[i].type = PT_PHOT;
 	parts[i].life = 680;
@@ -2032,7 +2032,7 @@ void Simulation::create_cherenkov_photon(int pp)//photons from NEUT going throug
 
 	pfree = parts[i].life;
 	NUM_PARTS += 1;
-	if (i>parts_lastActiveIndex) parts_lastActiveIndex = i;
+	if (i>parts.lastActiveIndex) parts.lastActiveIndex = i;
 
 	lr = rng.between(0, 1);
 
@@ -2175,7 +2175,7 @@ Simulation::PlanMoveResult Simulation::PlanMove(Sim &sim, int i, int x, int y)
 			}
 			//block if particle can't move (0), or some special cases where it returns 1 (can_move = 3 but returns 1 meaning particle will be eaten)
 			//also photons are still blocked (slowed down) by any particle (even ones it can move through), and absorb wall also blocks particles
-			int eval = sim.eval_move(t, fin_x, fin_y, NULL);
+			int eval = sim.eval_move(t, fin_x, fin_y, nullptr);
 			if (!eval || (can_move[t][TYP(pmap[fin_y][fin_x])] == 3 && eval == 1) || (t == PT_PHOT && pmap[fin_y][fin_x]) || bmap[fin_y/CELL][fin_x/CELL]==WL_DESTROYALL || closedEholeStart!=(bmap[fin_y/CELL][fin_x/CELL] == WL_EHOLE && !emap[fin_y/CELL][fin_x/CELL]))
 			{
 				// found an obstacle
@@ -2210,7 +2210,7 @@ void Simulation::UpdateParticles(int start, int end)
 	//the main particle loop function, goes over all particles.
 	auto &sd = SimulationData::CRef();
 	auto &elements = sd.elements;
-	for (auto i = start; i < end && i <= parts_lastActiveIndex; i++)
+	for (auto i = start; i < end && i <= parts.lastActiveIndex; i++)
 	{
 		if (parts[i].type)
 		{
@@ -2917,7 +2917,7 @@ killed:
 					if (!x_ok || !y_ok) //when moving from left to right stickmen might be able to fall through solid things, fix with "eval_move(t, nx+diffx, ny+diffy, NULL)" but then they die instead
 					{
 						//adjust stickmen legs
-						playerst* stickman = NULL;
+						playerst* stickman = nullptr;
 						int t = parts[i].type;
 						if (t == PT_STKM)
 							stickman = &player;
@@ -2964,7 +2964,7 @@ killed:
 						continue;
 					}
 
-					if (eval_move(PT_PHOT, fin_x, fin_y, NULL))
+					if (eval_move(PT_PHOT, fin_x, fin_y, nullptr))
 					{
 						int rt = TYP(pmap[fin_y][fin_x]);
 						int lt = TYP(pmap[y][x]);
@@ -3363,7 +3363,7 @@ void Simulation::RecalcFreeParticles(bool do_life_dec)
 	auto &sd = SimulationData::CRef();
 	auto &elements = sd.elements;
 	//the particle loop that resets the pmap/photon maps every frame, to update them.
-	for (int i = 0; i <= parts_lastActiveIndex; i++)
+	for (int i = 0; i <= parts.lastActiveIndex; i++)
 	{
 		if (parts[i].type)
 		{
@@ -3431,13 +3431,13 @@ void Simulation::RecalcFreeParticles(bool do_life_dec)
 	}
 	if (lastPartUnused == -1)
 	{
-		pfree = (parts_lastActiveIndex>=(NPART-1)) ? -1 : parts_lastActiveIndex+1;
+		pfree = (parts.lastActiveIndex>=(NPART-1)) ? -1 : parts.lastActiveIndex+1;
 	}
 	else
 	{
-		parts[lastPartUnused].life = (parts_lastActiveIndex>=(NPART-1)) ? -1 : parts_lastActiveIndex+1;
+		parts[lastPartUnused].life = (parts.lastActiveIndex>=(NPART-1)) ? -1 : parts.lastActiveIndex+1;
 	}
-	parts_lastActiveIndex = lastPartUsed;
+	parts.lastActiveIndex = lastPartUsed;
 	if (elementRecount)
 		elementRecount = false;
 }
@@ -3446,7 +3446,7 @@ void Simulation::SimulateGoL()
 {
 	auto &builtinGol = SimulationData::builtinGol;
 	CGOL = 0;
-	for (int i = 0; i <= parts_lastActiveIndex; ++i)
+	for (int i = 0; i <= parts.lastActiveIndex; ++i)
 	{
 		auto &part = parts[i];
 		if (part.type != PT_LIFE)
@@ -3652,7 +3652,7 @@ void Simulation::CheckStacking()
 	}
 	if (excessive_stacking_found)
 	{
-		for (int i = 0; i <= parts_lastActiveIndex; i++)
+		for (int i = 0; i <= parts.lastActiveIndex; i++)
 		{
 			if (parts[i].type)
 			{
@@ -3877,7 +3877,7 @@ void Simulation::BeforeSim()
 		// update PPIP tmp?
 		if (Element_PPIP_ppip_changed)
 		{
-			for (int i = 0; i <= parts_lastActiveIndex; i++)
+			for (int i = 0; i <= parts.lastActiveIndex; i++)
 			{
 				if (parts[i].type==PT_PPIP)
 				{

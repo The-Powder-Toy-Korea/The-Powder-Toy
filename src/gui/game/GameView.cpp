@@ -204,7 +204,7 @@ GameView::GameView():
 	recordingFolder(0),
 	currentPoint(ui::Point(0, 0)),
 	lastPoint(ui::Point(0, 0)),
-	activeBrush(NULL),
+	activeBrush(nullptr),
 	saveSimulationButtonEnabled(false),
 	saveReuploadAllowed(true),
 	drawMode(DrawPoints),
@@ -227,7 +227,7 @@ GameView::GameView():
 	scrollBar->Appearance.VerticalAlign = ui::Appearance::AlignMiddle;
 	AddComponent(scrollBar);
 
-	searchButton = new ui::Button(ui::Point(currentX, Size.Y-16), ui::Point(17, 15), "", "시뮬레이션을 검색합니다. [Ctrl] 키를 누른 상태로 클릭하여 이 컴퓨터에 저장된 시뮬레이션을 불러옵니다.");  // 열기
+	searchButton = new ui::Button(ui::Point(currentX, Size.Y-16), ui::Point(17, 15), "", "시뮬레이션을 검색합니다. <Ctrl> 키를 누른 상태로 클릭하여 이 컴퓨터에 저장된 시뮬레이션을 불러옵니다.");  // 열기
 	searchButton->SetIcon(IconOpen);
 	currentX+=18;
 	searchButton->SetTogglable(false);
@@ -418,7 +418,7 @@ void GameView::NotifyMenuListChanged(GameModel * sender)
 			String description_temp = menuList[i]->GetDescription();
 			ByteString description = description_temp.ToUtf8();
 			if (i == SC_FAVORITES && !Favorite::Ref().AnyFavorites())
-				description += " (물질을 [Ctrl] + [Shift] + 클릭하여 즐겨찾기에 등록할 수 있습니다)";
+				description += " (<Ctrl+Shift>를 누른 상태로 물질을 클릭하여 즐겨찾기에 등록할 수 있습니다)";
 			auto *tempButton = new MenuButton(ui::Point(WINDOWW-16, currentY), ui::Point(15, 15), tempString, description.FromUtf8());
 			tempButton->Appearance.Margin = ui::Border(0, 2, 3, 2);
 			tempButton->menuID = i;
@@ -662,11 +662,11 @@ void GameView::NotifyColourSelectorVisibilityChanged(GameModel * sender)
 	{
 		ToolButton * button = *iter;
 		RemoveComponent(button);
-		button->SetParentWindow(NULL);
+		button->SetParentWindow(nullptr);
 	}
 
 	RemoveComponent(colourPicker);
-	colourPicker->SetParentWindow(NULL);
+	colourPicker->SetParentWindow(nullptr);
 
 	if(sender->GetColourSelectorVisibility())
 	{
@@ -994,7 +994,7 @@ int GameView::Record(bool record)
 	}
 	else if (!recording)
 	{
-		time_t startTime = time(NULL);
+		time_t startTime = time(nullptr);
 		recordingFolder = startTime;
 		Platform::MakeDirectory("recordings");
 		Platform::MakeDirectory(ByteString::Build("recordings", PATH_SEP_CHAR, recordingFolder));
@@ -2079,7 +2079,7 @@ void GameView::disableCtrlBehaviour()
 		searchButton->Appearance.BackgroundInactive = ui::Colour(0, 0, 0);
 		searchButton->Appearance.BackgroundHover = ui::Colour(20, 20, 20);
 		searchButton->Appearance.TextInactive = searchButton->Appearance.TextHover = ui::Colour(255, 255, 255);
-		searchButton->SetToolTip("시뮬레이션을 검색합니다. [Ctrl] 키를 누른 상태로 클릭하여 이 컴퓨터에 저장된 시뮬레이션을 불러옵니다.");
+		searchButton->SetToolTip("시뮬레이션을 검색합니다. <Ctrl> 키를 누른 상태로 클릭하여 이 컴퓨터에 저장된 시뮬레이션을 불러옵니다.");
 		if (currentSaveType == 2)
 			saveSimulationButton->SetShowSplit(false);
 	}
@@ -2126,7 +2126,7 @@ void GameView::SetSaveButtonTooltips()
 	else if (saveSimulationButton->GetShowSplit())
 		saveSimulationButton->SetToolTips("현재 시뮬레이션을 다시 업로드합니다.", "시뮬레이션 속성 수정");
 	else
-		saveSimulationButton->SetToolTips("현재 시뮬레이션을 다시 업로드합니다.", "시뮬레이션을 업로드합니다. [Ctrl] 키를 누른 상태로 클릭하여 로컬 드라이브에 저장합니다.");
+		saveSimulationButton->SetToolTips("현재 시뮬레이션을 다시 업로드합니다.", "시뮬레이션을 업로드합니다. <Ctrl> 키를 누른 상태로 클릭하여 로컬 드라이브에 저장합니다.");
 }
 
 void GameView::RenderSimulation(const RenderableSimulation &sim, bool handleEvents)
@@ -2529,11 +2529,71 @@ void GameView::OnDraw()
 			fpsInfo << " [격자: " << rendererSettings->gridSize << "]";
 		if (rendererSettings->findingElement)
 			fpsInfo << " [찾기]";
-		if (showDebug)
+		if (c->GetDebugFlags() & DEBUG_SIMHUD)
 		{
-			if (threadedRenderingAllowed)
+			fpsInfo << "\t시뮬레이션";
+			fpsInfo << "\n  최대 FPS: ";
+			auto fpsLimit = ui::Engine::Ref().GetFpsLimit();
+			if (std::holds_alternative<FpsLimitVsync>(fpsLimit))
 			{
-				fpsInfo << " [SRT]";
+				fpsInfo << "수직 동기화";
+			}
+			else if (std::holds_alternative<FpsLimitNone>(fpsLimit))
+			{
+				fpsInfo << "없음";
+			}
+			else
+			{
+				fpsInfo << std::get<FpsLimitExplicit>(fpsLimit).value;
+			}
+		}
+		if (c->GetDebugFlags() & DEBUG_RENHUD)
+		{
+			fpsInfo << "\n렌더링";
+			fpsInfo << "\n  렌더링 제한: ";
+			auto drawLimit = ui::Engine::Ref().GetDrawingFrequencyLimit();
+			if (std::holds_alternative<DrawLimitDisplay>(drawLimit))
+			{
+				fpsInfo << "디스플레이";
+			}
+			else if (std::holds_alternative<DrawLimitNone>(drawLimit))
+			{
+				fpsInfo << "없음";
+			}
+			else
+			{
+				fpsInfo << std::get<DrawLimitExplicit>(drawLimit).value;
+			}
+			fpsInfo << ", 유효: ";
+			if (auto drawCap = ui::Engine::Ref().GetEffectiveDrawCap())
+			{
+				fpsInfo << *drawCap;
+			}
+			else
+			{
+				fpsInfo << "없음";
+			}
+			fpsInfo << "\n  SRT: ";
+			if (!c->GetThreadedRendering())
+			{
+				fpsInfo << "비활성화";
+			}
+			else if (threadedRenderingAllowed)
+			{
+				fpsInfo << "활성화";
+			}
+			else
+			{
+				fpsInfo << "활성화할 수 없음";
+			}
+			fpsInfo << "\n  주사율: ";
+			if (auto refreshRate = ui::Engine::Ref().GetRefreshRate())
+			{
+				fpsInfo << *refreshRate;
+			}
+			else
+			{
+				fpsInfo << "알 수 없음";
 			}
 		}
 

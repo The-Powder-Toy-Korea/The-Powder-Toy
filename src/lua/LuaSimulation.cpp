@@ -568,7 +568,7 @@ static int createWalls(lua_State *L)
 		return luaL_error(L, "Unrecognised wall id '%d'", c);
 
 	auto *lsi = GetLSI();
-	int ret = lsi->sim->CreateWalls(x, y, rx, ry, c, NULL);
+	int ret = lsi->sim->CreateWalls(x, y, rx, ry, c, nullptr);
 	lua_pushinteger(L, ret);
 	return 1;
 }
@@ -589,7 +589,7 @@ static int createWallLine(lua_State *L)
 		return luaL_error(L, "Unrecognised wall id '%d'", c);
 
 	auto *lsi = GetLSI();
-	lsi->sim->CreateWallLine(x1, y1, x2, y2, rx, ry, c, NULL);
+	lsi->sim->CreateWallLine(x1, y1, x2, y2, rx, ry, c, nullptr);
 	return 0;
 }
 
@@ -862,7 +862,7 @@ static int resetTemp(lua_State *L)
 	auto &sd = SimulationData::CRef();
 	auto &elements = sd.elements;
 	bool onlyConductors = luaL_optint(L, 1, 0);
-	for (int i = 0; i < sim->parts_lastActiveIndex; i++)
+	for (int i = 0; i < sim->parts.lastActiveIndex; i++)
 	{
 		if (sim->parts[i].type && (elements[sim->parts[i].type].HeatConduct || !onlyConductors))
 		{
@@ -1286,7 +1286,7 @@ static int brush(lua_State *L)
 static int partsClosure(lua_State *L)
 {
 	auto *lsi = GetLSI();
-	for (int i = lua_tointeger(L, lua_upvalueindex(1)); i <= lsi->sim->parts_lastActiveIndex; ++i)
+	for (int i = lua_tointeger(L, lua_upvalueindex(1)); i <= lsi->sim->parts.lastActiveIndex; ++i)
 	{
 		if (lsi->sim->parts[i].type)
 		{
@@ -1942,10 +1942,10 @@ void LuaSimulation::Open(lua_State *L)
 		LFUNC(fanVelocityY),
 		LFUNC(listDefaultGol),
 #undef LFUNC
-		{ NULL, NULL }
+		{ nullptr, nullptr }
 	};
 	lua_newtable(L);
-	luaL_register(L, NULL, reg);
+	luaL_register(L, nullptr, reg);
 
 #define LCONST(v) lua_pushinteger(L, int(v)); lua_setfield(L, -2, #v)
 #define LCONSTF(v) lua_pushnumber(L, float(v)); lua_setfield(L, -2, #v)

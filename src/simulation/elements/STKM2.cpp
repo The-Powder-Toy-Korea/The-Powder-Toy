@@ -35,7 +35,7 @@ void Element::Element_STKM2()
 
 	DefaultProperties.temp = R_TEMP + 14.6f + 273.15f;
 	HeatConduct = 0;
-	Description = "스틱맨 2: [W], [A], [S], [D] 키로 조종할 수 있습니다.";
+	Description = "스틱맨 2: <W>/<A>/<S>/<D> 키로 조종할 수 있습니다.";
 
 	Properties = PROP_NOCTYPEDRAW;
 	CarriesTypeIn = 1U << FIELD_CTYPE;

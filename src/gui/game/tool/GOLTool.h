@@ -8,7 +8,7 @@ class GOLTool: public Tool
 	GameModel &gameModel;
 public:
 	GOLTool(GameModel &gameModel):
-		Tool(0, "CUST", "새 사용자 지정 생명 게임을 추가합니다. [Ctrl] + [Shift]를 누른 상태로 우클릭하여 제거합니다.",
+		Tool(0, "CUST", "새 사용자 지정 생명 게임을 추가합니다. <Ctrl+Shift>를 누른 상태로 우클릭하여 제거합니다.",
 			0xFEA900_rgb, "DEFAULT_UI_ADDLIFE", NULL
 		),
 		gameModel(gameModel)
