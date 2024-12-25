@@ -1,3 +1,2 @@
-Based on The Powder Toy, 99.0 Beta 376.
+Based on The Powder Toy, 99.0.
 - Updated TPT code.
-- Improved translations.
