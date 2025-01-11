@@ -1,2 +1,2 @@
-Based on The Powder Toy, 99.0.
+Based on The Powder Toy, Snapshot-378.
 - Updated TPT code.
