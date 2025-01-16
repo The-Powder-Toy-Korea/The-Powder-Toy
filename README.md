@@ -20,7 +20,7 @@ TPT를 빌드하려면 [The Powder Toy 공식 위키](https://powdertoy.co.uk/Wi
 기여자
 ===========================================================================
 
-* 스타니슬라프 K. 스코브로네크 (오리지널 The Powder Toy를 디자인함)
+* 스타니슬라프 K. 스코브로네크(오리지널 The Powder Toy를 디자인함)
 * 사이먼 로버트쇼
 * Skresanov Savely
 * Pilihp64
@@ -40,8 +40,8 @@ TPT를 빌드하려면 [The Powder Toy 공식 위키](https://powdertoy.co.uk/Wi
 번역자
 ===========================================================================
 
-* 피어 (Perssphere)
-* 뭐지What (NeuroWhAI)
+* 검은고래(Black Whale)
+* 뭐지What(NeuroWhAI)
 * 파토매니아
 * Hopz
 * LegenDUST

@@ -35,7 +35,7 @@ OptionsView::OptionsView() : ui::Window(ui::Point(-1, -1), ui::Point(320, 340))
 	};
 	
 	{
-		auto *label = new ui::Label(ui::Point(4, 1), ui::Point(Size.X-8, 22), "시뮬레이션 설정");
+		auto *label = new ui::Label(ui::Point(4, 1), ui::Point(Size.X-8, 22), "설정");
 		label->SetTextColour(style::Colour::InformationTitle);
 		label->Appearance.HorizontalAlign = ui::Appearance::AlignLeft;
 		label->Appearance.VerticalAlign = ui::Appearance::AlignMiddle;
@@ -61,6 +61,7 @@ OptionsView::OptionsView() : ui::Window(ui::Point(-1, -1), ui::Point(320, 340))
 		label->AutoHeight();
 		scrollPanel->AddChild(label);
 		currentY += label->Size.Y - 1;
+		return label;
 	};
 	auto addCheckbox = [this, &currentY, &autoWidth, &addLabel](int indent, String text, String info, std::function<void ()> action) {
 		auto *checkbox = new ui::Checkbox(ui::Point(8 + indent * 15, currentY), ui::Point(1, 16), text, "");
@@ -354,6 +355,22 @@ OptionsView::OptionsView() : ui::Window(ui::Point(-1, -1), ui::Point(320, 340))
 		}
 		currentY += 26;
 	}
+	autoStartupRequest = addCheckbox(0, "시작 시 오늘의 메시지 및 알림 가져오기", "업데이트도 확인합니다.", [this] {
+		auto checked = autoStartupRequest->GetChecked();
+		if (checked)
+		{
+			Client::Ref().BeginStartupRequest();
+		}
+		c->SetAutoStartupRequest(checked);
+	});
+	auto *doStartupRequest = new ui::Button(ui::Point(10, currentY), ui::Point(90, 16), "지금 가져오기");
+	doStartupRequest->SetActionCallback({ [] {
+		Client::Ref().BeginStartupRequest();
+	} });
+	scrollPanel->AddChild(doStartupRequest);
+	startupRequestStatus = addLabel(5, "");
+	UpdateStartupRequestStatus();
+	currentY += 13;
 	redirectStd = addCheckbox(0, "오류 및 기타 메시지를 파일로 저장", "개발자가 문제 해결을 위하여 이것을 요청할 수 있습니다.", [this] {
 		c->SetRedirectStd(redirectStd->GetChecked());
 	});
@@ -417,6 +434,35 @@ void OptionsView::AmbientAirTempToTextBox(float airTemp)
 		break;
 	}
 	ambientAirTemp->SetText(sb.Build());
+}
+
+void OptionsView::UpdateStartupRequestStatus()
+{
+	switch (Client::Ref().GetStartupRequestStatus())
+	{
+	case Client::StartupRequestStatus::notYetDone:
+		startupRequestStatus->SetText("\bg - 아직 가져오지 않음");
+		break;
+
+	case Client::StartupRequestStatus::inProgress:
+		startupRequestStatus->SetText("\bg - 가져오는 중...");
+		break;
+
+	case Client::StartupRequestStatus::succeeded:
+		startupRequestStatus->SetText(String::Build("\bg - 완료, 가져온 알림 ", Client::Ref().GetServerNotifications().size(), "개"));
+		break;
+
+	case Client::StartupRequestStatus::failed:
+		{
+			auto error = Client::Ref().GetStartupRequestError();
+			if (!error)
+			{
+				error = "???";
+			}
+			startupRequestStatus->SetText("\bg - 실패함: " + error->FromUtf8());
+		}
+		break;
+	}
 }
 
 void OptionsView::UpdateAirTemp(String temp, bool isDefocus)
@@ -526,11 +572,17 @@ void OptionsView::NotifySettingsChanged(OptionsModel * sender)
 	threadedRendering->SetChecked(sender->GetThreadedRendering());
 	momentumScroll->SetChecked(sender->GetMomentumScroll());
 	redirectStd->SetChecked(sender->GetRedirectStd());
+	autoStartupRequest->SetChecked(sender->GetAutoStartupRequest());
 }
 
 void OptionsView::AttachController(OptionsController * c_)
 {
 	c = c_;
+}
+
+void OptionsView::OnTick(float dt)
+{
+	UpdateStartupRequestStatus();
 }
 
 void OptionsView::OnDraw()
