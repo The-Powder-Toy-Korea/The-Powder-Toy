@@ -571,7 +571,7 @@ void GameModel::Tick()
 		}
 		catch (const http::RequestError &ex)
 		{
-			new ErrorMessage("좋아요/싫어요를 표시하는 데 오류가 발생함", ByteString(ex.what()).FromUtf8());
+			new ErrorMessage("추천/비추천을 표시하는 데 오류가 발생함", ByteString(ex.what()).FromUtf8());
 		}
 		currentSave.execVoteRequest.reset();
 	}
@@ -1018,7 +1018,7 @@ void GameModel::SetPaused(bool pauseState)
 	notifyPausedChanged();
 }
 
-bool GameModel::GetPaused()
+bool GameModel::GetPaused() const
 {
 	return sim->sys_pause?true:false;
 }

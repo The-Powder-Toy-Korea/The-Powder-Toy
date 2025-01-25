@@ -197,15 +197,12 @@ static int debug(lua_State *L)
 
 static int fpsCap(lua_State *L)
 {
+	auto *lsi = GetLSI();
 	int acount = lua_gettop(L);
 	if (acount == 0)
 	{
-		auto fpsLimit = ui::Engine::Ref().GetFpsLimit();
-		if (std::holds_alternative<FpsLimitVsync>(fpsLimit))
-		{
-			lua_pushliteral(L, "vsync");
-		}
-		else if (std::holds_alternative<FpsLimitNone>(fpsLimit))
+		auto fpsLimit = lsi->window->GetSimFpsLimit();
+		if (std::holds_alternative<FpsLimitNone>(fpsLimit))
 		{
 			lua_pushnumber(L, 2);
 		}
@@ -215,11 +212,6 @@ static int fpsCap(lua_State *L)
 		}
 		return 1;
 	}
-	if (lua_isstring(L, 1) && byteStringEqualsLiteral(tpt_lua_toByteString(L, 1), "vsync"))
-	{
-		ui::Engine::Ref().SetFpsLimit(FpsLimitVsync{});
-		return 0;
-	}
 	float fpscap = luaL_checknumber(L, 1);
 	if (fpscap < 2)
 	{
@@ -227,10 +219,10 @@ static int fpsCap(lua_State *L)
 	}
 	if (fpscap == 2)
 	{
-		ui::Engine::Ref().SetFpsLimit(FpsLimitNone{});
+		lsi->window->SetSimFpsLimit(FpsLimitNone{});
 		return 0;
 	}
-	ui::Engine::Ref().SetFpsLimit(FpsLimitExplicit{ fpscap });
+	lsi->window->SetSimFpsLimit(FpsLimitExplicit{ fpscap });
 	return 0;
 }
 
@@ -254,6 +246,7 @@ static int drawCap(lua_State *L)
 		}
 		return 1;
 	}
+	// if (lua_isstring(L, 1) && byteStringEqualsLiteral(tpt_lua_toByteString(L, 1), "vsync")) // TODO: DrawLimitVsync
 	if (lua_isstring(L, 1) && byteStringEqualsLiteral(tpt_lua_toByteString(L, 1), "display"))
 	{
 		ui::Engine::Ref().SetDrawingFrequencyLimit(DrawLimitDisplay{});
@@ -297,6 +290,7 @@ void LuaMisc::Open(lua_State *L)
 	LCONST(DEBUG_SURFNORM);
 	LCONST(DEBUG_SIMHUD);
 	LCONST(DEBUG_RENHUD);
+	LCONST(DEBUG_AIRVEL);
 #undef LCONST
 	{
 		lua_newtable(L);

@@ -175,6 +175,9 @@ private:
 	int foundParticles = 0;
 	const RendererFrame *rendererFrame = nullptr;
 
+	SimFpsLimit simFpsLimit = FpsLimitExplicit{ 60.f };
+	void ApplySimFpsLimit();
+
 public:
 	GameView();
 	~GameView();
@@ -243,6 +246,7 @@ public:
 	void OnKeyPress(int key, int scan, bool repeat, bool shift, bool ctrl, bool alt) override;
 	void OnKeyRelease(int key, int scan, bool repeat, bool shift, bool ctrl, bool alt) override;
 	void OnTick(float dt) override;
+	void OnSimTick() override;
 	void OnDraw() override;
 	void OnBlur() override;
 	void OnFileDrop(ByteString filename) override;
@@ -277,4 +281,10 @@ public:
 
 	void RenderSimulation(const RenderableSimulation &sim, bool handleEvents);
 	void AfterSimDraw(const RenderableSimulation &sim);
+
+	void SetSimFpsLimit(SimFpsLimit newSimFpsLimit);
+	SimFpsLimit GetSimFpsLimit() const
+	{
+		return simFpsLimit;
+	}
 };

@@ -9,6 +9,7 @@ if [[ -z  ${BSH_HOST_PLATFORM-} ]]; then >&2 echo  "BSH_HOST_PLATFORM not set"; 
 if [[ -z      ${BSH_HOST_LIBC-} ]]; then >&2 echo      "BSH_HOST_LIBC not set"; exit 1; fi
 if [[ -z ${BSH_STATIC_DYNAMIC-} ]]; then >&2 echo "BSH_STATIC_DYNAMIC not set"; exit 1; fi
 if [[ -z  ${BSH_DEBUG_RELEASE-} ]]; then >&2 echo  "BSH_DEBUG_RELEASE not set"; exit 1; fi
+if [[ -z           ${BSH_LINT-} ]]; then >&2 echo           "BSH_LINT not set"; exit 1; fi
 if [[ -z       ${RELEASE_NAME-} ]]; then >&2 echo       "RELEASE_NAME not set"; exit 1; fi
 if [[ -z       ${RELEASE_TYPE-} ]]; then >&2 echo       "RELEASE_TYPE not set"; exit 1; fi
 if [[ -z             ${MOD_ID-} ]]; then >&2 echo             "MOD_ID not set"; exit 1; fi
@@ -26,6 +27,8 @@ if [[ -z         ${APP_VENDOR-} ]]; then >&2 echo         "APP_VENDOR not set"; 
 case $BSH_HOST_ARCH-$BSH_HOST_PLATFORM-$BSH_HOST_LIBC-$BSH_STATIC_DYNAMIC in
 x86_64-linux-gnu-static) ;;
 x86_64-linux-gnu-dynamic) ;;
+aarch64-linux-gnu-static) ;;
+aarch64-linux-gnu-dynamic) ;;
 x86_64-windows-mingw-static) ;;
 x86_64-windows-mingw-dynamic) ;;
 x86_64-windows-msvc-static) ;;
@@ -90,7 +93,7 @@ if [[ -z ${BSH_NO_PACKAGES-} ]]; then
 	linux)
 		sudo apt update
 		if [[ $BSH_STATIC_DYNAMIC == static ]]; then
-			sudo apt install libc6-dev libc6-dev-i386
+			sudo apt install libc6-dev
 		else
 			sudo apt install libluajit-5.1-dev libcurl4-openssl-dev libfftw3-dev zlib1g-dev libsdl2-dev libbz2-dev libjsoncpp-dev libpng-dev
 		fi
@@ -117,7 +120,7 @@ if [[ -z ${BSH_NO_PACKAGES-} ]]; then
 		fi
 		;;
 	emscripten)
-		git clone https://github.com/emscripten-core/emsdk.git --branch 3.1.30
+		git clone https://github.com/emscripten-core/emsdk.git --branch 3.1.72
 		cd emsdk
 		./emsdk install latest
 		./emsdk activate latest
@@ -281,6 +284,9 @@ if [[ $BSH_HOST_PLATFORM == linux ]] && [[ $BSH_HOST_ARCH != aarch64 ]]; then
 	# certain file managers can't run PIEs https://bugzilla.gnome.org/show_bug.cgi?id=737849
 	meson_configure+=$'\t'-Db_pie=false
 	c_link_args+=\'-no-pie\',
+fi
+if [[ $SEPARATE_DEBUG == yes ]] && [[ $BSH_HOST_PLATFORM == emscripten ]]; then
+	c_link_args+=\'-gseparate-dwarf\',
 fi
 stable_or_beta=no
 if [[ $RELEASE_TYPE == beta ]]; then
@@ -486,10 +492,14 @@ else
 fi
 
 if [[ $SEPARATE_DEBUG == yes ]] && [[ $BSH_HOST_PLATFORM-$BSH_HOST_LIBC != windows-msvc ]]; then
-	$objcopy --only-keep-debug $strip_target $DEBUG_ASSET_PATH
-	$strip --strip-debug --strip-unneeded $strip_target
-	$objcopy --add-gnu-debuglink $DEBUG_ASSET_PATH $strip_target
-	chmod -x $DEBUG_ASSET_PATH
+	if [[ $BSH_HOST_PLATFORM == emscripten ]]; then
+		mv $APP_EXE.wasm.debug.wasm $DEBUG_ASSET_PATH # yeah >_>
+	else
+		$objcopy --only-keep-debug $strip_target $DEBUG_ASSET_PATH
+		$strip --strip-debug --strip-unneeded $strip_target
+		$objcopy --add-gnu-debuglink $DEBUG_ASSET_PATH $strip_target
+		chmod -x $DEBUG_ASSET_PATH
+	fi
 fi
 if [[ $BSH_HOST_PLATFORM == android ]]; then
 	$JAVA_HOME_8_X64/bin/keytool -genkeypair -keystore keystore.jks -alias androidkey -validity 10000 -keyalg RSA -keysize 2048 -keypass bagelsbagels -storepass bagelsbagels -dname "CN=nobody"
@@ -537,7 +547,7 @@ if [[ $BSH_HOST_PLATFORM == darwin ]]; then
 		exit 1
 	fi
 elif [[ $PACKAGE_MODE == emscripten ]]; then
-	tar cvf $ASSET_PATH $APP_EXE.js $APP_EXE.worker.js $APP_EXE.wasm
+	tar cvf $ASSET_PATH $APP_EXE.js $APP_EXE.wasm
 elif [[ $PACKAGE_MODE == appimage ]]; then
 	# so far this can only happen with $BSH_HOST_PLATFORM-$BSH_HOST_LIBC == linux-gnu, but this may change later
 	case $BSH_HOST_ARCH in

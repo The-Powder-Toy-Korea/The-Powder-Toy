@@ -2,6 +2,7 @@
 #include <memory>
 #include <optional>
 #include <stack>
+#include <variant>
 #include "common/String.h"
 #include "common/ExplicitSingleton.h"
 #include "graphics/Pixel.h"
@@ -9,6 +10,16 @@
 #include "gui/WindowFrameOps.h"
 #include <climits>
 #include "FpsLimit.h"
+
+struct RefreshRateDefault
+{
+	int value = 60;
+};
+struct RefreshRateQueried
+{
+	int value;
+};
+using RefreshRate = std::variant<RefreshRateDefault, RefreshRateQueried>;
 
 class Graphics;
 namespace ui
@@ -57,10 +68,11 @@ namespace ui
 		inline bool GetGlobalQuit() {return GlobalQuit; }
 
 		void Tick();
+		void SimTick();
 		void Draw();
 
-		void SetFps(float fps);
-		inline float GetFps() { return fps; }
+		void SetFps(float newFps);
+		float GetFps() const;
 
 		inline int GetMouseButton() { return mouseb_; }
 		inline int GetMouseX() { return mousex_; }
@@ -74,11 +86,7 @@ namespace ui
 		//inline State* GetState() { return state_; }
 		inline Window* GetWindow() { return state_; }
 
-		void SetFpsLimit(FpsLimit newFpsLimit);
-		FpsLimit GetFpsLimit() const
-		{
-			return fpsLimit;
-		}
+		FpsLimit GetFpsLimit() const;
 
 		DrawLimit drawingFrequencyLimit;
 		Graphics * g;
@@ -88,20 +96,18 @@ namespace ui
 
 		unsigned int FrameIndex;
 	private:
-		FpsLimit fpsLimit;
 
 		bool textInput = false;
 		int lastTextEditingStart = INT_MAX;
 
-		float dt;
-		float fps;
+		void ApplyFpsLimit();
 		std::deque<Window*> windows;
 		std::stack<Point> mousePositions;
 		//Window* statequeued_;
 		Window* state_;
 		Point windowTargetPosition;
 		bool ignoreEvents = false;
-		std::optional<int> refreshRate;
+		RefreshRate refreshRate;
 
 		// saved appearances of windows that are in the backround and
 		// thus are not currently being redrawn
@@ -145,12 +151,12 @@ namespace ui
 		bool GetResizable          () const { return windowFrameOps.resizable;           }
 		bool GetBlurryScaling      () const { return windowFrameOps.blurryScaling;       }
 
-		std::optional<int> GetRefreshRate() const
+		RefreshRate GetRefreshRate() const
 		{
 			return refreshRate;
 		}
 
-		void SetRefreshRate(std::optional<int> newRefreshRate)
+		void SetRefreshRate(RefreshRate newRefreshRate)
 		{
 			refreshRate = newRefreshRate;
 		}

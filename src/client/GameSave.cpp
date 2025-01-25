@@ -17,7 +17,7 @@
 #include <algorithm>
 
 constexpr auto currentVersion = UPSTREAM_VERSION.displayVersion;
-constexpr auto nextVersion = Version(99, 0);
+constexpr auto nextVersion = Version(99, 1);
 static_assert(nextVersion >= currentVersion);
 
 constexpr auto effectiveVersion = ALLOW_FAKE_NEWER_VERSION ? nextVersion : currentVersion;
@@ -2444,7 +2444,7 @@ std::pair<bool, std::vector<char>> GameSave::serialiseOPS() const
 			}
 			if (part.type == PT_LSNS)
 			{
-				if (part.tmp >= 1 || part.tmp <= 3)
+				if (part.tmp >= 1 && part.tmp <= 3)
 				{
 					RESTRICTVERSION(95, 0);
 				}

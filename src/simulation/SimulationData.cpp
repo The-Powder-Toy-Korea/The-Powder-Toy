@@ -91,7 +91,7 @@ static std::vector<menu_section> LoadMenus()
 		{0xE052, String("생명 게임"), 0, 1},
 		{0xE057, String("도구"), 0, 1},
 		{0xE067, String("즐겨찾기"), 0, 1},
-		{0xE064, String("도색 도구"), 0, 1},
+		{0xE064, String("도색"), 0, 1},
 	};
 }
 

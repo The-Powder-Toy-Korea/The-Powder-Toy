@@ -146,14 +146,14 @@ void blit(pixel *vid)
 
 void UpdateRefreshRate()
 {
-	std::optional<int> refreshRate;
+	RefreshRate refreshRate;
 	int displayIndex = SDL_GetWindowDisplayIndex(sdl_window);
 	if (displayIndex >= 0)
 	{
 		SDL_DisplayMode displayMode;
 		if (!SDL_GetCurrentDisplayMode(displayIndex, &displayMode) && displayMode.refresh_rate)
 		{
-			refreshRate = displayMode.refresh_rate;
+			refreshRate = RefreshRateQueried{ displayMode.refresh_rate };
 		}
 	}
 	ui::Engine::Ref().SetRefreshRate(refreshRate);
@@ -204,7 +204,7 @@ void SDLClose()
 void SDLSetScreen()
 {
 	auto newFrameOps = ui::Engine::Ref().windowFrameOps;
-	auto newVsyncHint = std::holds_alternative<FpsLimitVsync>(ui::Engine::Ref().GetFpsLimit());
+	auto newVsyncHint = false; // TODO: DrawLimitVsync
 	if (FORCE_WINDOW_FRAME_OPS == forceWindowFrameOpsEmbedded)
 	{
 		newFrameOps.resizable = false;
@@ -319,7 +319,7 @@ void SDLSetScreen()
 		SDL_SetWindowSize(sdl_window, size.X, size.Y);
 		LoadWindowPosition();
 	}
-	UpdateFpsLimit();
+	ApplyFpsLimit();
 	if (newFrameOpsNorm.fullscreen)
 	{
 		SDL_RaiseWindow(sdl_window);
@@ -450,7 +450,7 @@ static void EventProcess(const SDL_Event &event)
 	}
 }
 
-void EngineProcess()
+std::optional<uint64_t> EngineProcess()
 {
 	auto &engine = ui::Engine::Ref();
 	auto correctedFrameTime = tickSchedule.GetFrameTime();
@@ -477,31 +477,37 @@ void EngineProcess()
 		EventProcess(event);
 	}
 
-	engine.Tick();
-
+	std::optional<uint64_t> delay;
 	{
-		auto drawLimit = ui::Engine::Ref().GetDrawingFrequencyLimit();
 		auto nowNs = uint64_t(SDL_GetTicks()) * UINT64_C(1'000'000);
 		auto effectiveDrawLimit = engine.GetEffectiveDrawCap();
 		if (!effectiveDrawLimit || drawSchedule.HasElapsed(nowNs))
 		{
+			engine.Tick();
 			engine.Draw();
 			drawSchedule.SetNow(nowNs);
-			if (effectiveDrawLimit)
-			{
-				drawSchedule.Arm(float(*effectiveDrawLimit));
-			}
 			SDLSetScreen();
 			blit(engine.g->Data());
 		}
+		else
+		{
+			engine.SimTick();
+		}
+		if (effectiveDrawLimit)
+		{
+			delay = drawSchedule.Arm(float(*effectiveDrawLimit)) / UINT64_C(1'000'000);
+		}
 	}
+	auto fpsLimit = ui::Engine::Ref().GetFpsLimit();
+	if (!std::holds_alternative<FpsLimitFollowDraw>(fpsLimit))
 	{
-		auto fpsLimit = ui::Engine::Ref().GetFpsLimit();
+		delay.reset();
 		auto nowNs = uint64_t(SDL_GetTicks()) * UINT64_C(1'000'000);
 		tickSchedule.SetNow(nowNs);
 		if (auto *fpsLimitExplicit = std::get_if<FpsLimitExplicit>(&fpsLimit))
 		{
-			SDL_Delay(tickSchedule.Arm(fpsLimitExplicit->value) / UINT64_C(1'000'000));
+			delay = tickSchedule.Arm(fpsLimitExplicit->value) / UINT64_C(1'000'000);
 		}
 	}
+	return delay;
 }

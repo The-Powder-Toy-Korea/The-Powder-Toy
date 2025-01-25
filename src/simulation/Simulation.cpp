@@ -976,6 +976,12 @@ int Simulation::parts_avg(int ci, int ni,int t)
 	return PT_NONE;
 }
 
+void Parts::Reset()
+{
+	memset(data.data(), 0, sizeof(Particle)*NPART);
+	lastActiveIndex = 0;
+}
+
 void Simulation::clear_sim(void)
 {
 	for (auto i = 0; i <= parts.lastActiveIndex; i++)
@@ -994,13 +1000,12 @@ void Simulation::clear_sim(void)
 	signs.clear();
 	memset(bmap, 0, sizeof(bmap));
 	memset(emap, 0, sizeof(emap));
-	memset(parts, 0, sizeof(Particle)*NPART);
+	parts.Reset();
 	for (int i = 0; i < NPART-1; i++)
 		parts[i].life = i+1;
 	parts[NPART-1].life = -1;
 	pfree = 0;
 	NUM_PARTS = 0;
-	parts.lastActiveIndex = 0;
 	memset(pmap, 0, sizeof(pmap));
 	memset(fvx, 0, sizeof(fvx));
 	memset(fvy, 0, sizeof(fvy));
@@ -2329,12 +2334,16 @@ void Simulation::UpdateParticles(int start, int end)
 				{
 					float convGravX, convGravY;
 					GetGravityField(x, y, -2.0f, -2.0f, convGravX, convGravY);
-					auto offsetX = int(std::round(convGravX + x));
-					auto offsetY = int(std::round(convGravY + y));
-					if ((offsetX != x || offsetY != y) && offsetX >= 0 && offsetX < XRES && offsetY >= 0 && offsetY < YRES) {//some heat convection for liquids
+					auto offsetX = std::clamp(int(std::round(convGravX + x)), x-1, x+1);
+					auto offsetY = std::clamp(int(std::round(convGravY + y)), y-1, y+1);
+					// Some heat convection for liquids
+					if (offsetX != x || offsetY != y)
+					{
 						auto r = pmap[offsetY][offsetX];
-						if (!(!r || parts[i].type != TYP(r))) {
-							if (parts[i].temp>parts[ID(r)].temp) {
+						if (r && parts[i].type == TYP(r))
+						{
+							if (parts[i].temp>parts[ID(r)].temp)
+							{
 								auto swappage = parts[i].temp;
 								parts[i].temp = parts[ID(r)].temp;
 								parts[ID(r)].temp = swappage;
@@ -3621,15 +3630,14 @@ void Simulation::BeforeSim()
 	if (!sys_pause || framerender)
 	{
 		// decrease wall conduction, make walls block air and ambient heat
-		int x, y;
-		for (y = 0; y < YCELLS; y++)
+		for (int y = 0; y < YCELLS; y++)
 		{
-			for (x = 0; x < XCELLS; x++)
+			for (int x = 0; x < XCELLS; x++)
 			{
 				if (emap[y][x])
 					emap[y][x] --;
 				air->bmap_blockair[y][x] = (bmap[y][x]==WL_WALL || bmap[y][x]==WL_WALLELEC || bmap[y][x]==WL_BLOCKAIR || (bmap[y][x]==WL_EWALL && !emap[y][x]));
-				air->bmap_blockairh[y][x] = (bmap[y][x]==WL_WALL || bmap[y][x]==WL_WALLELEC || bmap[y][x]==WL_BLOCKAIR || bmap[y][x]==WL_GRAV || (bmap[y][x]==WL_EWALL && !emap[y][x])) ? 0x8:0;
+				air->bmap_blockairh[y][x] = (air->bmap_blockair[y][x] || bmap[y][x]==WL_GRAV) ? 0x8 : 0;
 			}
 		}
 

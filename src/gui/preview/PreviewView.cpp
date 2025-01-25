@@ -180,8 +180,8 @@ void PreviewView::AttachController(PreviewController * controller)
 {
 	c = controller;
 
-	int textWidth = Graphics::TextSize("세이브 ID를 복사하려면 아래의 상자를 누르십시오").X - 1;
-	saveIDLabel = new ui::Label(ui::Point((Size.X-textWidth-20)/2, Size.Y+5), ui::Point(textWidth+20, 16), "세이브 ID를 복사하려면 아래의 상자를 누르십시오");
+	int textWidth = Graphics::TextSize("세이브 ID를 복사하려면 아래 상자를 누르십시오").X - 1;
+	saveIDLabel = new ui::Label(ui::Point((Size.X-textWidth-20)/2, Size.Y+5), ui::Point(textWidth+20, 16), "세이브 ID를 복사하려면 아래 상자를 누르십시오");
 	saveIDLabel->SetTextColour(ui::Colour(150, 150, 150));
 	saveIDLabel->Appearance.HorizontalAlign = ui::Appearance::AlignCentre;
 	AddComponent(saveIDLabel);
@@ -251,7 +251,7 @@ void PreviewView::CheckComment()
 	String text = addCommentBox->GetText().ToLower();
 	if (addCommentRequest)
 	{
-		commentWarningLabel->SetText("댓글을 게시하는 중...");
+		commentWarningLabel->SetText("댓글을 추가하는 중...");
 		commentHelpText = true;
 	}
 	else if (!userIsAuthor && (text.Contains("stolen") || text.Contains("copied")))
@@ -267,7 +267,7 @@ void PreviewView::CheckComment()
 	}
 	else if (userIsAuthor && text.Contains("vote"))
 	{
-		commentWarningLabel->SetText("좋아요에 대해 언급하지 마십시오.");
+		commentWarningLabel->SetText("추천에 대해 언급하지 마십시오.");
 		commentHelpText = true;
 	}
 	else if (CheckSwearing(text))
@@ -438,7 +438,7 @@ void PreviewView::OnTick(float dt)
 		}
 		catch (const http::RequestError &ex)
 		{
-			new ErrorMessage("댓글을 게시하는 데 오류가 발생함", ByteString(ex.what()).FromUtf8());
+			new ErrorMessage("댓글을 추가하는 데 오류가 발생함", ByteString(ex.what()).FromUtf8());
 		}
 		isSubmittingComment = false;
 		CheckCommentSubmitEnabled();
@@ -661,7 +661,7 @@ void PreviewView::NotifyCommentBoxEnabledChanged(PreviewModel * sender)
 		commentBoxSizeX = float(Size.X-(XRES/2)-48);
 		commentBoxSizeY = 17;
 
-		addCommentBox = new ui::Textbox(ui::Point((XRES/2)+4, Size.Y-19), ui::Point(Size.X-(XRES/2)-48, 17), "", "새 댓글 게시");
+		addCommentBox = new ui::Textbox(ui::Point((XRES/2)+4, Size.Y-19), ui::Point(Size.X-(XRES/2)-48, 17), "", "댓글 추가");
 		addCommentBox->SetActionCallback({ [this] {
 			CheckComment();
 			commentBoxAutoHeight();
@@ -682,7 +682,7 @@ void PreviewView::NotifyCommentBoxEnabledChanged(PreviewModel * sender)
 	}
 	else
 	{
-		submitCommentButton = new ui::Button(ui::Point(XRES/2, Size.Y-19), ui::Point(Size.X-(XRES/2), 19), "댓글을 게시하려면 로그인하십시오.");
+		submitCommentButton = new ui::Button(ui::Point(XRES/2, Size.Y-19), ui::Point(Size.X-(XRES/2), 19), "댓글을 추가하려면 로그인하십시오.");
 		submitCommentButton->SetActionCallback({ [this] { c->ShowLogin(); } });
 		AddComponent(submitCommentButton);
 	}

@@ -20,6 +20,7 @@ constexpr auto DEBUG_PARTICLE   = 0x0008;
 constexpr auto DEBUG_SURFNORM   = 0x0010;
 constexpr auto DEBUG_SIMHUD     = 0x0020;
 constexpr auto DEBUG_RENHUD     = 0x0040;
+constexpr auto DEBUG_AIRVEL     = 0x0080;
 
 class DebugInfo;
 class SaveFile;
@@ -116,6 +117,7 @@ public:
 	void CopyRegion(ui::Point point1, ui::Point point2);
 	void CutRegion(ui::Point point1, ui::Point point2);
 	void Update();
+	bool GetPaused() const;
 	void SetPaused(bool pauseState);
 	void SetPaused();
 	void SetDecoration(bool decorationState);

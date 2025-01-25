@@ -147,7 +147,7 @@ void PreviewModel::OnSaveReady()
 	{
 		auto gameSave = std::make_unique<GameSave>(*saveData);
 		if (gameSave->fromNewerVersion)
-			new ErrorMessage("이 세이브는 더 높은 버전의 게임을 요구합니다.", String::Build("The Powder Toy를 게임이나 ", SERVER, "에서 업데이트하십시오."));
+			new ErrorMessage("더 높은 버전에서 작성된 세이브입니다.", String::Build("The Powder Toy를 게임이나 ", SERVER, "에서 업데이트하십시오."));
 		saveInfo->SetGameSave(std::move(gameSave));
 	}
 	catch(ParseException &e)

@@ -1,4 +1,4 @@
-The Powder Toy - 2024년 12월
+The Powder Toy - 2025년 1월
 ==========================
 
 [The Powder Toy 공식 홈페이지](https://powdertoy.co.uk/Download.html)에서 최신 버전의 오리지널 TPT를 내려받으십시오.
@@ -17,11 +17,11 @@ Lua API가 있어 작업을 자동화하거나 게임용 플러그인을 만들 
 
 TPT를 빌드하려면 [The Powder Toy 공식 위키](https://powdertoy.co.uk/Wiki/W/Main_Page/ko.html)의 _개발 안내_ 문단을 참조하십시오.
 
-기여자
+특별 감사
 ===========================================================================
 
-* 스타니슬라프 K. 스코브로네크(오리지널 The Powder Toy를 디자인함)
-* 사이먼 로버트쇼
+* 스타니슬라프 K. 스코브로네크 - 오리지널 The Powder Toy를 디자인함
+* 사이먼 로버트쇼 - 웹사이트 작성, 현재 서버 소유자
 * Skresanov Savely
 * Pilihp64
 * Catelite

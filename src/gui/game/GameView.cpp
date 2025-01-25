@@ -267,12 +267,12 @@ GameView::GameView():
 	SetSaveButtonTooltips();
 	AddComponent(saveSimulationButton);
 
-	upVoteButton = new ui::Button(ui::Point(currentX, Size.Y-16), ui::Point(49, 15), "", "");
+	upVoteButton = new ui::Button(ui::Point(currentX, Size.Y-16), ui::Point(39, 15), "", "");
 	upVoteButton->SetIcon(IconVoteUp);
 	upVoteButton->Appearance.HorizontalAlign = ui::Appearance::AlignLeft;
 	upVoteButton->Appearance.Margin.Top+=2;
 	upVoteButton->Appearance.Margin.Left+=10;
-	currentX+=48;
+	currentX+=38;
 	AddComponent(upVoteButton);
 
 	downVoteButton = new ui::Button(ui::Point(currentX, Size.Y-16), ui::Point(15, 15), "", "");
@@ -770,6 +770,7 @@ void GameView::NotifyUserChanged(GameModel * sender)
 void GameView::NotifyPausedChanged(GameModel * sender)
 {
 	pauseButton->SetToggleState(sender->GetPaused());
+	ApplySimFpsLimit();
 }
 
 void GameView::NotifyToolTipChanged(GameModel * sender)
@@ -785,8 +786,8 @@ void GameView::NotifyInfoTipChanged(GameModel * sender)
 
 void GameView::ResetVoteButtons()
 {
-	upVoteButton->SetToolTip("Like this save");
-	downVoteButton->SetToolTip("Dislike this save");
+	upVoteButton->SetToolTip("세이브 추천하기");
+	downVoteButton->SetToolTip("세이브 비추천하기");
 	upVoteButton->Appearance.BackgroundPulse = false;
 	downVoteButton->Appearance.BackgroundPulse = false;
 }
@@ -1828,9 +1829,12 @@ void GameView::OnTick(float dt)
 		if(toolTipPresence<0)
 			toolTipPresence = 0;
 	}
-	c->Update();
 }
 
+void GameView::OnSimTick()
+{
+	c->Update();
+}
 
 void GameView::DoMouseMove(int x, int y, int dx, int dy)
 {
@@ -2209,13 +2213,6 @@ void GameView::OnDraw()
 		ui::Point finalCurrentMouse = c->PointTranslate(currentMouse);
 		ui::Point initialDrawPoint = drawPoint1;
 
-		//Air velocity line near cursor
-		if (showDebug && (rendererSettings->displayMode & DISPLAY_AIRV))
-		{
-			g->XorLine({finalCurrentMouse.X, finalCurrentMouse.Y},
-					{finalCurrentMouse.X + (int)(10.0f*sample.AirVelocityX), finalCurrentMouse.Y + (int)(10.0f*sample.AirVelocityY)});
-		}
-
 		if (wallBrush)
 		{
 			finalCurrentMouse = c->NormaliseBlockCoord(finalCurrentMouse);
@@ -2547,7 +2544,12 @@ void GameView::OnDraw()
 	{
 		//FPS and some version info
 		StringBuilder fpsInfo;
-		fpsInfo << Format::Precision(2) << "FPS: " << ui::Engine::Ref().GetFps();
+		auto fps = 0.f;
+		if (!c->GetPaused())
+		{
+			fps = ui::Engine::Ref().GetFps();
+		}
+		fpsInfo << Format::Precision(2) << "FPS: " << fps;
 
 		if (showDebug)
 		{
@@ -2566,20 +2568,15 @@ void GameView::OnDraw()
 			fpsInfo << " [찾기]";
 		if (c->GetDebugFlags() & DEBUG_SIMHUD)
 		{
-			fpsInfo << "\t시뮬레이션";
+			fpsInfo << "\n시뮬레이션";
 			fpsInfo << "\n  최대 FPS: ";
-			auto fpsLimit = ui::Engine::Ref().GetFpsLimit();
-			if (std::holds_alternative<FpsLimitVsync>(fpsLimit))
-			{
-				fpsInfo << "수직 동기화";
-			}
-			else if (std::holds_alternative<FpsLimitNone>(fpsLimit))
+			if (std::holds_alternative<FpsLimitNone>(simFpsLimit))
 			{
 				fpsInfo << "없음";
 			}
 			else
 			{
-				fpsInfo << std::get<FpsLimitExplicit>(fpsLimit).value;
+				fpsInfo << std::get<FpsLimitExplicit>(simFpsLimit).value;
 			}
 		}
 		if (c->GetDebugFlags() & DEBUG_RENHUD)
@@ -2622,13 +2619,13 @@ void GameView::OnDraw()
 				fpsInfo << "활성화할 수 없음";
 			}
 			fpsInfo << "\n  주사율: ";
-			if (auto refreshRate = ui::Engine::Ref().GetRefreshRate())
+			auto refreshRate = ui::Engine::Ref().GetRefreshRate();
+			fpsInfo << std::visit([](auto &refreshRate) {
+				return refreshRate.value;
+			}, refreshRate);
+			if (std::holds_alternative<RefreshRateDefault>(refreshRate))
 			{
-				fpsInfo << *refreshRate;
-			}
-			else
-			{
-				fpsInfo << "알 수 없음";
+				fpsInfo << " (기본값)";
 			}
 		}
 
@@ -2819,4 +2816,26 @@ void GameView::WaitForRendererThread()
 	rendererThreadCv.wait(lk, [this]() {
 		return !rendererThreadOwnsRenderer;
 	});
+}
+
+void GameView::ApplySimFpsLimit()
+{
+	if (c->GetPaused())
+	{
+		SetFpsLimit(FpsLimitFollowDraw{});
+	}
+	else if (std::holds_alternative<FpsLimitNone>(simFpsLimit))
+	{
+		SetFpsLimit(FpsLimitNone{});
+	}
+	else
+	{
+		SetFpsLimit(std::get<FpsLimitExplicit>(simFpsLimit));
+	}
+}
+
+void GameView::SetSimFpsLimit(SimFpsLimit newSimFpsLimit)
+{
+	simFpsLimit = newSimFpsLimit;
+	ApplySimFpsLimit();
 }

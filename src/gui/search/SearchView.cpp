@@ -46,7 +46,7 @@ SearchView::SearchView():
 	AddComponent(pageCountLabel);
 	AddComponent(pageTextbox);
 
-	searchField = new ui::Textbox(ui::Point(60, 10), ui::Point(WINDOWW-283, 17), "", "검색, [F1]로 도움말");
+	searchField = new ui::Textbox(ui::Point(60, 10), ui::Point(WINDOWW-283, 17), "", "검색, <F1>로 도움말");
 	searchField->Appearance.icon = IconSearch;
 	searchField->Appearance.HorizontalAlign = ui::Appearance::AlignLeft;
 	searchField->Appearance.VerticalAlign = ui::Appearance::AlignMiddle;
@@ -171,7 +171,7 @@ void SearchView::searchHelp()
 	String info =
 		"검색 상자에 입력하면 세이브 제목과 태그를 자동으로 검색합니다. 검색어는 OR 방식으로 묶입니다.\n"
 		"\n"
-		"정렬: \bt\"좋아요\"\bw/\bt\"날짜\"\bw 단추를 눌러 세이브가 표시되는 순서를 바꿉니다.\n"
+		"정렬: \bt\"추천\"\bw/\bt\"날짜\"\bw 단추를 눌러 세이브가 표시되는 순서를 바꿉니다.\n"
 		"카테고리: The Powder Toy 계정에 로그인한 경우, \bt\"내 세이브\"\bw 단추를 눌러 내 세이브만을 보거나, 별 모양 아이콘을 클릭하여 즐겨 찾는 세이브를 볼 수 있습니다.\n"
 		"날짜 범위: 검색 상자 오른쪽의 드롭다운 메뉴를 눌러 검색할 날짜 범위를 선택합니다.\n"
 		"\n"
@@ -259,7 +259,7 @@ void SearchView::NotifySortChanged(SearchModel * sender)
 	if(sender->GetSort() == http::sortByVotes)
 	{
 		sortButton->SetToggleState(false);
-		sortButton->SetText("좋아요");
+		sortButton->SetText("추천");
 		sortButton->SetIcon(IconVoteSort);
 	}
 	else
