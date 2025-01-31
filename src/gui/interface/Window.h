@@ -24,6 +24,7 @@ namespace ui
 	class Window
 	{
 	public:
+		bool contributesToFps = false;
 		Point Position;
 		Point Size;
 
@@ -103,7 +104,7 @@ namespace ui
 
 		virtual void OnInitialized() {}
 		virtual void OnExit() {}
-		virtual void OnTick(float dt) {}
+		virtual void OnTick() {}
 		virtual void OnSimTick() {}
 		virtual void OnDraw() {}
 		virtual void OnFocus() {}
@@ -133,7 +134,6 @@ namespace ui
 		bool destruct;
 		bool stop;
 
-		float dt;
 		float fps;
 		FpsLimit fpsLimit = FpsLimitFollowDraw{};
 	};

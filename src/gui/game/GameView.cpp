@@ -14,6 +14,7 @@
 #include "Notification.h"
 #include "ToolButton.h"
 #include "QuickOptions.h"
+#include "PowderToySDL.h"
 
 #include "client/SaveInfo.h"
 #include "client/SaveFile.h"
@@ -184,16 +185,12 @@ GameView::GameView():
 	currentSaveType(0),
 	lastMenu(-1),
 
-	toolTipPresence(0),
 	toolTip(""),
 	isToolTipFadingIn(false),
 	toolTipPosition(-1, -1),
-	infoTipPresence(0),
 	infoTip(""),
-	buttonTipShow(0),
 	buttonTip(""),
 	isButtonTipFadingIn(false),
-	introText(2048),
 	introTextMessage(IntroText().FromUtf8()),
 
 	doScreenshot(false),
@@ -216,6 +213,7 @@ GameView::GameView():
 	currentMouse(0, 0),
 	mousePosition(0, 0)
 {
+	contributesToFps = true;
 
 	int currentX = 1;
 	//Set up UI
@@ -1727,7 +1725,7 @@ void GameView::SkipIntroText()
 	introText = 0;
 }
 
-void GameView::OnTick(float dt)
+void GameView::OnTick()
 {
 	if (selectMode == PlaceSave && !placeSaveThumb)
 		selectMode = SelectNone;
@@ -1785,55 +1783,26 @@ void GameView::OnTick(float dt)
 		}
 	}
 
-	if(introText)
-	{
-		introText -= int(dt)>0?(int(dt) < 5? int(dt):5):1;
-		if(introText < 0)
-			introText  = 0;
-	}
-	if(infoTipPresence>0)
-	{
-		infoTipPresence -= int(dt)>0?int(dt):1;
-		if(infoTipPresence<0)
-			infoTipPresence = 0;
-	}
+	introText.Tick();
+	infoTipPresence.Tick();
 	if (isButtonTipFadingIn || (selectMode != PlaceSave && selectMode != SelectNone))
 	{
 		isButtonTipFadingIn = false;
-		if(buttonTipShow < 120)
-		{
-			buttonTipShow += int(dt*2)>0?int(dt*2):1;
-			if(buttonTipShow>120)
-				buttonTipShow = 120;
-		}
+		buttonTipShow.MarkGoingUpwardThisTick();
 	}
-	else if(buttonTipShow>0)
-	{
-		buttonTipShow -= int(dt)>0?int(dt):1;
-		if(buttonTipShow<0)
-			buttonTipShow = 0;
-	}
+	buttonTipShow.Tick();
 	if (isToolTipFadingIn)
 	{
 		isToolTipFadingIn = false;
-		if(toolTipPresence < 120)
-		{
-			toolTipPresence += int(dt*2)>0?int(dt*2):1;
-			if(toolTipPresence>120)
-				toolTipPresence = 120;
-		}
+		toolTipPresence.MarkGoingUpwardThisTick();
 	}
-	else if(toolTipPresence>0)
-	{
-		toolTipPresence -= int(dt)>0?int(dt):1;
-		if(toolTipPresence<0)
-			toolTipPresence = 0;
-	}
+	toolTipPresence.Tick();
 }
 
 void GameView::OnSimTick()
 {
 	c->Update();
+	wantFrame = true;
 }
 
 void GameView::DoMouseMove(int x, int y, int dx, int dy)
@@ -2186,24 +2155,28 @@ void GameView::OnDraw()
 	Graphics * g = GetGraphics();
 
 	auto threadedRenderingAllowed = c->ThreadedRenderingAllowed();
-	if (threadedRenderingAllowed)
+	if (wantFrame)
 	{
-		StartRendererThread();
-		WaitForRendererThread();
-		AfterSimDraw(*sim);
-		foundParticles = ren->GetFoundParticles();
-		*rendererThreadResult = ren->GetVideo();
-		rendererFrame = rendererThreadResult.get();
-		DispatchRendererThread();
-	}
-	else
-	{
-		PauseRendererThread();
-		ren->ApplySettings(*rendererSettings);
-		RenderSimulation(*sim, true);
-		AfterSimDraw(*sim);
-		foundParticles = ren->GetFoundParticles();
-		rendererFrame = &ren->GetVideo();
+		wantFrame = false;
+		if (threadedRenderingAllowed)
+		{
+			StartRendererThread();
+			WaitForRendererThread();
+			AfterSimDraw(*sim);
+			foundParticles = ren->GetFoundParticles();
+			*rendererThreadResult = ren->GetVideo();
+			rendererFrame = rendererThreadResult.get();
+			DispatchRendererThread();
+		}
+		else
+		{
+			PauseRendererThread();
+			ren->ApplySettings(*rendererSettings);
+			RenderSimulation(*sim, true);
+			AfterSimDraw(*sim);
+			foundParticles = ren->GetFoundParticles();
+			rendererFrame = &ren->GetVideo();
+		}
 	}
 
 	std::copy_n(rendererFrame->data(), rendererFrame->Size().X * rendererFrame->Size().Y, g->Data());
@@ -2544,12 +2517,7 @@ void GameView::OnDraw()
 	{
 		//FPS and some version info
 		StringBuilder fpsInfo;
-		auto fps = 0.f;
-		if (!c->GetPaused())
-		{
-			fps = ui::Engine::Ref().GetFps();
-		}
-		fpsInfo << Format::Precision(2) << "FPS: " << fps;
+		fpsInfo << Format::Precision(2) << "FPS: " << ui::Engine::Ref().GetFps();
 
 		if (showDebug)
 		{
@@ -2638,7 +2606,7 @@ void GameView::OnDraw()
 	//Tooltips
 	if(infoTipPresence)
 	{
-		int infoTipAlpha = (infoTipPresence>50?50:infoTipPresence)*5;
+		int infoTipAlpha = (infoTipPresence>50?50:int(infoTipPresence))*5;
 		g->BlendTextOutline({ (XRES - (Graphics::TextSize(infoTip).X - 1)) / 2, YRES / 2 - 2 }, infoTip, 0xFFFFFF_rgb .WithAlpha(infoTipAlpha));
 	}
 
@@ -2820,13 +2788,16 @@ void GameView::WaitForRendererThread()
 
 void GameView::ApplySimFpsLimit()
 {
-	if (c->GetPaused())
+	if (std::holds_alternative<FpsLimitNone>(simFpsLimit))
 	{
-		SetFpsLimit(FpsLimitFollowDraw{});
-	}
-	else if (std::holds_alternative<FpsLimitNone>(simFpsLimit))
-	{
-		SetFpsLimit(FpsLimitNone{});
+		if (c->GetPaused())
+		{
+			SetFpsLimit(FpsLimitFollowDraw{});
+		}
+		else
+		{
+			SetFpsLimit(FpsLimitNone{});
+		}
 	}
 	else
 	{

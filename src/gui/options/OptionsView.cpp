@@ -355,7 +355,13 @@ OptionsView::OptionsView() : ui::Window(ui::Point(-1, -1), ui::Point(320, 340))
 		}
 		currentY += 26;
 	}
-	autoStartupRequest = addCheckbox(0, "시작 시 오늘의 메시지 및 알림 가져오기", "업데이트도 확인합니다.", [this] {
+	String autoStartupRequestNote = "시작할 때 한번만";
+	if (!IGNORE_UPDATES)
+	{
+		autoStartupRequestNote += ", 업데이트와 함께";
+	}
+	autoStartupRequestNote += " 확인합니다.";
+	autoStartupRequest = addCheckbox(0, "오늘의 메시지 및 알림 가져오기", autoStartupRequestNote, [this] {
 		auto checked = autoStartupRequest->GetChecked();
 		if (checked)
 		{
@@ -580,7 +586,7 @@ void OptionsView::AttachController(OptionsController * c_)
 	c = c_;
 }
 
-void OptionsView::OnTick(float dt)
+void OptionsView::OnTick()
 {
 	UpdateStartupRequestStatus();
 }

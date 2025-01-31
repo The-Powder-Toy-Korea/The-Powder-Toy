@@ -351,7 +351,7 @@ void ServerSaveActivity::CheckName(String newname)
 		titleLabel->SetText("새 시뮬레이션 업로드:");
 }
 
-void ServerSaveActivity::OnTick(float dt)
+void ServerSaveActivity::OnTick()
 {
 	if (thumbnailRenderer)
 	{
