@@ -54,7 +54,7 @@ void LoginModel::Tick()
 			{
 				client.AddServerNotification(item);
 			}
-			statusText = "Logged in";
+			statusText = "로그인함";
 			loginStatus = loginSucceeded;
 		}
 		catch (const http::RequestError &ex)
@@ -72,7 +72,7 @@ void LoginModel::Tick()
 			logoutRequest->Finish();
 			auto &client = Client::Ref();
 			client.SetAuthUser(User(0, ""));
-			statusText = "Logged out";
+			statusText = "로그아웃함";
 		}
 		catch (const http::RequestError &ex)
 		{

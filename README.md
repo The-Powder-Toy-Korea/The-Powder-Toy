@@ -1,4 +1,4 @@
-The Powder Toy - 2025년 1월
+The Powder Toy - 2025년 2월
 ==========================
 
 [The Powder Toy 공식 홈페이지](https://powdertoy.co.uk/Download.html)에서 최신 버전의 오리지널 TPT를 내려받으십시오.
