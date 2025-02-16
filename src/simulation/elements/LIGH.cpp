@@ -34,7 +34,7 @@ void Element::Element_LIGH()
 	Weight = 100;
 
 	HeatConduct = 0;
-	Description = "번개: 브러시의 크기로 번개의 크기를 조정할 수 있습니다.";
+	Description = "번개: 브러시의 크기로 번개의 크기를 조절할 수 있습니다.";
 
 	Properties = TYPE_SOLID;
 
