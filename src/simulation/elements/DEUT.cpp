@@ -32,7 +32,7 @@ void Element::Element_DEUT()
 
 	DefaultProperties.temp = R_TEMP - 2.0f + 273.15f;
 	HeatConduct = 251;
-	Description = "중수: 온도에 따라 부피가 다르며 중성자에 방사성 반응을 합니다.";
+	Description = "중수: 온도가 낮을수록 더 농축되며 중성자 또는 양성자와 반응하여 폭발합니다.";
 
 	Properties = TYPE_LIQUID|PROP_NEUTPASS;
 

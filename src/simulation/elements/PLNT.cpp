@@ -32,7 +32,7 @@ void Element::Element_PLNT()
 	Weight = 100;
 
 	HeatConduct = 65;
-	Description = "식물: WATR을 흡수하여 성장합니다.";
+	Description = "식물: 물을 흡수하여 자랍니다.";
 
 	Properties = TYPE_SOLID|PROP_NEUTPENETRATE|PROP_LIFE_DEC;
 

@@ -29,7 +29,7 @@ void Element::Element_SHLD1()
 	Weight = 100;
 
 	HeatConduct = 0;
-	Description = "보호막: 전류를 흐르게 하면 주변에 막이 형성됩니다.";
+	Description = "보호막: 전류가 흐르면 보강되며 압력에 의하여 부서집니다.";
 
 	Properties = TYPE_SOLID|PROP_LIFE_DEC;
 

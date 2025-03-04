@@ -31,7 +31,7 @@ void Element::Element_PLUT()
 
 	DefaultProperties.temp = R_TEMP + 4.0f + 273.15f;
 	HeatConduct = 251;
-	Description = "플루토늄: 높은 질량의 핵분열성 입자이며, 고압에서 중성자를 방출합니다.";
+	Description = "플루토늄: 핵분열이 가능한 무거운 입자입니다. 고압에서 중성자를 방출합니다.";
 
 	Properties = TYPE_PART|PROP_NEUTPASS|PROP_RADIOACTIVE;
 

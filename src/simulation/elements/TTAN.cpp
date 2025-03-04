@@ -30,7 +30,7 @@ void Element::Element_TTAN()
 	Weight = 100;
 
 	HeatConduct = 251;
-	Description = "타이타늄: 다른 금속들보다 높은 온도에서 융해합니다. 모든 압력을 봉쇄합니다.";
+	Description = "타이타늄: 대부분의 다른 금속보다 녹는점이 높고 모든 압력을 차단합니다.";
 
 	Properties = TYPE_SOLID|PROP_CONDUCTS|PROP_HOT_GLOW|PROP_LIFE_DEC;
 

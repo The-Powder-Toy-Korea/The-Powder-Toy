@@ -32,7 +32,7 @@ void Element::Element_GOLD()
 	Weight = 100;
 
 	HeatConduct = 251;
-	Description = "금: 부식되지 않으며 철의 부식을 무효화할 수 있습니다.";
+	Description = "금: 내식성 금속으로 철의 부식을 방지합니다. 우수한 도체입니다.";
 
 	Properties = TYPE_SOLID|PROP_CONDUCTS|PROP_HOT_GLOW|PROP_LIFE_DEC|PROP_NEUTPASS;
 

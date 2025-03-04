@@ -29,7 +29,7 @@ void Element::Element_DRAY()
 	Weight = 100;
 
 	HeatConduct = 0;
-	Description = "D-Type 광선 방출기: 앞에 있는 물질을 복사합니다.";
+	Description = "D형 광선 방출기: 앞에 있는 선형 범위의 물질을 복제합니다.";
 
 	Properties = TYPE_SOLID;
 	CarriesTypeIn = 1U << FIELD_CTYPE;

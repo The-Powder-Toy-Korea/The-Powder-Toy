@@ -27,7 +27,7 @@ void Element::Element_SAND()
 	Weight = 90;
 
 	HeatConduct = 150;
-	Description = "모래: 질량이 높으며, 융해하면 유리가 생성됩니다.";
+	Description = "모래: 무거운 입자입니다. 녹으면 유리가 됩니다.";
 
 	Properties = TYPE_PART;
 

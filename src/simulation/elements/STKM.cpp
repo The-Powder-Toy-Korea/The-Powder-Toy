@@ -35,7 +35,7 @@ void Element::Element_STKM()
 
 	DefaultProperties.temp = R_TEMP + 14.6f + 273.15f;
 	HeatConduct = 0;
-	Description = "스틱맨: 화살표 키로 조종할 수 있습니다.";
+	Description = "스틱맨: 죽이지 마십시오! 화살표 키로 조종할 수 있습니다.";
 
 	Properties = PROP_NOCTYPEDRAW;
 	CarriesTypeIn = 1U << FIELD_CTYPE;
@@ -639,7 +639,7 @@ void Element_STKM_interact(Simulation *sim, playerst *playerp, int i, int x, int
 			damage += sim->rng.between(32, 51);
 		}
 
-		if (elements[TYP(r)].HeatConduct && (TYP(r)!=PT_HSWC||sim->parts[ID(r)].life==10) && ((playerp->elem!=PT_LIGH && sim->parts[ID(r)].temp>=323) || sim->parts[ID(r)].temp<=243) && (!playerp->rocketBoots || TYP(r)!=PT_PLSM))
+		if (!sim->IsHeatInsulator(sim->parts[ID(r)]) && ((playerp->elem!=PT_LIGH && sim->parts[ID(r)].temp>=323) || sim->parts[ID(r)].temp<=243) && (!playerp->rocketBoots || TYP(r)!=PT_PLSM))
 		{
 			damage += 2;
 			playerp->accs[3] -= 1;

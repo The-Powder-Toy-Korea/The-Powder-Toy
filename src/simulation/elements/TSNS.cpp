@@ -29,7 +29,7 @@ void Element::Element_TSNS()
 	Weight = 100;
 
 	HeatConduct = 0;
-	Description = "온도 감지기: 설정된 온도보다 높은 온도의 물질이 감지되는 경우 전류를 방출합니다.";
+	Description = "온도 감지기: 근처에 온도가 더 높은 입자가 있을 때 전류를 방출합니다.";
 
 	Properties = TYPE_SOLID;
 

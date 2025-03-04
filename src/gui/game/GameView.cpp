@@ -2358,13 +2358,13 @@ void GameView::OnDraw()
 			{
 				if (type == PT_LAVA && c->IsValidElement(ctype))
 				{
-					sampleInfo << "융해된 " << c->ElementResolve(ctype, 0);
+					sampleInfo << "융해한 " << c->ElementResolve(ctype, 0);
 				}
 				else if ((type == PT_PIPE || type == PT_PPIP) && c->IsValidElement(ctype))
 				{
 					if (ctype == PT_LAVA && c->IsValidElement(sample.particle.tmp4))
 					{
-						sampleInfo << "융해된 " << c->ElementResolve(sample.particle.tmp4, -1) << "이(가) 들어 있는 " << c->ElementResolve(type, 0);
+						sampleInfo << "융해한 " << c->ElementResolve(sample.particle.tmp4, -1) << "이(가) 들어 있는 " << c->ElementResolve(type, 0);
 					}
 					else
 					{
@@ -2531,7 +2531,7 @@ void GameView::OnDraw()
 				fpsInfo << ", 총 입자량: " << sample.NumParts;
 		}
 		if (c->GetReplaceModeFlags()&REPLACE_MODE)
-			fpsInfo << " [물질 변경]";
+			fpsInfo << " [물질 대체]";
 		if (c->GetReplaceModeFlags()&SPECIFIC_DELETE)
 			fpsInfo << " [특정 물질 제거]";
 		if (rendererSettings->gridSize)

@@ -30,7 +30,7 @@ void Element::Element_WIFI()
 	Weight = 100;
 
 	HeatConduct = 0;
-	Description = "무선 송신기: 같은 온도 채널의 다른 송신기로 전류를 전달합니다.";
+	Description = "무선 송수신기: 같은 온도 채널의 다른 송수신기로 전류를 전송합니다.";
 
 	Properties = TYPE_SOLID;
 

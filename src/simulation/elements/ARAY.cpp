@@ -30,7 +30,7 @@ void Element::Element_ARAY()
 	Weight = 100;
 
 	HeatConduct = 0;
-	Description = "A-Type 광선 방출기: 이 물질에서 방출되는 광선은 금속과 충돌 시 스파크를 일으킵니다.";
+	Description = "A형 광선 방출기: 광선끼리 충돌하면 점을 생성합니다.";
 
 	Properties = TYPE_SOLID;
 

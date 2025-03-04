@@ -28,7 +28,7 @@ void Element::Element_PSTE()
 
 	DefaultProperties.temp = R_TEMP - 2.0f + 273.15f;
 	HeatConduct = 29;
-	Description = "콜로이드: 높은 압력에서 굳습니다.";
+	Description = "페이스트: 압력을 받으면 단단해집니다.";
 
 	Properties = TYPE_LIQUID;
 

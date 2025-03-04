@@ -30,7 +30,7 @@ void Element::Element_MORT()
 
 	DefaultProperties.temp = R_TEMP + 4.0f + 273.15f;
 	HeatConduct = 60;
-	Description = "증기 기관차.";
+	Description = "모트버트(Mortvert): 증기 기관차입니다.";
 
 	Properties = TYPE_GAS;
 

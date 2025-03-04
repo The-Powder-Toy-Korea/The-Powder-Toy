@@ -29,7 +29,7 @@ void Element::Element_CLNE()
 	Weight = 100;
 
 	HeatConduct = 251;
-	Description = "복제기: 접촉하는 물질을 복제합니다.";
+	Description = "복제기: 닿는 모든 입자를 복제합니다.";
 
 	Properties = TYPE_SOLID | PROP_PHOTPASS | PROP_NOCTYPEDRAW;
 	CarriesTypeIn = 1U << FIELD_CTYPE;

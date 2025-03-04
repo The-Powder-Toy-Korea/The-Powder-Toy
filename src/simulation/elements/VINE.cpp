@@ -31,7 +31,7 @@ void Element::Element_VINE()
 	Weight = 100;
 
 	HeatConduct = 65;
-	Description = "덩굴: 나무와 함께 성장합니다.";
+	Description = "덩굴: 나무를 따라 자랍니다.";
 
 	Properties = TYPE_SOLID;
 

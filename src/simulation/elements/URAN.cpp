@@ -31,7 +31,7 @@ void Element::Element_URAN()
 
 	DefaultProperties.temp = R_TEMP + 30.0f + 273.15f;
 	HeatConduct = 251;
-	Description = "우라늄: 압력에 따라 가열하는 높은 질량의 입자입니다.";
+	Description = "우라늄: 무거운 입자입니다. 압력을 받으면 발열합니다.";
 
 	Properties = TYPE_PART | PROP_RADIOACTIVE;
 

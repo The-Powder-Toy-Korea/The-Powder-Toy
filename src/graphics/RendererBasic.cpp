@@ -7,7 +7,7 @@
 
 const std::vector<RenderPreset> Renderer::renderModePresets = {
 	{
-		"대체 속도 디스플레이",
+		"대안 속도 디스플레이",
 		RENDER_EFFE | RENDER_BASC,
 		DISPLAY_AIRC,
 		0,
@@ -61,13 +61,13 @@ const std::vector<RenderPreset> Renderer::renderModePresets = {
 		0,
 	},
 	{
-		"열 줄무늬 디스플레이",
+		"열 명암 디스플레이",
 		RENDER_BASC,
 		0,
 		COLOUR_GRAD,
 	},
 	{
-		"라이프 줄무늬 디스플레이",
+		"라이프 명암 디스플레이",
 		RENDER_BASC,
 		0,
 		COLOUR_LIFE,

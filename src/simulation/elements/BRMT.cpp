@@ -29,7 +29,7 @@ void Element::Element_BRMT()
 	Weight = 90;
 
 	HeatConduct = 211;
-	Description = "메탈 가루: BRMT가 압력에 의해 부서지거나 녹슨 철로부터 생성됩니다.";
+	Description = "메탈 가루: 철이 녹슬거나 BMTL이 압력으로 부서질 때 발생합니다.";
 
 	Properties = TYPE_PART|PROP_CONDUCTS|PROP_LIFE_DEC|PROP_HOT_GLOW;
 

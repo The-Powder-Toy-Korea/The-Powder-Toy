@@ -31,7 +31,7 @@ void Element::Element_GRAV()
 	Weight = 85;
 
 	HeatConduct = 70;
-	Description = "중력 가루: 질량이 매우 낮으며 속도에 따라 색상이 변화합니다.";
+	Description = "중력 가루: 매우 가벼운 먼지입니다. 속도에 따라 색상이 변화합니다.";
 
 	Properties = TYPE_PART | PROP_LIFE_DEC;
 

@@ -29,7 +29,7 @@ void Element::Element_BRCK()
 	Weight = 100;
 
 	HeatConduct = 251;
-	Description = "돌: 부서질 수 있는 건축 재료입니다.";
+	Description = "벽돌: 깨지기 쉬운 건축 자재입니다.";
 
 	Properties = TYPE_SOLID|PROP_HOT_GLOW;
 

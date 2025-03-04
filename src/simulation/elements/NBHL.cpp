@@ -29,7 +29,7 @@ void Element::Element_NBHL()
 	Weight = 100;
 
 	HeatConduct = 186;
-	Description = "블랙홀: 물질을 중력으로 흡수합니다(뉴턴 중력을 요구합니다).";
+	Description = "블랙홀: 중력으로 입자를 빨아들입니다(뉴턴 중력을 요구합니다).";
 
 	Properties = TYPE_SOLID;
 

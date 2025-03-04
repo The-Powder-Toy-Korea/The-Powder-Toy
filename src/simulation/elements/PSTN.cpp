@@ -36,7 +36,7 @@ void Element::Element_PSTN()
 
 	DefaultProperties.temp = 10.0f + 273.15f;
 	HeatConduct = 0;
-	Description = "피스톤: 입자들을 밀어냅니다.";
+	Description = "피스톤: 입자를 밀어냅니다. PSCN으로 확장하며, NSCN으로 축소합니다.";
 
 	Properties = TYPE_SOLID;
 	CarriesTypeIn = 1U << FIELD_CTYPE;

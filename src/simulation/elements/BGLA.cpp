@@ -27,7 +27,7 @@ void Element::Element_BGLA()
 	Weight = 90;
 
 	HeatConduct = 150;
-	Description = "유리 가루: 유리가 높은 압력에 의해 파괴될 때 생성되는 질량이 높은 물질입니다. 융해될 수 있습니다.";
+	Description = "유리 가루: 유리가 압력을 받아 깨질 때 형성되는 무거운 입자입니다. 녹을 수 있는 입자입니다.";
 
 	Properties = TYPE_PART | PROP_NEUTPASS | PROP_PHOTPASS | PROP_HOT_GLOW | PROP_DEADLY;
 

@@ -30,7 +30,7 @@ void Element::Element_AMTR()
 	Weight = 100;
 
 	HeatConduct = 70;
-	Description = "반물질: 물질과 닿으면 쌍소멸을 일으킵니다.";
+	Description = "반물질: 대부분의 입자를 소멸시킵니다.";
 
 	Properties = TYPE_GAS;
 

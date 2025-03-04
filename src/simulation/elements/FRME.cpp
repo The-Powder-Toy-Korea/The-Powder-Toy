@@ -29,7 +29,7 @@ void Element::Element_FRME()
 	Weight = 100;
 
 	HeatConduct = 0;
-	Description = "프레임: 대부분의 물질을 밀기 위해 PSTN과 함께 사용됩니다.";
+	Description = "프레임: 피스톤과 함께 사용하여 많은 입자를 밀어낼 수 있습니다.";
 
 	Properties = TYPE_SOLID;
 

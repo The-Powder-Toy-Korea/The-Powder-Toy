@@ -27,7 +27,7 @@ void Element::Element_INWR()
 	Weight = 100;
 
 	HeatConduct = 251;
-	Description = "절연전선: 전류를 PSCN 및 NSCN으로만 흐르게 할 수 있습니다.";
+	Description = "절연 전선: PSCN, NSCN, WIFI 및 SWCH로만 연결됩니다.";
 
 	Properties = TYPE_SOLID|PROP_CONDUCTS|PROP_LIFE_DEC;
 

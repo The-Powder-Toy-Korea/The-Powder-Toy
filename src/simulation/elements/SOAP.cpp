@@ -1,4 +1,5 @@
 #include "simulation/ElementCommon.h"
+#include "SOAP.h"
 
 static int update(UPDATE_FUNC_ARGS);
 static int graphics(GRAPHICS_FUNC_ARGS);
@@ -32,7 +33,7 @@ void Element::Element_SOAP()
 
 	DefaultProperties.temp = R_TEMP - 2.0f + 273.15f;
 	HeatConduct = 29;
-	Description = "비누: 거품을 생성하고 도색된 물질을 표백하며 바이러스를 무효화합니다.";
+	Description = "비누: 거품을 만들고, 도색된 물질을 표백하고, 바이러스를 치료합니다.";
 
 	Properties = TYPE_LIQUID|PROP_NEUTPENETRATE|PROP_LIFE_DEC;
 

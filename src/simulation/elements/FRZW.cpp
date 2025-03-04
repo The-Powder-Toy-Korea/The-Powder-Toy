@@ -30,7 +30,7 @@ void Element::Element_FRZW()
 
 	DefaultProperties.temp = 120.0f;
 	HeatConduct = 29;
-	Description = "동결수: 동결 가루가 융해되어 생성됩니다.";
+	Description = "동결수: 동결 가루가 녹을 때 형성되는 혼합 액체입니다.";
 
 	Properties = TYPE_LIQUID | PROP_LIFE_DEC;
 

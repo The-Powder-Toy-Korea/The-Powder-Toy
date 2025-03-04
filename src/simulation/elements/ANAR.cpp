@@ -30,7 +30,7 @@ void Element::Element_ANAR()
 	Weight = 85;
 
 	HeatConduct = 70;
-	Description = "반중력 가루: 중력 및 공기에 대해 반대로 작용합니다.";
+	Description = "반중력 가루: 중력을 거스르는 매우 가벼운 먼지입니다. 연소할 때 냉각됩니다.";
 
 	Properties = TYPE_PART;
 

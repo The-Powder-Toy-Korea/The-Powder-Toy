@@ -29,7 +29,7 @@ void Element::Element_BRAY()
 	Weight = 100;
 
 	HeatConduct = 251;
-	Description = "B-Type 광선";
+	Description = "B형 광선: 광선끼리 충돌하면 점을 생성합니다.";
 
 	Properties = TYPE_SOLID|PROP_LIFE_DEC|PROP_LIFE_KILL;
 

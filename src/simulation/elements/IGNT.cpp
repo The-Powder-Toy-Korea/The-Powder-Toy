@@ -29,7 +29,7 @@ void Element::Element_IGNT()
 	Weight = 100;
 
 	HeatConduct = 88;
-	Description = "도화선: 불꽃과 함께 천천히 타들어갑니다.";
+	Description = "도화선: 불 및 불꽃과 함께 천천히 타들어갑니다.";
 
 	Properties = TYPE_SOLID | PROP_NEUTPENETRATE | PROP_SPARKSETTLE | PROP_LIFE_KILL;
 

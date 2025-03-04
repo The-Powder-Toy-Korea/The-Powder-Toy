@@ -32,7 +32,7 @@ void Element::Element_PRTO()
 	Weight = 100;
 
 	HeatConduct = 0;
-	Description = "포탈 출구: 입자는 이곳에서 나옵니다. 같은 온도 채널에 있는 포탈 입구에서 입자가 즉시 전송됩니다.";
+	Description = "포털 출구: 입자가 여기서 나옵니다. 같은 온도 채널의 포털 입구에서 입자가 즉시 전송됩니다(WIFI와 동일).";
 
 	Properties = TYPE_SOLID;
 

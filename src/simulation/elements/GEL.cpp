@@ -31,7 +31,7 @@ void Element::Element_GEL()
 
 	DefaultProperties.temp = R_TEMP - 2.0f + 273.15f;
 	HeatConduct = 29;
-	Description = "젤: 열전도도와 점도가 변할 수 있는 물질입니다.";
+	Description = "젤: 다양한 점도와 열전도율의 액체입니다. 물을 흡수합니다.";
 
 	Properties = TYPE_LIQUID|PROP_LIFE_DEC|PROP_NEUTPENETRATE;
 

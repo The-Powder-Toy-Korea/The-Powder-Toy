@@ -28,7 +28,7 @@ void Element::Element_DUST()
 	Weight = 85;
 
 	HeatConduct = 70;
-	Description = "먼지: 질량이 매우 낮은 가연성 가루입니다.";
+	Description = "먼지: 매우 가벼운 먼지입니다. 가연성 물질입니다.";
 
 	Properties = TYPE_PART;
 

@@ -27,7 +27,7 @@ void Element::Element_WAX()
 	Weight = 100;
 
 	HeatConduct = 44;
-	Description = "왁스: 고온에서 융해합니다.";
+	Description = "왁스: 가연성이며, 적당히 높은 온도에서 녹습니다.";
 
 	Properties = TYPE_SOLID;
 

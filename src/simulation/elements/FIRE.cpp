@@ -34,7 +34,7 @@ void Element::Element_FIRE()
 
 	DefaultProperties.temp = R_TEMP + 400.0f + 273.15f;
 	HeatConduct = 88;
-	Description = "불: 가연성 물질을 점화하며, 공기를 가열합니다.";
+	Description = "불: 가연성 물질을 점화합니다. 공기를 가열합니다.";
 
 	Properties = TYPE_GAS|PROP_LIFE_DEC|PROP_LIFE_KILL;
 

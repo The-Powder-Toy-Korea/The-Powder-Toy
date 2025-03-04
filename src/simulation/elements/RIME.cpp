@@ -30,7 +30,7 @@ void Element::Element_RIME()
 
 	DefaultProperties.temp = -30.0f + 273.15f;
 	HeatConduct = 100;
-	Description = "서리: WTRV가 급격히 냉각되어 승화될 때 생성됩니다.";
+	Description = "서리: 증기가 빠르게 냉각되어 승화할 때 생성되는 고체입니다.";
 
 	Properties = TYPE_SOLID;
 

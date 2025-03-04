@@ -31,7 +31,7 @@ void Element::Element_WARP()
 	Weight = 1;
 
 	HeatConduct = 100;
-	Description = "왜곡체: 공간을 왜곡시켜 주변의 물질을 이동 및 소멸시킵니다.";
+	Description = "왜곡체: 다른 물질을 이동합니다.";
 
 	Properties = TYPE_GAS|PROP_LIFE_DEC|PROP_LIFE_KILL;
 

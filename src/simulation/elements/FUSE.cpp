@@ -29,7 +29,7 @@ void Element::Element_FUSE()
 	Weight = 100;
 
 	HeatConduct = 200;
-	Description = "퓨즈: 고온의 물질 및 전류에 반응합니다.";
+	Description = "퓨즈: 천천히 연소합니다. 매우 높은 온도나 전류를 가하면 발화합니다.";
 
 	Properties = TYPE_SOLID;
 

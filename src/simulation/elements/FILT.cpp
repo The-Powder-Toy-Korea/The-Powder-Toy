@@ -31,7 +31,7 @@ void Element::Element_FILT()
 	Weight = 100;
 
 	HeatConduct = 251;
-	Description = "필터: PHOT이 통과할 때 색깔을 바꾸며, 온도에 따라 색이 변합니다.";
+	Description = "필터: 광자와 BIZR의 색상을 변경합니다. 색상은 온도에 따라 달라집니다.";
 
 	Properties = TYPE_SOLID | PROP_PHOTPASS | PROP_NOAMBHEAT | PROP_LIFE_DEC;
 

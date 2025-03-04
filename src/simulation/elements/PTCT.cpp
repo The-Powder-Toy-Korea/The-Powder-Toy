@@ -29,7 +29,7 @@ void Element::Element_PTCT()
 	Weight = 100;
 
 	HeatConduct = 251;
-	Description = "저온형 반도체: 100 °C 이하에서만 전류가 흐릅니다.";
+	Description = "PTC 서미스터: PSCN 및 NSCN과 함께 작동하지만 100 °C 이하하에서만 전류가 흐릅니다.";
 
 	Properties = TYPE_SOLID|PROP_CONDUCTS|PROP_LIFE_DEC;
 

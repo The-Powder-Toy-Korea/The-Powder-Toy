@@ -29,7 +29,7 @@ void Element::Element_CO2()
 	Weight = 1;
 
 	HeatConduct = 88;
-	Description = "이산화 탄소: 질량이 큰 기체입니다. 물에 녹아 탄산수를 생성하며 어는점 이하에서 드라이아이스로 변합니다.";
+	Description = "이산화 탄소: 무거운 기체로, 바닥으로 가라앉습니다. 물에 녹으며 차가워지면 드라이아이스로 변합니다.";
 
 	Properties = TYPE_GAS;
 

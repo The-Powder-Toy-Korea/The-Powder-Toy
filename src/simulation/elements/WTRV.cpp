@@ -30,7 +30,7 @@ void Element::Element_WTRV()
 
 	DefaultProperties.temp = R_TEMP + 100.0f + 273.15f;
 	HeatConduct = 48;
-	Description = "수증기: 물이 고온에서 기화하면 생성됩니다.";
+	Description = "수증기: 뜨거운 물에서 생성됩니다.";
 
 	Properties = TYPE_GAS;
 

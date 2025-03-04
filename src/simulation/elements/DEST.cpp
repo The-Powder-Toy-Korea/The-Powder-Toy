@@ -30,7 +30,7 @@ void Element::Element_DEST()
 	Weight = 101;
 
 	HeatConduct = 150;
-	Description = "파괴적 폭탄: 거의 모든 물질을 파괴합니다.";
+	Description = "파괴적 폭탄: 더욱 파괴적인 폭탄으로 거의 모든 것을 뚫을 수 있습니다.";
 
 	Properties = TYPE_PART|PROP_LIFE_DEC|PROP_LIFE_KILL_DEC;
 
@@ -87,7 +87,7 @@ static int update(UPDATE_FUNC_ARGS)
 		if (parts[i].life<=0)
 			parts[i].life=1;
 	}
-	else if (elements[rt].HeatConduct)
+	else if (!sim->IsHeatInsulator(parts[ID(r)]))
 		parts[ID(r)].temp = MAX_TEMP;
 	parts[i].temp=MAX_TEMP;
 	sim->pv[y/CELL][x/CELL]+=80.0f;

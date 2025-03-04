@@ -27,7 +27,7 @@ void Element::Element_INSL()
 	Weight = 100;
 
 	HeatConduct = 0;
-	Description = "절연체: 열과 전류를 막지만 불에 탈 수 있습니다.";
+	Description = "절연체: 열, 전기, 방사선을 차단합니다.";
 
 	Properties = TYPE_SOLID;
 

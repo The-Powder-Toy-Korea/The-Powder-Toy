@@ -93,7 +93,7 @@ RenderView::RenderView():
 	addDisplayModeCheckbox(DISPLAY_AIRH, IconHeat    , ui::Point(167, 22), "공기의 온도를 열 디스플레이와 같이 표시합니다.");
 	line2 = 200;
 	addDisplayModeCheckbox(DISPLAY_WARP, IconWarp      , ui::Point(205, 22), "중력 렌즈 디스플레이: 뉴턴 중력이 발생하는 곳에서 빛을 왜곡하는 효과를 표시합니다.");
-	addDisplayModeCheckbox(DISPLAY_EFFE, IconEffect    , ui::Point(205,  4), "고체 이동 활성화, 스틱맨 총, Premium\xE2\x84\xA2 그래픽 (패러디)");
+	addDisplayModeCheckbox(DISPLAY_EFFE, IconEffect    , ui::Point(205,  4), "고체 이동 활성화, 스틱맨 총, Premium\xE2\x84\xA2 그래픽(패러디)");
 	addDisplayModeCheckbox(DISPLAY_PERS, IconPersistant, ui::Point(237,  4), "물질이 지나간 곳에 잠시 동안 경로를 표시합니다.");
 	line3 = 270;
 
@@ -118,7 +118,7 @@ RenderView::RenderView():
 		AddComponent(colourModeCheckbox);
 	};
 	addColourModeCheckbox(COLOUR_HEAT, IconHeat    , ui::Point(275,  4), "물질의 온도를 표시합니다. 짙은 남색이 가장 차가움을, 진분홍색이 가장 뜨거움을 나타냅니다.");
-	addColourModeCheckbox(COLOUR_LIFE, IconLife    , ui::Point(275, 22), "물질의 Life 값을 회색조로 표시합니다.");
+	addColourModeCheckbox(COLOUR_LIFE, IconLife    , ui::Point(275, 22), "물질의 라이프 값을 명암으로 표시합니다.");
 	addColourModeCheckbox(COLOUR_GRAD, IconGradient, ui::Point(307, 22), "열 확산을 자세히 표시하기 위해 물질의 색상을 약간 변경합니다.");
 	addColourModeCheckbox(COLOUR_BASC, IconBasic   , ui::Point(307,  4), "모든 물질에 대한 특수 효과나 도색 등을 모두 표시하지 않습니다.");
 	line4 = 340;

@@ -32,7 +32,7 @@ void Element::Element_CBNW()
 	DefaultProperties.temp = R_TEMP - 2.0f + 273.15f;
 	HeatConduct = 29;
 	LatentHeat = 7500;
-	Description = "탄산수: 천천히 김이 빠지며 CO2를 생성합니다.";
+	Description = "탄산수: 김이 빠지며 천천히 이산화 탄소를 방출합니다.";
 
 	Properties = TYPE_LIQUID|PROP_CONDUCTS|PROP_LIFE_DEC|PROP_NEUTPENETRATE;
 

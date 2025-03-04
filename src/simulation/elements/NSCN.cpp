@@ -28,7 +28,7 @@ void Element::Element_NSCN()
 	Weight = 100;
 
 	HeatConduct = 251;
-	Description = "N형 실리콘: PSCN에 전류를 전달하지 않습니다.";
+	Description = "N형 실리콘: P형 실리콘으로 전류를 전달하지 않습니다. 전원식 물질을 비활성화합니다.";
 
 	Properties = TYPE_SOLID|PROP_CONDUCTS|PROP_LIFE_DEC;
 

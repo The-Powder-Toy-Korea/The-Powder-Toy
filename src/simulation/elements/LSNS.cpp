@@ -30,7 +30,7 @@ void Element::Element_LSNS()
 
 	DefaultProperties.temp = 4.0f + 273.15f;
 	HeatConduct = 0;
-	Description = "Life 감지기: 설정된 온도보다 높은 Life 값을 갖는 물질이 근처에 있는 경우 전류를 방출합니다.";
+	Description = "라이프 감지기: 주변에 설정한 온도보다 높은 라이프 값을 갖는 입자가 있는 경우 전류를 방출합니다.";
 
 	Properties = TYPE_SOLID;
 

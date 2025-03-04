@@ -30,7 +30,7 @@ void Element::Element_LITH()
 	Weight = 17;
 
 	HeatConduct = 70;
-	Description = "리튬: 물과 닿으면 폭발합니다.";
+	Description = "리튬: 물에 닿으면 폭발하는 반응성 원소입니다.";
 
 	Properties = TYPE_PART | PROP_LIFE_DEC;
 

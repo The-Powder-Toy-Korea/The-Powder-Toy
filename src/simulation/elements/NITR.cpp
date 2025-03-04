@@ -28,7 +28,7 @@ void Element::Element_NITR()
 	Weight = 23;
 
 	HeatConduct = 50;
-	Description = "나이트로글리세린: 압력에 매우 민감한 폭발물로, CLST와 혼합하여 TNT를 만들 수 있습니다.";
+	Description = "나이트로글리세린: 압력에 매우 민감한 폭발물입니다. 점토 가루와 혼합하여 TNT를 만듭니다.";
 
 	Properties = TYPE_LIQUID;
 

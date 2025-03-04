@@ -27,7 +27,7 @@ void Element::Element_SALT()
 	Weight = 75;
 
 	HeatConduct = 110;
-	Description = "소금: 물에 용해될 수 있습니다.";
+	Description = "소금: 물에 녹습니다.";
 
 	Properties = TYPE_PART;
 

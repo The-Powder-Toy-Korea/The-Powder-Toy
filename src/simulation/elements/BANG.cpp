@@ -29,7 +29,7 @@ void Element::Element_BANG()
 	Weight = 100;
 
 	HeatConduct = 88;
-	Description = "트라이나이트로톨루엔: 한 번에 전체가 폭발하는 폭발물입니다.";
+	Description = "트라이나이트로톨루엔: 한 번에 전체가 폭발합니다.";
 
 	Properties = TYPE_SOLID | PROP_NEUTPENETRATE;
 

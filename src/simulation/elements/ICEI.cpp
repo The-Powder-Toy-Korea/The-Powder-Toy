@@ -31,7 +31,7 @@ void Element::Element_ICEI()
 	DefaultProperties.temp = R_TEMP - 50.0f + 273.15f;
 	HeatConduct = 46;
 	LatentHeat = 1095;
-	Description = "얼음: 압력에 의해 파괴될 수 있으며 공기를 식힙니다.";
+	Description = "얼음: 압력을 받으면 깨지며 공기를 식힙니다.";
 
 	Properties = TYPE_SOLID|PROP_LIFE_DEC|PROP_NEUTPASS;
 	CarriesTypeIn = 1U << FIELD_CTYPE;
