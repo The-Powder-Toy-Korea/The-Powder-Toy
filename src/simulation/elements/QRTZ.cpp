@@ -30,7 +30,7 @@ void Element::Element_QRTZ()
 	Weight = 100;
 
 	HeatConduct = 3;
-	Description = "석영: 깨지기 쉬운 광물입니다. 전도성이 있으며 차가워지면 더 깨지기 쉽습니다. 광자를 산란시킵니다.";
+	Description = "석영: 깨지기 쉬운 광물입니다. 전기 전도성이 있으며 차가워지면 더 깨지기 쉽습니다. 광자를 산란시킵니다.";
 
 	Properties = TYPE_SOLID | PROP_PHOTPASS | PROP_HOT_GLOW | PROP_LIFE_DEC;
 

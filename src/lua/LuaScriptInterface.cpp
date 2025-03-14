@@ -3,8 +3,8 @@
 #include "common/platform/Platform.h"
 #include "common/tpt-rand.h"
 #include "compat_lua.h"
-#include "scrptmgr_lua.h"
-#include "multimgr_lua.h"
+#include "scriptmanager_lua.h"
+#include "multiplaymanager_lua.h"
 #include "gui/game/GameController.h"
 #include "gui/game/GameModel.h"
 #include "gui/game/GameView.h"
@@ -179,19 +179,19 @@ LuaScriptInterface::LuaScriptInterface(GameController *newGameController, GameMo
 		lua_pop(L, 1);
 	}
 	auto compatSpan = compat_lua.AsCharSpan();
-	auto scriptManagerSpan = scrptmgr_lua.AsCharSpan();
-	auto multiplayManagerSpan = multimgr_lua.AsCharSpan();
+	auto scriptManagerSpan = scriptmanager_lua.AsCharSpan();
+	auto multiplayManagerSpan = multiplaymanager_lua.AsCharSpan();
 	if (luaL_loadbuffer(L, compatSpan.data(), compatSpan.size(), "@[built-in compat.lua]") || tpt_lua_pcall(L, 0, 0, 0, eventTraitNone))
 	{
-		throw std::runtime_error(ByteString("내장 Compat을 불러오는 데 실패함: ") + tpt_lua_toByteString(L, -1));
+		throw std::runtime_error(ByteString("failed to load built-in compat: ") + tpt_lua_toByteString(L, -1));
 	}
-	if (luaL_loadbuffer(L, scriptManagerSpan.data(), scriptManagerSpan.size(), "@[built-in scrptmgr.lua]") || tpt_lua_pcall(L, 0, 0, 0, eventTraitNone))
+	if (luaL_loadbuffer(L, scriptManagerSpan.data(), scriptManagerSpan.size(), "@[built-in scriptmanager_ko-kr.lua]") || tpt_lua_pcall(L, 0, 0, 0, eventTraitInterface))
 	{
-		throw std::runtime_error(ByteString("내장 스크립트 관리자를 불러오는 데 실패함: ") + tpt_lua_toByteString(L, -1));
+		throw std::runtime_error(ByteString("failed to load built-in script manager: ") + tpt_lua_toByteString(L, -1));
 	}
-	if (luaL_loadbuffer(L, multiplayManagerSpan.data(), multiplayManagerSpan.size(), "@[built-in multimgr.lua]") || tpt_lua_pcall(L, 0, 0, 0, eventTraitNone))
+	if (luaL_loadbuffer(L, multiplayManagerSpan.data(), multiplayManagerSpan.size(), "@[built-in multiplaymanager_ko-kr.lua]") || tpt_lua_pcall(L, 0, 0, 0, eventTraitNone))
 	{
-		throw std::runtime_error(ByteString("내장 멀티플레이 관리자를 불러오는 데 실패함: ") + tpt_lua_toByteString(L, -1));
+		throw std::runtime_error(ByteString("failed to load built-in multiplay manager: ") + tpt_lua_toByteString(L, -1));
 	}
 }
 
@@ -214,14 +214,26 @@ void LuaScriptInterface::InitCustomCanMove()
 void CommandInterface::Init()
 {
 	auto *lsi = static_cast<LuaScriptInterface *>(this);
-	auto *L = lsi->L;
-	if (Platform::FileExists("autorun.lua"))
+	// if (lsi->Autorun())
+	// {
+	// 	lua_pop(lsi->L, 1);
+	// }
+}
+
+int LuaScriptInterface::Autorun()
+{
+	if (!Platform::FileExists("autorun.lua"))
 	{
-		if(luaL_loadfile(L, "autorun.lua") || tpt_lua_pcall(L, 0, 0, 0, eventTraitNone))
-			Log(CommandInterface::LogError, LuaGetError());
-		else
-			Log(CommandInterface::LogWarning, "Loaded autorun.lua");
+		lua_pushliteral(L, "autorun.lua not found");
+		return 1;
 	}
+	if (luaL_loadfile(L, "autorun.lua") || tpt_lua_pcall(L, 0, 0, 0, eventTraitInterface))
+	{
+		Log(CommandInterface::LogError, LuaGetError());
+		return 1;
+	}
+	Log(CommandInterface::LogWarning, "Loaded autorun.lua");
+	return 0;
 }
 
 void CommandInterface::SetToolIndex(ByteString identifier, std::optional<int> index)
@@ -531,7 +543,7 @@ int CommandInterface::Command(String command)
 		else
 		{
 			lsi->lastCode = "";
-			ret = tpt_lua_pcall(L, 0, LUA_MULTRET, 0, eventTraitNone);
+			ret = tpt_lua_pcall(L, 0, LUA_MULTRET, 0, eventTraitInterface);
 			if (ret)
 			{
 				lastError = LuaGetError();
@@ -820,11 +832,6 @@ int tpt_lua_loadstring(lua_State *L, const ByteString &str)
 	return luaL_loadbuffer(L, str.data(), str.size(), str.data());
 }
 
-int tpt_lua_dostring(lua_State *L, const ByteString &str)
-{
-	return tpt_lua_loadstring(L, str) || tpt_lua_pcall(L, 0, LUA_MULTRET, 0, eventTraitNone);
-}
-
 bool tpt_lua_equalsString(lua_State *L, int index, const char *data, size_t size)
 {
 	return lua_isstring(L, index) && lua_objlen(L, index) == size && !memcmp(lua_tostring(L, index), data, size);
@@ -864,3 +871,10 @@ void CommandInterfaceDeleter::operator ()(CommandInterface *ptr) const
 	delete static_cast<LuaScriptInterface *>(ptr);
 }
 
+void LuaScriptInterface::AssertInterfaceEvent()
+{
+	if (!(eventTraits & eventTraitInterface))
+	{
+		luaL_error(L, "this functionality is restricted to interface events");
+	}
+}

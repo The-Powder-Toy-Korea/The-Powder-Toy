@@ -7,13 +7,13 @@
 
 const std::vector<RenderPreset> Renderer::renderModePresets = {
 	{
-		"대안 속도 디스플레이",
+		"대안 기류 디스플레이",
 		RENDER_EFFE | RENDER_BASC,
 		DISPLAY_AIRC,
 		0,
 	},
 	{
-		"공기 속도 디스플레이",
+		"기류 디스플레이",
 		RENDER_EFFE | RENDER_BASC,
 		DISPLAY_AIRV,
 		0,
@@ -37,7 +37,7 @@ const std::vector<RenderPreset> Renderer::renderModePresets = {
 		0,
 	},
 	{
-		"흐리기 디스플레이",
+		"얼룩 디스플레이",
 		RENDER_FIRE | RENDER_SPRK | RENDER_EFFE | RENDER_BLOB,
 		0,
 		0,
@@ -55,7 +55,7 @@ const std::vector<RenderPreset> Renderer::renderModePresets = {
 		0,
 	},
 	{
-		"일반 디스플레이",
+		"기본 디스플레이",
 		RENDER_BASC,
 		0,
 		0,

@@ -257,7 +257,7 @@ class WindTool: public Tool
 {
 public:
 	WindTool():
-		Tool(0, "WIND", "공기 흐름을 생성합니다.",
+		Tool(0, "WIND", "기류를 생성합니다.",
 			0x404040_rgb, "DEFAULT_UI_WIND")
 	{}
 

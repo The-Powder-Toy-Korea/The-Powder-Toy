@@ -829,7 +829,7 @@ void GameController::SwitchAir()
 		gameModel->SetInfoTip("공기: 압력 끄기");
 		break;
 	case AIR_VELOCITYOFF:
-		gameModel->SetInfoTip("공기: 바람 끄기");
+		gameModel->SetInfoTip("공기: 기류 끄기");
 		break;
 	case AIR_OFF:
 		gameModel->SetInfoTip("공기: 끄기");

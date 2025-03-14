@@ -31,7 +31,7 @@ void Element::Element_DLAY()
 
 	DefaultProperties.temp = 4.0f + 273.15f;
 	HeatConduct = 0;
-	Description = "지연기: 온도에 따라 전류 흐름을 지연시킵니다(HEAT 및 COOL을 사용).";
+	Description = "지연기: 온도에 따라 전류 흐름을 지연시킵니다(HEAT/COOL 사용).";
 
 	Properties = TYPE_SOLID;
 

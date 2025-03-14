@@ -31,7 +31,7 @@ void Element::Element_GLOW()
 
 	DefaultProperties.temp = R_TEMP + 20.0f + 273.15f;
 	HeatConduct = 44;
-	Description = "글로우: 압력을 받으면 빛납니다.";
+	Description = "발광체: 압력을 받으면 빛납니다.";
 
 	Properties = TYPE_LIQUID | PROP_PHOTPASS | PROP_LIFE_DEC;
 

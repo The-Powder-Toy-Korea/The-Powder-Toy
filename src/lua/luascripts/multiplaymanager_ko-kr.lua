@@ -62,6 +62,7 @@ require_preload__["tptmp.client"] = function()
 		tptVersion = { tpt.version.upstreamMajor, tpt.version.upstreamMinor }
 	end
 	local http = rawget(_G, "http")
+	local tools = rawget(_G, "tools")
 	local socket = rawget(_G, "socket")
 	if sim.CELL ~= 4 then -- * Required by cursor snapping functions.
 		loadtime_error = "CELL is not 4, try using the official version of the game"
@@ -77,6 +78,8 @@ require_preload__["tptmp.client"] = function()
 		loadtime_error = "no bit API, try updating the game"
 	elseif not http then
 		loadtime_error = "no http API, try updating the game"
+	elseif not tools then
+		loadtime_error = "no tools API, try updating the game"
 	elseif not socket or not socket.tcp then
 		loadtime_error = "no socket API, try updating the game"
 	elseif socket.bind then
@@ -358,7 +361,7 @@ require_preload__["tptmp.client"] = function()
 						end
 						tool_name = tool_name:match("[^_]+$") or tool_name
 						if add_argb then
-							tool_name = ("%s %02X%02X%02X%02X"):format(tool_name, member.deco_a, member.deco_r, member.deco_g, member.deco_b)
+							tool_name = ("%s %02X%02X%02X%02X"):format(tool_name, util.deco_unpack(member.deco))
 						end
 						local repl_tool_name
 						if member.bmode ~= 0 then
@@ -597,7 +600,7 @@ require_preload__["tptmp.client"] = function()
 	
 		win:set_subtitle("status", "연결되지 않음")
 		if tpt.version.snapshot then
-			win:backlog_push_neutral(colours.commonstr.error .. "* 스냅숏 버전의 TPT입니다. 오류가 발생할 수 있습니다.")
+			win:backlog_push_neutral(colours.commonstr.error .. "* 스냅샷 버전의 TPT입니다. 오류가 발생할 수 있습니다.")
 		elseif tpt.version.beta then
 			win:backlog_push_neutral(colours.commonstr.error .. "* 베타 버전의 TPT입니다. 오류가 발생할 수 있습니다.")
 		end
@@ -750,7 +753,7 @@ require_preload__["tptmp.client.client"] = function()
 	
 	function member_i:update_can_render()
 		if not self.can_render_ then
-			if self.deco_a ~= nil and
+			if self.deco ~= nil and
 			   self.kmod_c ~= nil and
 			   self.shape  ~= nil and
 			   self.size_x ~= nil and
@@ -896,6 +899,20 @@ require_preload__["tptmp.client.client"] = function()
 		self.xidr = util.xid_registry(supported)
 		self.xidr_unsupported = unsupported
 		self.profile_:xidr_sync()
+	end
+	
+	function client_i:handle_loadlocal_29_()
+		local member = self:member_prefix_()
+		local flags, _ = self:read_xy_12_()
+		local data = self:read_str24_()
+		local ok, err = util.stamp_load(0, 0, data, true)
+		if ok then
+			if bit.band(flags, 1) == 0 then
+				self.log_event_func_(colours.commonstr.event .. "Local save from " .. member.formatted_nick)
+			end
+		else
+			self.log_event_func_(colours.commonstr.error .. "Failed to load local save from " .. member.formatted_nick .. colours.commonstr.error .. ": " .. err)
+		end
 	end
 	
 	function client_i:handle_sync_30_()
@@ -1101,7 +1118,7 @@ require_preload__["tptmp.client.client"] = function()
 			if member.kmod_a then
 				x2, y2 = util.rect_snap_coords(x1, y1, x2, y2)
 			end
-			util.create_box_any(self.xidr, x1, y1, x2, y2, member.last_tool, member)
+			util.create_box_any(self.xidr, x1, y1, x2, y2, member.size_x, member.size_y, member.last_tool, member)
 		end
 		member.rect_x, member.rect_y = nil, nil
 	end
@@ -1234,7 +1251,7 @@ require_preload__["tptmp.client.client"] = function()
 	
 	function client_i:handle_brushdeco_65_()
 		local member = self:member_prefix_()
-		member.deco_a, member.deco_r, member.deco_g, member.deco_b = self:read_bytes_(4)
+		member.deco = util.deco_pack(self:read_bytes_(4))
 		member:update_can_render()
 	end
 	
@@ -1436,7 +1453,7 @@ require_preload__["tptmp.client.client"] = function()
 		if conn_status == 1 then
 			do
 				local arr = {}
-				for name in pairs(util.element_identifiers()) do
+				for name in pairs(util.tool_identifiers()) do
 					table.insert(arr, name)
 				end
 				local str = table.concat(arr, " ")
@@ -1627,12 +1644,7 @@ require_preload__["tptmp.client.client"] = function()
 	
 	function client_i:send_brushdeco(deco)
 		self:write_("\65")
-		self:write_bytes_(
-			bit.band(bit.rshift(deco, 24), 0xFF),
-			bit.band(bit.rshift(deco, 16), 0xFF),
-			bit.band(bit.rshift(deco,  8), 0xFF),
-			bit.band(           deco     , 0xFF)
-		)
+		self:write_bytes_(util.deco_unpack(deco))
 		self:write_flush_()
 	end
 	
@@ -1678,6 +1690,13 @@ require_preload__["tptmp.client.client"] = function()
 		local ok, err = self:send_pastestamp_data_("\30", 0, 0, sim.XRES, sim.YRES)
 		if not ok then
 			self.log_event_func_(colours.commonstr.error .. "Failed to send screen: " .. err)
+		end
+	end
+	
+	function client_i:send_loadlocal(reloading)
+		local ok, err = self:send_pastestamp_data_("\29", reloading and 1 or 0, 0, sim.XRES, sim.YRES)
+		if not ok then
+			self.log_event_func_(colours.commonstr.error .. "Failed to local save: " .. err)
 		end
 	end
 	
@@ -2147,7 +2166,7 @@ require_preload__["tptmp.client.client"] = function()
 			should_not_reconnect_func_ = params.should_not_reconnect_func,
 			id_to_member               = {},
 			nick_colour_seed_          = 0,
-			identifiers_               = util.element_identifiers(),
+			identifiers_               = util.tool_identifiers(),
 			fps_sync_                  = false,
 		}, client_m)
 		cli:rehash_supported_elements_()
@@ -2247,7 +2266,7 @@ require_preload__["tptmp.client.config"] = function()
 
 	local common_config = require("tptmp.common.config")
 	
-	local versionstr = "v2.1.2"
+	local versionstr = "v2.2.3"
 	
 	local config = {
 		-- ***********************************************************************
@@ -3028,6 +3047,7 @@ require_preload__["tptmp.client.profile.vanilla"] = function()
 		ipcirc    =               "The old circle brush does not sync, you will have to use /sync",
 		cgol      = "This custom GOL type is not supported, please avoid using it while connected",
 		cgolcolor =  "Custom GOL currently syncs without colours, use /sync to get colours across",
+		windhold  =   "Holding the WIND tool does not sync, please avoid doing it while connected",
 	}
 	
 	local BRUSH_COUNT = 3
@@ -3351,6 +3371,12 @@ require_preload__["tptmp.client.profile.vanilla"] = function()
 		end
 	end
 	
+	function profile_i:report_loadlocal_(reloading)
+		if self.registered_func_() then
+			self.client_:send_loadlocal(reloading)
+		end
+	end
+	
 	function profile_i:report_canceldraw_()
 		if self.registered_func_() then
 			self.client_:send_canceldraw()
@@ -3416,11 +3442,11 @@ require_preload__["tptmp.client.profile.vanilla"] = function()
 					if id then
 						self:report_loadonline_(id, hist)
 					else
-						self:report_pastestamp_(x, y, w, h)
+						self:report_loadlocal_(false)
 					end
 				elseif self.placesave_reload_ then
 					if not self.get_id_func_() then
-						self:report_pastestamp_(x, y, w, h)
+						self:report_loadlocal_(true)
 					end
 					self:report_reloadsim_()
 				elseif self.placesave_clear_ then
@@ -3910,6 +3936,11 @@ require_preload__["tptmp.client.profile.vanilla"] = function()
 					return
 				end
 				self:update_tools_()
+				if self.draw_mode_ == "line" then
+					if self[index_to_lraxid[self.last_toolslot_]] == "DEFAULT_TOOL_WIND" then
+						self.display_toolwarn_["windhold"] = true
+					end
+				end
 				if next(self.display_toolwarn_) then
 					if self.registered_func_() then
 						for key in pairs(self.display_toolwarn_) do
@@ -4697,19 +4728,9 @@ require_preload__["tptmp.client.util"] = function()
 	local config      = require("tptmp.client.config")
 	local common_util = require("tptmp.common.util")
 	
-	local jacobsmod = rawget(_G, "jacobsmod")
 	local PMAPBITS = sim.PMAPBITS
 	
 	local tpt_version = { tpt.version.major, tpt.version.minor }
-	local has_ambient_heat_tools
-	do
-		local old_selectedl = tpt.selectedl
-		if old_selectedl == "DEFAULT_UI_PROPERTY" or old_selectedl == "DEFAULT_UI_ADDLIFE" then
-			old_selectedl = "DEFAULT_PT_DUST"
-		end
-		has_ambient_heat_tools = pcall(function() tpt.selectedl = "DEFAULT_TOOL_AMBM" end)
-		tpt.selectedl = old_selectedl
-	end
 	
 	local function array_concat(...)
 		local tbl = {}
@@ -4721,78 +4742,6 @@ require_preload__["tptmp.client.util"] = function()
 		end
 		return tbl
 	end
-	
-	local tools = array_concat({
-		"DEFAULT_PT_LIFE_GOL",
-		"DEFAULT_PT_LIFE_HLIF",
-		"DEFAULT_PT_LIFE_ASIM",
-		"DEFAULT_PT_LIFE_2X2",
-		"DEFAULT_PT_LIFE_DANI",
-		"DEFAULT_PT_LIFE_AMOE",
-		"DEFAULT_PT_LIFE_MOVE",
-		"DEFAULT_PT_LIFE_PGOL",
-		"DEFAULT_PT_LIFE_DMOE",
-		"DEFAULT_PT_LIFE_3-4",
-		"DEFAULT_PT_LIFE_LLIF",
-		"DEFAULT_PT_LIFE_STAN",
-		"DEFAULT_PT_LIFE_SEED",
-		"DEFAULT_PT_LIFE_MAZE",
-		"DEFAULT_PT_LIFE_COAG",
-		"DEFAULT_PT_LIFE_WALL",
-		"DEFAULT_PT_LIFE_GNAR",
-		"DEFAULT_PT_LIFE_REPL",
-		"DEFAULT_PT_LIFE_MYST",
-		"DEFAULT_PT_LIFE_LOTE",
-		"DEFAULT_PT_LIFE_FRG2",
-		"DEFAULT_PT_LIFE_STAR",
-		"DEFAULT_PT_LIFE_FROG",
-		"DEFAULT_PT_LIFE_BRAN",
-	}, {
-		"DEFAULT_WL_ERASE",
-		"DEFAULT_WL_CNDTW",
-		"DEFAULT_WL_EWALL",
-		"DEFAULT_WL_DTECT",
-		"DEFAULT_WL_STRM",
-		"DEFAULT_WL_FAN",
-		"DEFAULT_WL_LIQD",
-		"DEFAULT_WL_ABSRB",
-		"DEFAULT_WL_WALL",
-		"DEFAULT_WL_AIR",
-		"DEFAULT_WL_POWDR",
-		"DEFAULT_WL_CNDTR",
-		"DEFAULT_WL_EHOLE",
-		"DEFAULT_WL_GAS",
-		"DEFAULT_WL_GRVTY",
-		"DEFAULT_WL_ENRGY",
-		"DEFAULT_WL_NOAIR",
-		"DEFAULT_WL_ERASEA",
-		"DEFAULT_WL_STASIS",
-	}, {
-		"DEFAULT_UI_SAMPLE",
-		"DEFAULT_UI_SIGN",
-		"DEFAULT_UI_PROPERTY",
-		"DEFAULT_UI_WIND",
-		"DEFAULT_UI_ADDLIFE",
-	}, {
-		"DEFAULT_TOOL_HEAT",
-		"DEFAULT_TOOL_COOL",
-		"DEFAULT_TOOL_AIR",
-		"DEFAULT_TOOL_VAC",
-		"DEFAULT_TOOL_PGRV",
-		"DEFAULT_TOOL_NGRV",
-		"DEFAULT_TOOL_MIX",
-		"DEFAULT_TOOL_CYCL",
-		has_ambient_heat_tools and "DEFAULT_TOOL_AMBM" or nil,
-		has_ambient_heat_tools and "DEFAULT_TOOL_AMBP" or nil,
-	}, {
-		"DEFAULT_DECOR_SET",
-		"DEFAULT_DECOR_CLR",
-		"DEFAULT_DECOR_ADD",
-		"DEFAULT_DECOR_SUB",
-		"DEFAULT_DECOR_MUL",
-		"DEFAULT_DECOR_DIV",
-		"DEFAULT_DECOR_SMDG",
-	})
 	
 	local function xid_registry(supported)
 		table.sort(supported, function(lhs, rhs)
@@ -4807,29 +4756,24 @@ require_preload__["tptmp.client.util"] = function()
 			end
 			return false
 		end)
-		local xid_first = {}
 		local xid_class = {}
 		local from_tool = {}
 		local to_tool = {}
-		for i = 1, #tools do
-			local xtype = 0x2000 + i
-			local tool = tools[i]
-			from_tool[tool] = xtype
-			to_tool[xtype] = tool
+		local to_tool_index = {}
+		for xtype, tool in ipairs(supported) do
+			assert(not to_tool[xtype])
+			assert(not from_tool[tool])
 			local class = tool:match("^[^_]+_(.-)_[^_]+$")
 			xid_class[xtype] = class
-			xid_first[class] = math.min(xid_first[class] or math.huge, xtype)
-		end
-		for key, value in pairs(supported) do
-			assert(not to_tool[key])
-			assert(not from_tool[value])
-			to_tool[key] = value
-			from_tool[value] = key
+			to_tool[xtype] = tool
+			to_tool_index[xtype] = tools.index[tool]
+			from_tool[tool] = xtype
 		end
 		local unknown_xid = 0x3FFF
 		assert(not to_tool[unknown_xid])
 		from_tool["UNKNOWN"] = unknown_xid
 		to_tool[unknown_xid] = "UNKNOWN"
+		to_tool_index[unknown_xid] = 0
 		local function assign_if_supported(tbl)
 			local res = {}
 			for key, value in pairs(tbl) do
@@ -4840,28 +4784,28 @@ require_preload__["tptmp.client.util"] = function()
 			return res
 		end
 		local create_override = assign_if_supported({
-			[ "DEFAULT_PT_STKM" ] = function(rx, ry, c)
-				return 0, 0, c
-			end,
 			[ "DEFAULT_PT_LIGH" ] = function(rx, ry, c)
 				local tmp = rx + ry
 				if tmp > 55 then
 					tmp = 55
 				end
-				return 0, 0, c + bit.lshift(tmp, PMAPBITS)
+				return 0, 0, elem.DEFAULT_PT_LIGH + bit.lshift(tmp, PMAPBITS)
 			end,
 			[ "DEFAULT_PT_TESC" ] = function(rx, ry, c)
 				local tmp = rx * 4 + ry * 4 + 7
 				if tmp > 300 then
 					tmp = 300
 				end
-				return rx, ry, c + bit.lshift(tmp, PMAPBITS)
+				return rx, ry, elem.DEFAULT_PT_TESC + bit.lshift(tmp, PMAPBITS)
+			end,
+			[ "DEFAULT_PT_STKM" ] = function(rx, ry, c)
+				return 0, 0, elem.DEFAULT_PT_STKM
 			end,
 			[ "DEFAULT_PT_STKM2" ] = function(rx, ry, c)
-				return 0, 0, c
+				return 0, 0, elem.DEFAULT_PT_STKM2
 			end,
 			[ "DEFAULT_PT_FIGH" ] = function(rx, ry, c)
-				return 0, 0, c
+				return 0, 0, elem.DEFAULT_PT_FIGH
 			end,
 		})
 		local no_flood = assign_if_supported({
@@ -4887,16 +4831,16 @@ require_preload__["tptmp.client.util"] = function()
 			[ "DEFAULT_UI_WIND" ] = true,
 		})
 		return {
-			xid_first = xid_first,
-			xid_class = xid_class,
-			from_tool = from_tool,
-			to_tool = to_tool,
+			xid_class       = xid_class,
+			from_tool       = from_tool,
+			to_tool         = to_tool,
+			to_tool_index   = to_tool_index,
 			create_override = create_override,
-			no_flood = no_flood,
-			no_shape = no_shape,
-			no_create = no_create,
-			line_only = line_only,
-			unknown_xid = unknown_xid,
+			no_flood        = no_flood,
+			no_shape        = no_shape,
+			no_create       = no_create,
+			line_only       = line_only,
+			unknown_xid     = unknown_xid,
 		}
 	end
 	
@@ -5034,47 +4978,46 @@ require_preload__["tptmp.client.util"] = function()
 		if xidr.line_only[xtype] or xidr.no_create[xtype] then
 			return
 		end
-		local translate = true
 		local class = xidr.xid_class[xtype]
-		if class == "WL" then
-			if xtype == xidr.from_tool.DEFAULT_WL_STRM then
-				rx, ry = 0, 0
-			end
-			sim.createWalls(x, y, rx, ry, xtype - xidr.xid_first.WL, brush)
-			return
-		elseif class == "TOOL" then
-			local str = 1
-			if member.kmod_s then
-				str = 10
-			elseif member.kmod_c then
-				str = 0.1
-			end
-			sim.toolBrush(x, y, rx, ry, xtype - xidr.xid_first.TOOL, brush, str)
-			return
-		elseif class == "DECOR" then
-			sim.decoBrush(x, y, rx, ry, member.deco_r, member.deco_g, member.deco_b, member.deco_a, xtype - xidr.xid_first.DECOR, brush)
-			return
-		elseif class == "PT_LIFE" then
-			xtype = bit.bor(elem.DEFAULT_PT_LIFE, bit.lshift(xtype - xidr.xid_first.PT_LIFE, PMAPBITS))
-			translate = false
-		elseif type(xtype) == "table" and xtype.type == "cgol" then
+		local old_create = false
+		if type(xtype) == "table" and xtype.type == "cgol" then
 			-- * TODO[api]: add an api for setting gol colour
 			xtype = xtype.elem
-			translate = false
+			old_create = true
+		else
+			local ov = xidr.create_override[xtype]
+			if ov then
+				rx, ry, xtype = ov(rx, ry, xtype)
+				old_create = true
+			end
 		end
-		local ov = xidr.create_override[xtype]
-		if ov then
-			rx, ry, xtype = ov(rx, ry, xtype)
+		local str = 1
+		if member.kmod_s then
+			str = 10
+		elseif member.kmod_c then
+			str = 0.1
 		end
 		local selectedreplace
 		if member.bmode ~= 0 then
 			selectedreplace = tpt.selectedreplace
 			tpt.selectedreplace = xidr.to_tool[member.tool_x] or "DEFAULT_PT_NONE"
 		end
-		if translate then
-			xtype = elem[xidr.to_tool[xtype]]
+		local bmode = sim.replaceModeFlags()
+		sim.replaceModeFlags(member.bmode)
+		if old_create then
+			sim.createParts(x, y, rx, ry, xtype, brush, member.bmode)
+		else
+			local deco
+			if class == "DECOR" then
+				deco = sim.decoColour()
+				sim.decoColour(member.deco)
+			end
+			sim.toolBrush(x, y, rx, ry, xidr.to_tool_index[xtype], brush, str)
+			if class == "DECOR" then
+				sim.decoColour(deco)
+			end
 		end
-		sim.createParts(x, y, rx, ry, xtype, brush, member.bmode)
+		sim.replaceModeFlags(bmode)
 		if member.bmode ~= 0 then
 			tpt.selectedreplace = selectedreplace
 		end
@@ -5089,109 +5032,57 @@ require_preload__["tptmp.client.util"] = function()
 		if xidr.no_create[xtype] or xidr.no_shape[xtype] then
 			return
 		end
-		local translate = true
 		local class = xidr.xid_class[xtype]
-		if class == "WL" then
-			local str = 1
-			if cont then
-				if member.kmod_s then
-					str = 10
-				elseif member.kmod_c then
-					str = 0.1
-				end
-				str = str * 5
-			end
-			local wl_fan = xidr.from_tool.DEFAULT_WL_FAN - xidr.xid_first.WL
-			if not cont and xtype == xidr.from_tool.DEFAULT_WL_FAN and tpt.get_wallmap(math.floor(x1 / 4), math.floor(y1 / 4)) == wl_fan then
-				local fvx = (x2 - x1) * 0.005
-				local fvy = (y2 - y1) * 0.005
-				local bw = sim.XRES / 4
-				local bh = sim.YRES / 4
-				local visit = {}
-				local mark = {}
-				local last = 0
-				local function enqueue(x, y)
-					if x >= 0 and y >= 0 and x < bw and y < bh and tpt.get_wallmap(x, y) == wl_fan then
-						local k = x + y * bw
-						if not mark[k] then
-							last = last + 1
-							visit[last] = k
-							mark[k] = true
-						end
-					end
-				end
-				enqueue(math.floor(x1 / 4), math.floor(y1 / 4))
-				local curr = 1
-				while visit[curr] do
-					local k = visit[curr]
-					local x, y = k % bw, math.floor(k / bw)
-					tpt.set_wallmap(x, y, 1, 1, fvx, fvy, wl_fan)
-					enqueue(x - 1, y)
-					enqueue(x, y - 1)
-					enqueue(x + 1, y)
-					enqueue(x, y + 1)
-					curr = curr + 1
-				end
-				return
-			end
-			if xtype == xidr.from_tool.DEFAULT_WL_STRM then
-				rx, ry = 0, 0
-			end
-			sim.createWallLine(x1, y1, x2, y2, rx, ry, xtype - xidr.xid_first.WL, brush)
-			return
-		elseif xtype == xidr.from_tool.DEFAULT_UI_WIND then
-			local str = 1
-			if cont then
-				if member.kmod_s then
-					str = 10
-				elseif member.kmod_c then
-					str = 0.1
-				end
-				str = str * 5
-			end
-			sim.toolLine(x1, y1, x2, y2, rx, ry, sim.TOOL_WIND, brush, str)
-			return
-		elseif class == "TOOL" then
-			local str = 1
-			if cont then
-				if member.kmod_s then
-					str = 10
-				elseif member.kmod_c then
-					str = 0.1
-				end
-			end
-			sim.toolLine(x1, y1, x2, y2, rx, ry, xtype - xidr.xid_first.TOOL, brush, str)
-			return
-		elseif class == "DECOR" then
-			sim.decoLine(x1, y1, x2, y2, rx, ry, member.deco_r, member.deco_g, member.deco_b, member.deco_a, xtype - xidr.xid_first.DECOR, brush)
-			return
-		elseif class == "PT_LIFE" then
-			xtype = bit.bor(elem.DEFAULT_PT_LIFE, bit.lshift(xtype - xidr.xid_first.PT_LIFE, PMAPBITS))
-			translate = false
-		elseif type(xtype) == "table" and xtype.type == "cgol" then
+		local old_create = false
+		if type(xtype) == "table" and xtype.type == "cgol" then
 			-- * TODO[api]: add an api for setting gol colour
 			xtype = xtype.elem
-			translate = false
+			old_create = true
+		else
+			local ov = xidr.create_override[xtype]
+			if ov then
+				rx, ry, xtype = ov(rx, ry, xtype)
+				old_create = true
+			end
 		end
-		local ov = xidr.create_override[xtype]
-		if ov then
-			rx, ry, xtype = ov(rx, ry, xtype)
+		local str = 1
+		if cont then
+			if member.kmod_s then
+				str = 10
+			elseif member.kmod_c then
+				str = 0.1
+			end
+			if xidr.to_tool[xtype] == "DEFAULT_TOOL_WIND" then
+				str = str * 5
+			end
 		end
 		local selectedreplace
 		if member.bmode ~= 0 then
 			selectedreplace = tpt.selectedreplace
 			tpt.selectedreplace = xidr.to_tool[member.tool_x] or "DEFAULT_PT_NONE"
 		end
-		if translate then
-			xtype = elem[xidr.to_tool[xtype]]
+		local bmode = sim.replaceModeFlags()
+		sim.replaceModeFlags(member.bmode)
+		if old_create then
+			sim.createLine(x1, y1, x2, y2, rx, ry, xtype, brush, member.bmode)
+		else
+			local deco
+			if class == "DECOR" then
+				deco = sim.decoColour()
+				sim.decoColour(member.deco)
+			end
+			sim.toolLine(x1, y1, x2, y2, rx, ry, xidr.to_tool_index[xtype], brush, str)
+			if class == "DECOR" then
+				sim.decoColour(deco)
+			end
 		end
-		sim.createLine(x1, y1, x2, y2, rx, ry, xtype, brush, member.bmode)
+		sim.replaceModeFlags(bmode)
 		if member.bmode ~= 0 then
 			tpt.selectedreplace = selectedreplace
 		end
 	end
 	
-	local function create_box_any(xidr, x1, y1, x2, y2, xtype, member)
+	local function create_box_any(xidr, x1, y1, x2, y2, rx, ry, xtype, member)
 		if not inside_rect(0, 0, sim.XRES, sim.YRES, x1, y1) or
 		   not inside_rect(0, 0, sim.XRES, sim.YRES, x2, y2) then
 			return
@@ -5199,39 +5090,44 @@ require_preload__["tptmp.client.util"] = function()
 		if xidr.line_only[xtype] or xidr.no_create[xtype] or xidr.no_shape[xtype] then
 			return
 		end
-		local translate = true
 		local class = xidr.xid_class[xtype]
-		if class == "WL" then
-			sim.createWallBox(x1, y1, x2, y2, xtype - xidr.xid_first.WL)
-			return
-		elseif class == "TOOL" then
-			sim.toolBox(x1, y1, x2, y2, xtype - xidr.xid_first.TOOL)
-			return
-		elseif class == "DECOR" then
-			sim.decoBox(x1, y1, x2, y2, member.deco_r, member.deco_g, member.deco_b, member.deco_a, xtype - xidr.xid_first.DECOR)
-			return
-		elseif class == "PT_LIFE" then
-			xtype = bit.bor(elem.DEFAULT_PT_LIFE, bit.lshift(xtype - xidr.xid_first.PT_LIFE, PMAPBITS))
-			translate = false
-		elseif type(xtype) == "table" and xtype.type == "cgol" then
+		local old_create = false
+		if type(xtype) == "table" and xtype.type == "cgol" then
 			-- * TODO[api]: add an api for setting gol colour
 			xtype = xtype.elem
-			translate = false
+			old_create = true
+		else
+			local ov = xidr.create_override[xtype]
+			if ov then
+				rx, ry, xtype = ov(rx, ry, xtype)
+				old_create = true
+			end
 		end
-		local _
-		local ov = xidr.create_override[xtype]
-		if ov then
-			_, _, xtype = ov(member.size_x, member.size_y, xtype)
-		end
+		local str = 1
 		local selectedreplace
 		if member.bmode ~= 0 then
 			selectedreplace = tpt.selectedreplace
 			tpt.selectedreplace = xidr.to_tool[member.tool_x] or "DEFAULT_PT_NONE"
 		end
-		if translate then
-			xtype = elem[xidr.to_tool[xtype]]
+		local bmode = sim.replaceModeFlags()
+		sim.replaceModeFlags(member.bmode)
+		if old_create then
+			local orx, ory = tpt.brushx, tpt.brushy
+			tpt.brushx, tpt.brushy = rx, ry
+			sim.createBox(x1, y1, x2, y2, xtype, member.bmode)
+			tpt.brushx, tpt.brushy = orx, ory
+		else
+			local deco
+			if class == "DECOR" then
+				deco = sim.decoColour()
+				sim.decoColour(member.deco)
+			end
+			sim.toolBox(x1, y1, x2, y2, xidr.to_tool_index[xtype], str, 0, rx, ry)
+			if class == "DECOR" then
+				sim.decoColour(deco)
+			end
 		end
-		sim.createBox(x1, y1, x2, y2, xtype, member and member.bmode)
+		sim.replaceModeFlags(bmode)
 		if member.bmode ~= 0 then
 			tpt.selectedreplace = selectedreplace
 		end
@@ -5244,35 +5140,37 @@ require_preload__["tptmp.client.util"] = function()
 		if xidr.line_only[xtype] or xidr.no_create[xtype] or xidr.no_flood[xtype] then
 			return
 		end
-		local translate = true
 		local class = xidr.xid_class[xtype]
-		if class == "WL" then
-			sim.floodWalls(x, y, xtype - xidr.xid_first.WL, wall_flood_hint)
+		if class == "DECOR" or class == "TOOL" then
 			return
-		elseif class == "DECOR" or class == "TOOL" then
-			return
-		elseif class == "PT_LIFE" then
-			xtype = bit.bor(elem.DEFAULT_PT_LIFE, bit.lshift(xtype - xidr.xid_first.PT_LIFE, PMAPBITS))
-			translate = false
-		elseif type(xtype) == "table" and xtype.type == "cgol" then
+		end
+		local old_create = false
+		if type(xtype) == "table" and xtype.type == "cgol" then
 			-- * TODO[api]: add an api for setting gol colour
 			xtype = xtype.elem
-			translate = false
-		end
-		local _
-		local ov = xidr.create_override[xtype]
-		if ov then
-			_, _, xtype = ov(member.size_x, member.size_y, xtype)
+			old_create = true
+		else
+			local ov = xidr.create_override[xtype]
+			if ov then
+				rx, ry, xtype = ov(rx, ry, xtype)
+				old_create = true
+			end
 		end
 		local selectedreplace
 		if member.bmode ~= 0 then
 			selectedreplace = tpt.selectedreplace
 			tpt.selectedreplace = xidr.to_tool[member.tool_x] or "DEFAULT_PT_NONE"
 		end
-		if translate then
-			xtype = elem[xidr.to_tool[xtype]]
+		local bmode = sim.replaceModeFlags()
+		sim.replaceModeFlags(member.bmode)
+		if old_create then
+			sim.floodParts(x, y, xtype, part_flood_hint, member.bmode)
+		elseif class == "WL" then
+			sim.floodWalls(x, y, sim.walls[xidr.to_tool[xtype]], wall_flood_hint)
+		else
+			sim.floodParts(x, y, elem[xidr.to_tool[xtype]], part_flood_hint, member.bmode)
 		end
-		sim.floodParts(x, y, xtype, part_flood_hint, member.bmode)
+		sim.replaceModeFlags(bmode)
 		if member.bmode ~= 0 then
 			tpt.selectedreplace = selectedreplace
 		end
@@ -5353,12 +5251,10 @@ require_preload__["tptmp.client.util"] = function()
 		return name ~= "" and name or nil
 	end
 	
-	local function element_identifiers()
+	local function tool_identifiers()
 		local identifiers = {}
-		for name in pairs(elem) do
-			if name:find("^[^_]*_PT_[^_]*$") then
-				identifiers[name] = true
-			end
+		for name in pairs(tools.index) do
+			identifiers[name] = true
 		end
 		return identifiers
 	end
@@ -5378,6 +5274,20 @@ require_preload__["tptmp.client.util"] = function()
 			end
 		end
 		return tool_name
+	end
+	
+	local function deco_unpack(deco)
+		return bit.band(bit.rshift(deco, 24), 0xFF),
+		       bit.band(bit.rshift(deco, 16), 0xFF),
+		       bit.band(bit.rshift(deco,  8), 0xFF),
+		       bit.band(           deco     , 0xFF)
+	end
+	
+	local function deco_pack(a, r, g, b)
+		return bit.bor(bit.lshift(a, 24),
+		               bit.lshift(r, 16),
+		               bit.lshift(g,  8),
+		                          b     )
 	end
 	
 	return {
@@ -5409,7 +5319,9 @@ require_preload__["tptmp.client.util"] = function()
 		tpt_version            = tpt_version,
 		urlencode              = urlencode,
 		heat_clear             = heat_clear,
-		element_identifiers    = element_identifiers,
+		deco_unpack            = deco_unpack,
+		deco_pack              = deco_pack,
+		tool_identifiers       = tool_identifiers,
 		tool_proper_name       = tool_proper_name,
 	}
 	
@@ -6846,7 +6758,7 @@ require_preload__["tptmp.common.config"] = function()
 		-- ***********************************************************************
 	
 		-- * Protocol version, between 0 and 254. 255 is reserved for future use.
-		version = 34,
+		version = 35,
 	
 		-- * Client-to-server message size limit, between 0 and 255, the latter
 		--   limit being imposted by the protocol.

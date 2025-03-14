@@ -7,7 +7,7 @@ void SimTool::Tool_AMBM()
 	Identifier = "DEFAULT_TOOL_AMBM";
 	Name = "AMBM";
 	Colour = 0x00DDFF_rgb;
-	Description = "공기 온도를 낮춥니다.";
+	Description = "복사열 감소 도구: 공기 온도를 낮춥니다.";
 	Perform = &perform;
 }
 

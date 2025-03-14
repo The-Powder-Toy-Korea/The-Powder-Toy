@@ -27,7 +27,7 @@ void Element::Element_CNCT()
 	Weight = 55;
 
 	HeatConduct = 100;
-	Description = "콘크리트: ROCK 또는 스스로의 위에서 쌓이지만 압력을 받으면 무너집니다.";
+	Description = "콘크리트: ROCK 또는 스스로의 위에서 쌓이지만, 압력을 받으면 무너집니다.";
 
 	Properties = TYPE_PART|PROP_HOT_GLOW;
 

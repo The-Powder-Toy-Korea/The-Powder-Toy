@@ -29,7 +29,7 @@ void Element::Element_BMTL()
 	Weight = 100;
 
 	HeatConduct = 251;
-	Description = "취성 메탈: 일반적인 전도성 건축 자재로, 녹을 수 있으며 압력을 받으면 부서질 수 있습니다.";
+	Description = "취성 메탈: 일반적인 전기 전도성 건축 자재로, 녹을 수 있으며 압력을 받으면 부서질 수 있습니다.";
 
 	Properties = TYPE_SOLID|PROP_CONDUCTS|PROP_LIFE_DEC|PROP_HOT_GLOW;
 

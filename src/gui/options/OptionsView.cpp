@@ -114,7 +114,7 @@ OptionsView::OptionsView() : ui::Window(ui::Point(-1, -1), ui::Point(320, 340))
 	airMode = addDropDown("공기 시뮬레이션 모드", {
 		{ "켜기", AIR_ON },
 		{ "압력 끄기", AIR_PRESSUREOFF },
-		{ "바람 끄기", AIR_VELOCITYOFF },
+		{ "기류 끄기", AIR_VELOCITYOFF },
 		{ "끄기", AIR_OFF },
 		{ "고정", AIR_NOUPDATE },
 	}, [this] {
