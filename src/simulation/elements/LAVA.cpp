@@ -33,7 +33,7 @@ void Element::Element_LAVA()
 
 	DefaultProperties.temp = R_TEMP + 1500.0f + 273.15f;
 	HeatConduct = 60;
-	Description = "용암: 가연성 물질을 점화합니다. 금속 및 기타 물질이 녹을 때 생성되며, 차가워지면 굳습니다.";
+	Description = "용암: 가연성 소재를 점화합니다. 금속 및 기타 소재가 녹을 때 생성되며, 차가워지면 굳습니다.";
 
 	Properties = TYPE_LIQUID|PROP_LIFE_DEC;
 	CarriesTypeIn = 1U << FIELD_CTYPE;

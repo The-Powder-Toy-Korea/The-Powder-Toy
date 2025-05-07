@@ -31,7 +31,7 @@ void Element::Element_EXOT()
 
 	DefaultProperties.temp = R_TEMP - 2.0f + 273.15f;
 	HeatConduct = 250;
-	Description = "이종 물질: 다량의 전자에 노출되면 폭발합니다. 대부분의 다른 물질과도 이상하게 반응합니다.";
+	Description = "이종 물질: 다량의 전자에 노출되면 폭발합니다. 다른 많은 이상한 반응이 있습니다.";
 
 	Properties = TYPE_LIQUID|PROP_NEUTPASS;
 

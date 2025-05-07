@@ -322,7 +322,7 @@ GameView::GameView():
 	pauseButton->SetActionCallback({ [this] { c->SetPaused(pauseButton->GetToggleState()); } });
 	AddComponent(pauseButton);
 
-	ui::Button * tempButton = new ui::Button(ui::Point(WINDOWW-16, WINDOWH-32), ui::Point(15, 15), 0xE065, "물질 검색...");
+	ui::Button * tempButton = new ui::Button(ui::Point(WINDOWW-16, WINDOWH-32), ui::Point(15, 15), 0xE065, "요소 검색...");
 	tempButton->Appearance.Margin = ui::Border(0, 2, 3, 2);
 	tempButton->SetActionCallback({ [this] { c->OpenElementSearch(); } });
 	AddComponent(tempButton);
@@ -418,7 +418,7 @@ void GameView::NotifyMenuListChanged(GameModel * sender)
 			String description_temp = menuList[i]->GetDescription();
 			ByteString description = description_temp.ToUtf8();
 			if (i == SC_FAVORITES && !Favorite::Ref().AnyFavorites())
-				description += " (<Ctrl+Shift>를 누른 상태로 물질을 클릭하여 즐겨찾기에 등록할 수 있습니다)";
+				description += " (<Ctrl+Shift>를 누른 상태로 요소를 클릭하여 즐겨찾기에 등록할 수 있습니다)";
 			auto *tempButton = new MenuButton(ui::Point(WINDOWW-16, currentY), ui::Point(15, 15), tempString, description.FromUtf8());
 			tempButton->Appearance.Margin = ui::Border(0, 2, 3, 2);
 			tempButton->menuID = i;
@@ -694,7 +694,7 @@ void GameView::NotifyColourPresetsChanged(GameModel * sender)
 	int i = 0;
 	for(std::vector<ui::Colour>::iterator iter = colours.begin(), end = colours.end(); iter != end; ++iter)
 	{
-		ToolButton * tempButton = new ToolButton(ui::Point(currentX, YRES+1), ui::Point(30, 18), "", "", "물질 도색 사전 설정");
+		ToolButton * tempButton = new ToolButton(ui::Point(currentX, YRES+1), ui::Point(30, 18), "", "", "요소 도색 사전 설정");
 		tempButton->Appearance.BackgroundInactive = *iter;
 		tempButton->SetActionCallback({ [this, i, tempButton] {
 			c->SetActiveColourPreset(i);
@@ -1656,7 +1656,13 @@ void GameView::OnKeyPress(int key, int scan, bool repeat, bool shift, bool ctrl,
 	}
 
 	if (shift && showDebug && key == '1')
+	{
 		c->LoadRenderPreset(10);
+	}
+	else if (shift && key == '6')
+	{
+		c->LoadRenderPreset(11);
+	}
 	else if (key >= '0' && key <= '9')
 	{
 		c->LoadRenderPreset(key-'0');
@@ -2167,7 +2173,7 @@ void GameView::OnDraw()
 			StartRendererThread();
 			WaitForRendererThread();
 			AfterSimDraw(*sim);
-			foundParticles = ren->GetFoundParticles();
+			rendererStats = ren->GetStats();
 			*rendererThreadResult = ren->GetVideo();
 			rendererFrame = rendererThreadResult.get();
 			DispatchRendererThread();
@@ -2178,7 +2184,7 @@ void GameView::OnDraw()
 			ren->ApplySettings(*rendererSettings);
 			RenderSimulation(*sim, true);
 			AfterSimDraw(*sim);
-			foundParticles = ren->GetFoundParticles();
+			rendererStats = ren->GetStats();
 			rendererFrame = &ren->GetVideo();
 		}
 	}
@@ -2526,14 +2532,23 @@ void GameView::OnDraw()
 		if (showDebug)
 		{
 			if (rendererSettings->findingElement)
-				fpsInfo << ", 입자량: " << foundParticles << "/" << sample.NumParts;
+				fpsInfo << ", 입자량: " << rendererStats.foundParticles << "/" << sample.NumParts;
 			else
 				fpsInfo << ", 총 입자량: " << sample.NumParts;
 		}
+		if ((std::holds_alternative<HdispLimitAuto>(rendererSettings->wantHdispLimitMin) ||
+		     std::holds_alternative<HdispLimitAuto>(rendererSettings->wantHdispLimitMax)) && rendererStats.hdispLimitValid)
+		{
+			fpsInfo << " [온도 최소:";
+			format::RenderTemperature(fpsInfo, rendererStats.hdispLimitMin, c->GetTemperatureScale());
+			fpsInfo << ", 최대:";
+			format::RenderTemperature(fpsInfo, rendererStats.hdispLimitMax, c->GetTemperatureScale());
+			fpsInfo << "]";
+		}
 		if (c->GetReplaceModeFlags()&REPLACE_MODE)
-			fpsInfo << " [물질 대체]";
+			fpsInfo << " [요소 대체]";
 		if (c->GetReplaceModeFlags()&SPECIFIC_DELETE)
-			fpsInfo << " [특정 물질 제거]";
+			fpsInfo << " [특정 요소 제거]";
 		if (rendererSettings->gridSize)
 			fpsInfo << " [격자: " << rendererSettings->gridSize << "]";
 		if (rendererSettings->findingElement)

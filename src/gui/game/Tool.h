@@ -85,7 +85,7 @@ class SampleTool: public Tool
 
 public:
 	SampleTool(GameModel &model):
-		Tool(0, "SMPL", "화면의 물질을 스포이트합니다.",
+		Tool(0, "SMPL", "화면의 요소를 스포이트합니다.",
 			0x000000_rgb, "DEFAULT_UI_SAMPLE", SampleTool::GetIcon
 		),
 		gameModel(model)
@@ -123,7 +123,7 @@ private:
 
 public:
 	PropertyTool(GameModel &model):
-		Tool(0, "PROP", "속성 그리기 도구: 물질의 속성을 바꾸는데 사용합니다.",
+		Tool(0, "PROP", "속성 그리기 도구: 그리기 공간에 있는 요소의 속성을 바꾸는 데 사용합니다.",
 			0xFEA900_rgb, "DEFAULT_UI_PROPERTY", NULL
 		),
 		gameModel(model)

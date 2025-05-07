@@ -29,7 +29,7 @@ void Element::Element_H2()
 	Weight = 1;
 
 	HeatConduct = 251;
-	Description = "수소: 산소와 함께 연소하여 물를 생성합니다. 고온 고압의 환경에서 핵융합합니다.";
+	Description = "수소: 산소와 함께 연소하여 물을 생성합니다. 고온 고압의 환경에서 핵융합합니다.";
 
 	Properties = TYPE_GAS | PROP_PHOTPASS;
 

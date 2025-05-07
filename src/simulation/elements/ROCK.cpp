@@ -30,7 +30,7 @@ void Element::Element_ROCK()
 	Weight = 100;
 
 	HeatConduct = 200;
-	Description = "암석: 단단하며 녹을 때 다양한 물질로 바뀝니다.";
+	Description = "암석: 단단하며, 다양한 요소로 녹습니다.";
 
 	Properties = TYPE_SOLID | PROP_HOT_GLOW;
 

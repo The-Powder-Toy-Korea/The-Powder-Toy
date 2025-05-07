@@ -29,7 +29,7 @@ void Element::Element_DTEC()
 	Weight = 100;
 
 	HeatConduct = 0;
-	Description = "탐지기: ctype으로 설정된 물질이 근처에 있을 때 전류를 방출합니다.";
+	Description = "탐지기: ctype으로 설정된 입자가 근처에 있을 때 전류를 방출합니다.";
 
 	Properties = TYPE_SOLID;
 	CarriesTypeIn = 1U << FIELD_CTYPE;

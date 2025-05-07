@@ -27,7 +27,7 @@ void Element::Element_DESL()
 	Weight = 15;
 
 	HeatConduct = 42;
-	Description = "디젤 연료: 고온 고압에서 폭발합니다.";
+	Description = "경유: 고온 고압에서 폭발합니다.";
 
 	Properties = TYPE_LIQUID;
 

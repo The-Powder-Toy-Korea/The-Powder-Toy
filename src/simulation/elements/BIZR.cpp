@@ -28,7 +28,7 @@ void Element::Element_BIZR()
 	Weight = 30;
 
 	HeatConduct = 29;
-	Description = "기묘한 액체: 비정상적인 상태 변화를 보이며, 다른 물질을 스스로의 도색 색상으로 칠합니다.";
+	Description = "기묘한 액체: 비정상적인 상태 변화를 보이며, 다른 요소를 스스로의 도색 색상으로 칠합니다.";
 
 	Properties = TYPE_LIQUID;
 

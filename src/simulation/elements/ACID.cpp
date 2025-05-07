@@ -31,7 +31,7 @@ void Element::Element_ACID()
 	Weight = 10;
 
 	HeatConduct = 34;
-	Description = "산: 거의 모든 물질을 녹입니다.";
+	Description = "산: 거의 모든 것을 녹입니다.";
 
 	Properties = TYPE_LIQUID|PROP_DEADLY;
 
@@ -82,7 +82,7 @@ static int update(UPDATE_FUNC_ARGS)
 							sim->kill_part(ID(r));
 						}
 					}
-					else if (rt != PT_CLNE && rt != PT_PCLN && parts[i].life > 50 && sim->rng.chance(elements[rt].Hardness, 1000))
+					else if (rt != PT_CLNE && rt != PT_PCLN && ((rt != PT_FOG && rt != PT_RIME) || parts[ID(r)].tmp <= 5) && parts[i].life > 50 && sim->rng.chance(elements[rt].Hardness, 1000))
 					{
 						if (sim->parts_avg(i, ID(r),PT_GLAS)!= PT_GLAS)//GLAS protects stuff from acid
 						{

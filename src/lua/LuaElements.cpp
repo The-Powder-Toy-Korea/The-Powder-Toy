@@ -170,7 +170,7 @@ static int luaGraphicsWrapper(GRAPHICS_FUNC_ARGS)
 		lua_pushinteger(lsi->L, *colr);
 		lua_pushinteger(lsi->L, *colg);
 		lua_pushinteger(lsi->L, *colb);
-		callret = tpt_lua_pcall(lsi->L, 4, 10, 0, eventTraitSimGraphics);
+		callret = tpt_lua_pcall(lsi->L, 4, 10, 0, eventTraitSimGraphics | eventTraitConstSim);
 		if (callret)
 		{
 			lsi->Log(CommandInterface::LogError, LuaGetError());
@@ -225,11 +225,13 @@ static void luaCreateWrapper(ELEMENT_CREATE_FUNC_ARGS)
 		lua_pushinteger(lsi->L, y);
 		lua_pushinteger(lsi->L, t);
 		lua_pushinteger(lsi->L, v);
-		if (tpt_lua_pcall(lsi->L, 5, 0, 0, eventTraitSimRng))
+		lsi->monopartAccessPartID = i;
+		if (tpt_lua_pcall(lsi->L, 5, 0, 0, eventTraitSimRng | eventTraitMonopartAccess))
 		{
 			lsi->Log(CommandInterface::LogError, "In create func: " + LuaGetError());
 			lua_pop(lsi->L, 1);
 		}
+		lsi->monopartAccessPartID = -1;
 	}
 }
 
@@ -252,7 +254,7 @@ static bool luaCreateAllowedWrapper(ELEMENT_CREATE_ALLOWED_FUNC_ARGS)
 		lua_pushinteger(lsi->L, x);
 		lua_pushinteger(lsi->L, y);
 		lua_pushinteger(lsi->L, t);
-		if (tpt_lua_pcall(lsi->L, 4, 1, 0, eventTraitSimRng))
+		if (tpt_lua_pcall(lsi->L, 4, 1, 0, eventTraitSimRng | eventTraitConstSim))
 		{
 			lsi->Log(CommandInterface::LogError, "In create allowed: " + LuaGetError());
 			lua_pop(lsi->L, 1);
@@ -283,11 +285,13 @@ static void luaChangeTypeWrapper(ELEMENT_CHANGETYPE_FUNC_ARGS)
 		lua_pushinteger(lsi->L, y);
 		lua_pushinteger(lsi->L, from);
 		lua_pushinteger(lsi->L, to);
-		if (tpt_lua_pcall(lsi->L, 5, 0, 0, eventTraitSimRng))
+		lsi->monopartAccessPartID = i;
+		if (tpt_lua_pcall(lsi->L, 5, 0, 0, eventTraitSimRng | eventTraitMonopartAccess))
 		{
 			lsi->Log(CommandInterface::LogError, "In change type: " + LuaGetError());
 			lua_pop(lsi->L, 1);
 		}
+		lsi->monopartAccessPartID = -1;
 	}
 }
 
@@ -324,7 +328,7 @@ static bool luaCtypeDrawWrapper(CTYPEDRAW_FUNC_ARGS)
 static int allocate(lua_State *L)
 {
 	auto *lsi = GetLSI();
-	lsi->AssertInterfaceEvent();
+	lsi->AssertMutableToolsEvent();
 	luaL_checktype(L, 1, LUA_TSTRING);
 	luaL_checktype(L, 2, LUA_TSTRING);
 	auto group = tpt_lua_toByteString(L, 1).ToUpper();
@@ -422,7 +426,7 @@ static int element(lua_State *L)
 
 	if (lua_gettop(L) > 1)
 	{
-		lsi->AssertInterfaceEvent();
+		lsi->AssertMutableToolsEvent();
 		{
 			auto &sd = SimulationData::Ref();
 			std::unique_lock lk(sd.elementGraphicsMx);
@@ -573,7 +577,7 @@ static int property(lua_State *L)
 
 	if (lua_gettop(L) > 2)
 	{
-		lsi->AssertInterfaceEvent();
+		lsi->AssertMutableToolsEvent();
 		auto &sd = SimulationData::Ref();
 		std::unique_lock lk(sd.elementGraphicsMx);
 		auto &elements = sd.elements;
@@ -727,7 +731,7 @@ static int property(lua_State *L)
 static int ffree(lua_State *L)
 {
 	auto *lsi = GetLSI();
-	lsi->AssertInterfaceEvent();
+	lsi->AssertMutableToolsEvent();
 
 	int id = luaL_checkinteger(L, 1);
 	ByteString identifier;
@@ -773,7 +777,7 @@ static int exists(lua_State *L)
 static int loadDefault(lua_State *L)
 {
 	auto *lsi = GetLSI();
-	lsi->AssertInterfaceEvent();
+	lsi->AssertMutableToolsEvent();
 	auto &sd = SimulationData::Ref();
 	std::unique_lock lk(sd.elementGraphicsMx);
 	auto &elements = sd.elements;
@@ -787,13 +791,22 @@ static int loadDefault(lua_State *L)
 			lua_settable(L, -3);
 
 			manageElementIdentifier(L, id, false);
-			if (id < (int)builtinElements.size())
+			auto oldEnabled = elements[id].Enabled;
+			if (id < (int)builtinElements.size() && builtinElements[id].Enabled)
 			{
 				elements[id] = builtinElements[id];
 			}
 			else
 			{
 				elements[id] = Element();
+			}
+			// TODO: somehow unify element and corresponding element tool management in a way that makes it hard to mess up
+			if (oldEnabled && elements[id].Enabled)
+			{
+				lsi->gameModel->UpdateElementTool(id);
+			}
+			else if (oldEnabled && !elements[id].Enabled)
+			{
 				lsi->gameModel->FreeTool(lsi->gameModel->GetToolFromIdentifier(identifier));
 			}
 			manageElementIdentifier(L, id, true);

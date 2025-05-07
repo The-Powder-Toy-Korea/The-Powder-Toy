@@ -107,7 +107,7 @@ PreviewView::PreviewView(std::unique_ptr<VideoBuffer> newSavePreview):
 	loadErrorButton->Visible = false;
 	AddComponent(loadErrorButton);
 
-	missingElementsButton = new ui::Button({ 0, 0 }, ui::Point(148, 19), "사용자 지정 물질을 찾을 수 없음");
+	missingElementsButton = new ui::Button({ 0, 0 }, ui::Point(148, 19), "사용자 지정 요소를 찾을 수 없음");
 	missingElementsButton->Appearance.HorizontalAlign = ui::Appearance::AlignCentre;
 	missingElementsButton->Appearance.VerticalAlign = ui::Appearance::AlignMiddle;
 	missingElementsButton->SetIcon(IconReport);
@@ -475,11 +475,11 @@ void PreviewView::ShowLoadError()
 void PreviewView::ShowMissingCustomElements()
 {
 	StringBuilder sb;
-	sb << "이 세이브는 현재 사용할 수 없는 사용자 지정 물질을 사용합니다. 세이브를 불러오기 위해 필요한 모드 또는 모든 스크립트가 사용되고 있는지 확인하십시오.";
+	sb << "이 세이브는 현재 사용할 수 없는 사용자 지정 요소를 사용합니다. 세이브를 불러오기 위해 필요한 모드 또는 모든 스크립트가 사용되고 있는지 확인하십시오.";
 	auto remainingIds = missingElements.ids;
 	if (missingElements.identifiers.size())
 	{
-		sb << "\n\n다음 목록에서 찾을 수 없는 사용자 지정 물질의 식별자를 확인하여, 문제를 해결하는 데 참고하십시오.\n\n";
+		sb << "\n\n다음 목록에서 찾을 수 없는 사용자 지정 요소의 식별자를 확인하여, 문제를 해결하는 데 참고하십시오.\n\n";
 		for (auto &[ identifier, id ] : missingElements.identifiers)
 		{
 			sb << "\n - " << identifier.FromUtf8();
@@ -488,13 +488,13 @@ void PreviewView::ShowMissingCustomElements()
 	}
 	if (remainingIds.size())
 	{
-		sb << "\n\n다음은 식별자와 연관되지 않은 찾을 수 없는 사용자 지정 물질의 ID 목록입니다. 이는 세이브의 게시자만이 고칠 수 있습니다.\n";
+		sb << "\n\n다음은 식별자와 연관되지 않은 찾을 수 없는 사용자 지정 요소의 ID 목록입니다. 이는 세이브의 게시자만이 고칠 수 있습니다.\n";
 		for (auto id : remainingIds)
 		{
 			sb << "\n - " << id;
 		}
 	}
-	new InformationMessage("찾을 수 없는 사용자 지정 물질", sb.Build(), true);
+	new InformationMessage("찾을 수 없는 사용자 지정 요소", sb.Build(), true);
 }
 
 void PreviewView::UpdateLoadStatus()

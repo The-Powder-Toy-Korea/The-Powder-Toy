@@ -29,7 +29,7 @@ void Element::Element_O2()
 	Weight = 1;
 
 	HeatConduct = 70;
-	Description = "산소 기체: 쉽게 발화합니다.";
+	Description = "산소: 쉽게 발화합니다.";
 
 	Properties = TYPE_GAS;
 

@@ -30,7 +30,7 @@ void Element::Element_HEAC()
 	Weight = 100;
 
 	HeatConduct = 251;
-	Description = "열 전도 물질: 열전도율이 높습니다.";
+	Description = "급속 열전도체: 열전도율이 높습니다.";
 
 	Properties = TYPE_SOLID;
 

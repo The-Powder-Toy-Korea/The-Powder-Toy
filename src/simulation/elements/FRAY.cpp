@@ -30,7 +30,7 @@ void Element::Element_FRAY()
 
 	DefaultProperties.temp = 20.0f + 273.15f;
 	HeatConduct = 0;
-	Description = "힘 광선 방출기: 온도에 따라 개체를 밀거나 당깁니다. ARAY처럼 사용합니다.";
+	Description = "힘 선 방출기: 온도에 따라 개체를 밀거나 당깁니다. ARAY처럼 사용합니다.";
 
 	Properties = TYPE_SOLID;
 

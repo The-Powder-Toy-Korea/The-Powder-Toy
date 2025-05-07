@@ -31,7 +31,7 @@ void Element::Element_WARP()
 	Weight = 1;
 
 	HeatConduct = 100;
-	Description = "왜곡체: 다른 물질을 이동합니다.";
+	Description = "왜곡체: 다른 요소를 이동시킵니다.";
 
 	Properties = TYPE_GAS|PROP_LIFE_DEC|PROP_LIFE_KILL;
 

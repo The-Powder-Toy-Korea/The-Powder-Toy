@@ -31,7 +31,7 @@ void Element::Element_PBCN()
 	Weight = 100;
 
 	HeatConduct = 251;
-	Description = "취성 전원식 복제기: 부서질 수 있는 전원식 복제기입니다.";
+	Description = "전원식 취성 복제기: 부서질 수 있는 전원식 복제기입니다.";
 
 	Properties = TYPE_SOLID | PROP_PHOTPASS | PROP_NOCTYPEDRAW;
 	CarriesTypeIn = 1U << FIELD_CTYPE;

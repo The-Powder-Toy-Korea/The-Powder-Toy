@@ -30,7 +30,7 @@ void Element::Element_DCEL()
 	Weight = 100;
 
 	HeatConduct = 251;
-	Description = "감속기: 주변 물질의 속도를 늦춥니다.";
+	Description = "감속기: 주변 요소의 속도를 늦춥니다.";
 
 	Properties = TYPE_SOLID;
 

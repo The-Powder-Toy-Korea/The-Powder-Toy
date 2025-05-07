@@ -5,11 +5,15 @@
 
 enum EventTraits : uint32_t
 {
-	eventTraitNone        = UINT32_C(0x00000000),
-	eventTraitSimRng      = UINT32_C(0x00000001),
-	eventTraitSimGraphics = UINT32_C(0x00000002),
-	eventTraitHindersSrt  = UINT32_C(0x00000004),
-	eventTraitInterface   = UINT32_C(0x00000008),
+	eventTraitNone              = UINT32_C(0x00000000),
+	eventTraitSimRng            = UINT32_C(0x00000001),
+	eventTraitSimGraphics       = UINT32_C(0x00000002),
+	eventTraitHindersSrt        = UINT32_C(0x00000004),
+	eventTraitInterface         = UINT32_C(0x00000008),
+	eventTraitInterfaceGraphics = UINT32_C(0x00000010),
+	eventTraitConstSim          = UINT32_C(0x00000020),
+	eventTraitConstTools        = UINT32_C(0x00000040),
+	eventTraitMonopartAccess    = UINT32_C(0x00000080),
 };
 constexpr EventTraits operator |(EventTraits lhs, EventTraits rhs)
 {
@@ -85,7 +89,7 @@ struct MouseWheelEvent
 
 struct TickEvent
 {
-	static constexpr EventTraits traits = eventTraitInterface;
+	static constexpr EventTraits traits = eventTraitInterface | eventTraitInterfaceGraphics;
 };
 
 struct BlurEvent
@@ -110,12 +114,12 @@ struct AfterSimEvent
 
 struct BeforeSimDrawEvent
 {
-	static constexpr EventTraits traits = eventTraitSimGraphics | eventTraitHindersSrt | eventTraitInterface;
+	static constexpr EventTraits traits = eventTraitSimGraphics | eventTraitHindersSrt | eventTraitInterface | eventTraitConstSim;
 };
 
 struct AfterSimDrawEvent
 {
-	static constexpr EventTraits traits = eventTraitSimGraphics | eventTraitInterface;
+	static constexpr EventTraits traits = eventTraitSimGraphics | eventTraitInterface | eventTraitConstSim;
 };
 
 using GameControllerEvent = std::variant<

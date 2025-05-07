@@ -33,7 +33,7 @@ void Element::Element_SOAP()
 
 	DefaultProperties.temp = R_TEMP - 2.0f + 273.15f;
 	HeatConduct = 29;
-	Description = "비누: 거품을 만들고, 도색된 물질을 표백하고, 바이러스를 치료합니다.";
+	Description = "비누: 거품을 만들고, 도색을 표백하고, 바이러스를 치료합니다.";
 
 	Properties = TYPE_LIQUID|PROP_NEUTPENETRATE|PROP_LIFE_DEC;
 

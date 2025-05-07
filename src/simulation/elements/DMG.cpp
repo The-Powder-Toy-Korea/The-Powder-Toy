@@ -31,7 +31,7 @@ void Element::Element_DMG()
 
 	DefaultProperties.temp = R_TEMP - 2.0f + 273.15f;
 	HeatConduct = 29;
-	Description = "압력 폭탄: 강한 압력을 발생시키고 충돌하는 모든 물질을 부숩니다.";
+	Description = "압력 폭탄: 강한 압력을 발생시키고 충돌하는 모든 물체를 부숩니다.";
 
 	Properties = TYPE_PART|PROP_SPARKSETTLE;
 

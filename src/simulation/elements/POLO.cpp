@@ -32,7 +32,7 @@ void Element::Element_POLO()
 
 	DefaultProperties.temp = 388.15f;
 	HeatConduct = 251;
-	Description = "폴로늄: 고방사성 물질이며, 중성자를 방출하며 가열됩니다.";
+	Description = "폴로늄: 고방사성 원소입니다. 중성자를 방출하며 가열됩니다.";
 
 	Properties = TYPE_PART|PROP_NEUTPASS|PROP_RADIOACTIVE|PROP_LIFE_DEC|PROP_DEADLY;
 

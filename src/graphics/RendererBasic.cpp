@@ -7,7 +7,7 @@
 
 const std::vector<RenderPreset> Renderer::renderModePresets = {
 	{
-		"대안 기류 디스플레이",
+		"대체 기류 디스플레이",
 		RENDER_EFFE | RENDER_BASC,
 		DISPLAY_AIRC,
 		0,
@@ -67,7 +67,7 @@ const std::vector<RenderPreset> Renderer::renderModePresets = {
 		COLOUR_GRAD,
 	},
 	{
-		"라이프 명암 디스플레이",
+		"수명값 명암 디스플레이",
 		RENDER_BASC,
 		0,
 		COLOUR_LIFE,

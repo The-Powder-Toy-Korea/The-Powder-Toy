@@ -32,7 +32,7 @@ void Element::Element_CRAY()
 	Weight = 100;
 
 	HeatConduct = 0;
-	Description = "생성 광선 방출기: ctype으로 설정된 물질 광선을 생성하며, 범위는 tmp로 설정합니다.";
+	Description = "입자 선 생성기: ctype으로 설정된 입자 광선을 생성하며, 범위는 tmp로 설정합니다.";
 
 	Properties = TYPE_SOLID;
 	CarriesTypeIn = 1U << FIELD_CTYPE;

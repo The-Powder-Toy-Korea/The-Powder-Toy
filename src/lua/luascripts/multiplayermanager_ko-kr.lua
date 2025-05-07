@@ -2266,7 +2266,7 @@ require_preload__["tptmp.client.config"] = function()
 
 	local common_config = require("tptmp.common.config")
 	
-	local versionstr = "v2.2.3"
+	local versionstr = "v2.2.4"
 	
 	local config = {
 		-- ***********************************************************************
@@ -5152,7 +5152,8 @@ require_preload__["tptmp.client.util"] = function()
 		else
 			local ov = xidr.create_override[xtype]
 			if ov then
-				rx, ry, xtype = ov(rx, ry, xtype)
+				local _
+				_, _, xtype = ov(member.size_x, member.size_y, xtype)
 				old_create = true
 			end
 		end
@@ -6758,7 +6759,7 @@ require_preload__["tptmp.common.config"] = function()
 		-- ***********************************************************************
 	
 		-- * Protocol version, between 0 and 254. 255 is reserved for future use.
-		version = 35,
+		version = 36,
 	
 		-- * Client-to-server message size limit, between 0 and 255, the latter
 		--   limit being imposted by the protocol.

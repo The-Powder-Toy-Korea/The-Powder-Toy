@@ -35,7 +35,7 @@ void Element::Element_FIGH()
 
 	DefaultProperties.temp = R_TEMP + 14.6f + 273.15f;
 	HeatConduct = 0;
-	Description = "싸움꾼: 스틱맨을 공격합니다. 공격에 쓰일 물질을 배치할 수 있습니다.";
+	Description = "파이터: 스틱맨을 공격합니다. 공격에 쓰일 요소를 배치할 수 있습니다.";
 
 	Properties = PROP_NOCTYPEDRAW;
 	CarriesTypeIn = 1U << FIELD_CTYPE;

@@ -27,7 +27,7 @@ void Element::Element_VOID()
 	Weight = 100;
 
 	HeatConduct = 251;
-	Description = "공허: 닿는 물질을 모두 소멸시킵니다.";
+	Description = "공허: 닿는 입자를 모두 소멸시킵니다.";
 
 	Properties = TYPE_SOLID;
 

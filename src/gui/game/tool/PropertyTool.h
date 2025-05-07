@@ -25,7 +25,7 @@ private:
 
 public:
 	PropertyTool(GameModel &newGameModel):
-		Tool(0, "PROP", "속성 그리기 도구: 물질의 속성을 바꾸는 데 사용합니다.",
+		Tool(0, "PROP", "속성 그리기 도구: 그리기 공간에 있는 요소의 속성을 바꾸는 데 사용합니다.",
 			0xFEA900_rgb, "DEFAULT_UI_PROPERTY", NULL
 		), gameModel(newGameModel)
 	{}

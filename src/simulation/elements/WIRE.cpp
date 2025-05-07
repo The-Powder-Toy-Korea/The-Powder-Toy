@@ -30,7 +30,7 @@ void Element::Element_WIRE()
 	Weight = 100;
 
 	HeatConduct = 250;
-	Description = "WireWorld 와이어: 생명 게임과 유사한 일련의 규칙에 따라 전류를 전달합니다.";
+	Description = "WireWorld 전선: 생명 게임과 유사한 일련의 규칙에 따라 전류를 전달합니다.";
 
 	Properties = TYPE_SOLID;
 

@@ -30,7 +30,7 @@ void Element::Element_LDTC()
 	Weight = 100;
 
 	HeatConduct = 0;
-	Description = "선형 탐지기: ctype으로 설정된 물질을 여덟 방향으로 스캔하여 반대편에 전류를 방출합니다.";
+	Description = "선형 탐지기: ctype으로 설정된 입자를 여덟 방향으로 스캔하여 반대편에 전류를 방출합니다.";
 
 	Properties = TYPE_SOLID | PROP_NOCTYPEDRAW;
 	CarriesTypeIn = 1U << FIELD_CTYPE;

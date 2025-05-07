@@ -52,7 +52,7 @@ static std::vector<wall_type> LoadWalls()
 	std::vector<wall_type>{
 		{0x808080_rgb, 0x000000_rgb, 0, Renderer::WallIcon, String("ERASE"),           "DEFAULT_WL_ERASE",  String("벽 지우개: 벽을 지웁니다.")},
 		{0xC0C0C0_rgb, 0x101010_rgb, 0, Renderer::WallIcon, String("CONDUCTIVE WALL"), "DEFAULT_WL_CNDTW",  String("전도성 벽: 모든 것을 막습니다. 전기 전도성이 있습니다.")},
-		{0x808080_rgb, 0x808080_rgb, 0, Renderer::WallIcon, String("EWALL"),           "DEFAULT_WL_EWALL",  String("전원식 벽: 전류가 공급하면 물질이 지나갈 수 있습니다.")},
+		{0x808080_rgb, 0x808080_rgb, 0, Renderer::WallIcon, String("EWALL"),           "DEFAULT_WL_EWALL",  String("전원식 벽: 전류가 공급되면 입자가 지나갈 수 있습니다.")},
 		{0xFF8080_rgb, 0xFF2008_rgb, 1, Renderer::WallIcon, String("DETECTOR"),        "DEFAULT_WL_DTECT",  String("감지 벽: 입자가 안에 있을 때 전류를 방출합니다.")},
 		{0x808080_rgb, 0x000000_rgb, 0, Renderer::WallIcon, String("STREAMLINE"),      "DEFAULT_WL_STRM",   String("흐름선: 기류를 따라가는 선을 만듭니다.")},
 		{0x8080FF_rgb, 0x000000_rgb, 1, Renderer::WallIcon, String("FAN"),             "DEFAULT_WL_FAN",    String("선풍기: 기류를 가속합니다. 선 도구로 방향과 강도를 정할 수 있습니다.")},
@@ -61,7 +61,7 @@ static std::vector<wall_type> LoadWalls()
 		{0x808080_rgb, 0x000000_rgb, 3, Renderer::WallIcon, String("WALL"),            "DEFAULT_WL_WALL",   String("벽: 모든 것을 막습니다.")},
 		{0x3C3C3C_rgb, 0x000000_rgb, 1, Renderer::WallIcon, String("AIRONLY WALL"),    "DEFAULT_WL_AIR",    String("공기 전용 벽: 기류는 통과시키지만, 다른 모든 것을 막습니다.")},
 		{0x575757_rgb, 0x000000_rgb, 1, Renderer::WallIcon, String("POWDER WALL"),     "DEFAULT_WL_POWDR",  String("가루 벽: 가루는 통과시키지만, 다른 모든 입자를 막습니다.")},
-		{0xFFFF22_rgb, 0x101010_rgb, 2, Renderer::WallIcon, String("CONDUCTOR"),       "DEFAULT_WL_CNDTR",  String("도체 벽: 모든 물질을 통과시키며 전기 전도성이 있습니다.")},
+		{0xFFFF22_rgb, 0x101010_rgb, 2, Renderer::WallIcon, String("CONDUCTOR"),       "DEFAULT_WL_CNDTR",  String("도체 벽: 모든 입자를 통과시키며 전기 전도성이 있습니다.")},
 		{0x242424_rgb, 0x101010_rgb, 0, Renderer::WallIcon, String("EHOLE"),           "DEFAULT_WL_EHOLE",  String("전원식 구멍: 입자를 흡수하며, 전류가 공급될 때 이를 내보냅니다.")},
 		{0x579777_rgb, 0x000000_rgb, 1, Renderer::WallIcon, String("GAS WALL"),        "DEFAULT_WL_GAS",    String("기체 벽: 기체는 통과시키지만, 다른 모든 입자를 막습니다.")},
 		{0xFFEE00_rgb, 0xAA9900_rgb, 4, Renderer::WallIcon, String("GRAVITY WALL"),    "DEFAULT_WL_GRVTY",  String("중력 벽: 이것으로 둘러싸인 공간 내부에서는 뉴턴 중력이 작용하지 않습니다.")},
@@ -78,7 +78,7 @@ static std::vector<menu_section> LoadMenus()
 	std::vector<menu_section>{
 		{0xE041, String("벽"), 0, 1},
 		{0xE042, String("전기"), 0, 1},
-		{0xE056, String("전원"), 0, 1},
+		{0xE056, String("전원재"), 0, 1},
 		{0xE019, String("감지기"), 0, 1},
 		{0xE062, String("힘"), 0, 1},
 		{0xE043, String("폭발물"), 0, 1},
