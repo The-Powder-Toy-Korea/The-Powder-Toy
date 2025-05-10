@@ -180,13 +180,13 @@ option(
 option(
 	'app_comment',
 	type: 'string',
-	value: 'Korean mod of The Powder Toy',
+	value: '앱 설명용 한글 텍스트',
 	description: 'App comment, used for desktop integration, change if you work on a mod'
 )
 option(
 	'app_exe',
 	type: 'string',
-	value: 'powder_kokr',
+	value: 'powder-kokr',
 	description: 'App executable name, used for desktop integration, change if you work on a mod'
 )
 option(
