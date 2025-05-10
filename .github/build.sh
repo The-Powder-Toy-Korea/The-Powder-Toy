@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-set -euo pipefail
+set -xeuo pipefail
 IFS=$'\n\t'
 
 if [[ -z ${BSH_BUILD_PLATFORM-} ]]; then >&2 echo "BSH_BUILD_PLATFORM not set"; exit 1; fi
