@@ -511,7 +511,7 @@ static int createParts(lua_State *L)
 	{
 		int c = luaL_checkint(L, 5); // note: weird: has to be specified in a sim context but not in a ui context
 		auto center = Vec2(x, y);
-		RasterizeEllipseRows(Vec2<float>(rx * rx, ry * ry), [lsi, c, center](int xLim, int dy) {
+		RasterizeEllipseRows(Vec2<float>(float(rx * rx), float(ry * ry)), [lsi, c, center](int xLim, int dy) {
 			for (auto pos : RectBetween(center + Vec2(-xLim, dy), center + Vec2(xLim, dy)))
 			{
 				lsi->sim->CreateParts(-1, pos.X, pos.Y, 0, 0, c, 0);
@@ -1275,6 +1275,21 @@ static int ambientAirTemp(lua_State *L)
 	return 0;
 }
 
+static int vorticityCoeff(lua_State *L)
+{
+	auto *lsi = GetLSI();
+	int acount = lua_gettop(L);
+	if (acount == 0)
+	{
+		lua_pushnumber(L, lsi->sim->air->vorticityCoeff);
+		return 1;
+	}
+	lsi->AssertInterfaceEvent();
+	float vorticityCoeff = restrict_flt(luaL_optnumber(L, 1, 0.0f), 0.0f, 1.0f);
+	lsi->gameModel->SetVorticityCoeff(vorticityCoeff);
+	return 0;
+}
+
 static int elementCount(lua_State *L)
 {
 	int element = luaL_optint(L, 1, 0);
@@ -1701,13 +1716,13 @@ static int temperatureScale(lua_State *L)
 	lsi->AssertInterfaceEvent();
 	if (lua_gettop(L) == 0)
 	{
-		lua_pushinteger(L, lsi->gameModel->GetTemperatureScale());
+		lua_pushinteger(L, int(lsi->gameModel->GetTemperatureScale()));
 		return 1;
 	}
 	int temperatureScale = luaL_checkinteger(L, 1);
-	if (temperatureScale < 0 || temperatureScale > 2)
+	if (temperatureScale < 0 || temperatureScale >= NUM_TEMPSCALES)
 		return luaL_error(L, "Invalid temperature scale");
-	lsi->gameModel->SetTemperatureScale(temperatureScale);
+	lsi->gameModel->SetTemperatureScale(TempScale(temperatureScale));
 	return 0;
 }
 
@@ -2013,6 +2028,7 @@ void LuaSimulation::Open(lua_State *L)
 		LFUNC(airMode),
 		LFUNC(waterEqualization),
 		LFUNC(ambientAirTemp),
+		LFUNC(vorticityCoeff),
 		LFUNC(elementCount),
 		LFUNC(canMove),
 		LFUNC(brush),
@@ -2128,6 +2144,11 @@ void LuaSimulation::Open(lua_State *L)
 	LCONST(DECOSPACE_GAMMA22);
 	LCONST(DECOSPACE_GAMMA18);
 	LCONST(NUM_DECOSPACES);
+
+	LCONST(TEMPSCALE_KELVIN);
+	LCONST(TEMPSCALE_CELSIUS);
+	LCONST(TEMPSCALE_FAHRENHEIT);
+	LCONST(NUM_TEMPSCALES);
 
 	LCONSTAS("CANMOVE_BOUNCE", 0);
 	LCONSTAS("CANMOVE_SWAP", 1);

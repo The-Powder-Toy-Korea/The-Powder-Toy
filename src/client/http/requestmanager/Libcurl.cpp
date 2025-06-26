@@ -63,6 +63,7 @@ namespace http
 		char curlErrorBuffer[CURL_ERROR_SIZE];
 		bool curlAddedToMulti = false;
 		bool gotStatusLine = false;
+		bool gotAllHeaders = false;
 
 		RequestHandleHttp() : RequestHandle(CtorTag{})
 		{
@@ -74,28 +75,47 @@ namespace http
 			auto bytes = size * count;
 			if (bytes >= 2 && ptr[bytes - 2] == '\r' && ptr[bytes - 1] == '\n')
 			{
-				if (bytes > 2 && handle->gotStatusLine) // Don't include header list terminator or the status line.
+				if (handle->gotAllHeaders)
 				{
-					auto line = ByteString(ptr, ptr + bytes - 2);
-					if (auto split = line.SplitBy(':'))
+					// Reset response headers if we see a new header arrive after seeing a header that we thought was the last.
+					// This happens when a Request takes multiple HTTP requests to complete; think redirects.
+					// We are interested only in the response headers of the last response.
+					handle->responseHeaders.clear();
+					handle->gotStatusLine = false;
+					handle->gotAllHeaders = false;
+				}
+				if (bytes > 2) // Don't include header list terminator
+				{
+					if (handle->gotStatusLine) // ... or the status line.
 					{
-						auto value = split.After();
-						while (value.size() && (value.front() == ' ' || value.front() == '\t'))
+						auto line = ByteString(ptr, ptr + bytes - 2);
+						if (auto split = line.SplitBy(':'))
 						{
-							value = value.Substr(1);
+							auto value = split.After();
+							while (value.size() && (value.front() == ' ' || value.front() == '\t'))
+							{
+								value = value.Substr(1);
+							}
+							while (value.size() && (value.back() == ' ' || value.back() == '\t'))
+							{
+								value = value.Substr(0, value.size() - 1);
+							}
+							handle->responseHeaders.push_back({ split.Before().ToLower(), value });
 						}
-						while (value.size() && (value.back() == ' ' || value.back() == '\t'))
+						else
 						{
-							value = value.Substr(0, value.size() - 1);
+							std::cerr << "skipping weird header: " << line << std::endl;
 						}
-						handle->responseHeaders.push_back({ split.Before().ToLower(), value });
 					}
 					else
 					{
-						std::cerr << "skipping weird header: " << line << std::endl;
+						handle->gotStatusLine = true;
 					}
 				}
-				handle->gotStatusLine = true;
+				else
+				{
+					handle->gotAllHeaders = true;
+				}
 				return bytes;
 			}
 			return 0;
@@ -119,7 +139,7 @@ namespace http
 	{
 		using RequestManager::RequestManager;
 
-		RequestManagerImpl(ByteString newProxy, ByteString newCafile, ByteString newCapath, bool newDisableNetwork);
+		RequestManagerImpl(Config newConfig);
 		~RequestManagerImpl();
 
 		std::thread worker;
@@ -168,8 +188,7 @@ namespace http
 		}
 	};
 
-	RequestManagerImpl::RequestManagerImpl(ByteString newProxy, ByteString newCafile, ByteString newCapath, bool newDisableNetwork) :
-		RequestManager(newProxy, newCafile, newCapath, newDisableNetwork)
+	RequestManagerImpl::RequestManagerImpl(Config newConfig) : RequestManager(newConfig)
 	{
 		worker = std::thread([this]() {
 			Worker();
@@ -498,10 +517,6 @@ namespace http
 				HandleCURLcode(curl_easy_setopt(handle->curlEasy, CURLOPT_CONNECTTIMEOUT, curlConnectTimeoutS));
 				HandleCURLcode(curl_easy_setopt(handle->curlEasy, CURLOPT_HTTPHEADER, handle->curlHeaders));
 				HandleCURLcode(curl_easy_setopt(handle->curlEasy, CURLOPT_URL, handle->uri.c_str()));
-				if (proxy.size())
-				{
-					HandleCURLcode(curl_easy_setopt(handle->curlEasy, CURLOPT_PROXY, proxy.c_str()));
-				}
 				HandleCURLcode(curl_easy_setopt(handle->curlEasy, CURLOPT_PRIVATE, (void *)handle));
 				HandleCURLcode(curl_easy_setopt(handle->curlEasy, CURLOPT_USERAGENT, userAgent.c_str()));
 				HandleCURLcode(curl_easy_setopt(handle->curlEasy, CURLOPT_HEADERDATA, (void *)handle));
@@ -536,9 +551,9 @@ namespace http
 		curl_slist_free_all(handle->curlHeaders);
 	}
 
-	RequestManagerPtr RequestManager::Create(ByteString newProxy, ByteString newCafile, ByteString newCapath, bool newDisableNetwork)
+	RequestManagerPtr RequestManager::Create(Config newConfig)
 	{
-		return RequestManagerPtr(new RequestManagerImpl(newProxy, newCafile, newCapath, newDisableNetwork));
+		return RequestManagerPtr(new RequestManagerImpl(newConfig));
 	}
 
 	void RequestManagerDeleter::operator ()(RequestManager *ptr) const
@@ -595,19 +610,25 @@ namespace http
 		HandleCURLcode(curl_easy_setopt(easy, CURLOPT_SSL_OPTIONS, CURLSSLOPT_NO_REVOKE));
 #endif
 
-		auto &capath = http::RequestManager::Ref().Capath();
-		auto &cafile = http::RequestManager::Ref().Cafile();
-		if (capath.size())
+		auto &rm = http::RequestManager::Ref();
+		auto &capath = rm.Capath();
+		auto &cafile = rm.Cafile();
+		auto &proxy = rm.Proxy();
+		if (capath)
 		{
-			HandleCURLcode(curl_easy_setopt(easy, CURLOPT_CAPATH, capath.c_str()));
+			HandleCURLcode(curl_easy_setopt(easy, CURLOPT_CAPATH, capath->c_str()));
 		}
-		else if (cafile.size())
+		else if (cafile)
 		{
-			HandleCURLcode(curl_easy_setopt(easy, CURLOPT_CAINFO, cafile.c_str()));
+			HandleCURLcode(curl_easy_setopt(easy, CURLOPT_CAINFO, cafile->c_str()));
 		}
 		else if constexpr (USE_SYSTEM_CERT_PROVIDER)
 		{
 			UseSystemCertProvider(easy);
+		}
+		if (proxy)
+		{
+			HandleCURLcode(curl_easy_setopt(easy, CURLOPT_PROXY, proxy->c_str()));
 		}
 	}
 }

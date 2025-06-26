@@ -4,6 +4,7 @@
 #include "gui/interface/Point.h"
 #include "graphics/RendererSettings.h"
 #include "simulation/CustomGOLData.h"
+#include "simulation/SimulationSettings.h"
 #include <vector>
 #include <deque>
 #include <memory>
@@ -95,7 +96,7 @@ private:
 	bool mouseClickRequired;
 	bool includePressure;
 	bool perfectCircle = true;
-	int temperatureScale;
+	TempScale temperatureScale;
 
 	size_t activeColourPreset;
 	std::vector<ui::Colour> colourPresets;
@@ -104,6 +105,7 @@ private:
 
 	int edgeMode;
 	float ambientAirTemp;
+	float vorticityCoeff;
 	int decoSpace;
 
 	String infoTip;
@@ -150,8 +152,8 @@ public:
 
 	void SetEdgeMode(int edgeMode);
 	int GetEdgeMode();
-	void SetTemperatureScale(int temperatureScale);
-	inline int GetTemperatureScale() const
+	void SetTemperatureScale(TempScale temperatureScale);
+	inline TempScale GetTemperatureScale() const
 	{
 		return temperatureScale;
 	}
@@ -162,6 +164,8 @@ public:
 	}
 	void SetAmbientAirTemperature(float ambientAirTemp);
 	float GetAmbientAirTemperature();
+	void SetVorticityCoeff(float vorticityCoeff);
+	float GetVorticityCoeff();
 	void SetDecoSpace(int decoSpace);
 	int GetDecoSpace();
 

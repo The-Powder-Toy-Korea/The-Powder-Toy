@@ -138,6 +138,22 @@ OptionsView::OptionsView() : ui::Window(ui::Point(-1, -1), ui::Point(320, 340))
 		scrollPanel->AddChild(label);
 		currentY += 20;
 	}
+	{ // Vorticity coefficient setting
+		vorticityCoeff = new ui::Textbox(ui::Point(Size.X-95, currentY), ui::Point(80, 16));
+		vorticityCoeff->SetActionCallback({ [this] {
+			UpdateVorticityCoeff(vorticityCoeff->GetText(), false);
+		} });
+		vorticityCoeff->SetDefocusCallback({ [this] {
+			UpdateVorticityCoeff(vorticityCoeff->GetText(), true);
+		}});
+		vorticityCoeff->SetLimit(9);
+		scrollPanel->AddChild(vorticityCoeff);
+		auto *label = new ui::Label(ui::Point(8, currentY), ui::Point(Size.X-105, 16), "와류 제한");
+		label->Appearance.HorizontalAlign = ui::Appearance::AlignLeft;
+		label->Appearance.VerticalAlign = ui::Appearance::AlignMiddle;
+		scrollPanel->AddChild(label);
+		currentY += 20;
+	}
 	class GravityWindow : public ui::Window
 	{
 		void OnTryExit(ExitMethod method) override
@@ -222,11 +238,11 @@ OptionsView::OptionsView() : ui::Window(ui::Point(-1, -1), ui::Point(320, 340))
 		c->SetEdgeMode(edgeMode->GetOption().second);
 	});
 	temperatureScale = addDropDown("온도 단위", {
-		{ "절대온도", 0 },
-		{ "섭씨", 1 },
-		{ "화씨", 2 },
+		{ "절대온도", TEMPSCALE_KELVIN },
+		{ "섭씨", TEMPSCALE_CELSIUS },
+		{ "화씨", TEMPSCALE_FAHRENHEIT },
 	}, [this] {
-		c->SetTemperatureScale(temperatureScale->GetOption().second);
+		c->SetTemperatureScale(TempScale(temperatureScale->GetOption().second));
 	});
 	if (FORCE_WINDOW_FRAME_OPS != forceWindowFrameOpsHandheld)
 	{
@@ -427,7 +443,7 @@ void OptionsView::AmbientAirTempToTextBox(float airTemp)
 {
 	StringBuilder sb;
 	sb << Format::Precision(2);
-	switch (temperatureScale->GetOption().second)
+	switch (TempScale(temperatureScale->GetOption().second))
 	{
 	case 1:
 		sb << (airTemp - 273.15f) << "C";
@@ -440,6 +456,13 @@ void OptionsView::AmbientAirTempToTextBox(float airTemp)
 		break;
 	}
 	ambientAirTemp->SetText(sb.Build());
+}
+
+void OptionsView::VorticityCoeffToTextBox(float vorticity)
+{
+	StringBuilder sb;
+	sb << Format::Precision(2) << vorticity;
+	vorticityCoeff->SetText(sb.Build());
 }
 
 void OptionsView::UpdateStartupRequestStatus()
@@ -478,7 +501,7 @@ void OptionsView::UpdateAirTemp(String temp, bool isDefocus)
 	bool isValid;
 	try
 	{
-		airTemp = format::StringToTemperature(temp, temperatureScale->GetOption().second);
+		airTemp = format::StringToTemperature(temp, TempScale(temperatureScale->GetOption().second));
 		isValid = true;
 	}
 	catch (const std::exception &ex)
@@ -514,6 +537,47 @@ void OptionsView::UpdateAirTemp(String temp, bool isDefocus)
 	UpdateAmbientAirTempPreview(airTemp, isValid);
 }
 
+void OptionsView::UpdateVorticityCoeff(String vort, bool isDefocus)
+{
+	// Parse vorticity and determine validity
+	float vorticity = 0;
+	bool isValid;
+	try
+	{
+		vorticity = vort.ToNumber<float>();
+		isValid = true;
+	}
+	catch (const std::exception &ex)
+	{
+		isValid = false;
+	}
+
+	// While defocusing, correct out of range vorticity and empty textboxes
+	if (isDefocus)
+	{
+		if (vort.empty())
+		{
+			isValid = true;
+			vorticity = 0.0f;
+		}
+		else if (!isValid)
+			return;
+		else if (vorticity < 0.0f)
+			vorticity = 0.0f;
+		else if (vorticity > 1.0f)
+			vorticity = 1.0f;
+
+		VorticityCoeffToTextBox(vorticity);
+	}
+	// Out of range vorticities are invalid, preview should go away
+	else if (isValid && (vorticity < 0.0f || vorticity > 1.0f))
+		isValid = false;
+
+	// If valid, set vorticity
+	if (isValid)
+		c->SetVorticityCoeff(vorticity);
+}
+
 void OptionsView::NotifySettingsChanged(OptionsModel * sender)
 {
 	temperatureScale->SetOption(sender->GetTemperatureScale()); // has to happen before AmbientAirTempToTextBox is called
@@ -528,6 +592,11 @@ void OptionsView::NotifySettingsChanged(OptionsModel * sender)
 		float airTemp = sender->GetAmbientAirTemperature();
 		UpdateAmbientAirTempPreview(airTemp, true);
 		AmbientAirTempToTextBox(airTemp);
+	}
+	// Same for vorticity
+	if (!vorticityCoeff->IsFocused())
+	{
+		VorticityCoeffToTextBox(sender->GetVorticityCoeff());
 	}
 	gravityMode->SetOption(sender->GetGravityMode());
 	customGravityX = sender->GetCustomGravityX();

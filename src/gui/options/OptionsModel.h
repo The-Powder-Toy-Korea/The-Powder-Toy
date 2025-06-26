@@ -1,5 +1,6 @@
 #pragma once
 #include <vector>
+#include "simulation/SimulationSettings.h"
 
 class GameModel;
 class Simulation;
@@ -27,10 +28,12 @@ public:
 	void SetAirMode(int airMode);
 	float GetAmbientAirTemperature();
 	void SetAmbientAirTemperature(float ambientAirTemp);
+	float GetVorticityCoeff();
+	void SetVorticityCoeff(float vorticityCoeff);
 	int GetEdgeMode();
 	void SetEdgeMode(int edgeMode);
-	int GetTemperatureScale();
-	void SetTemperatureScale(int temperatureScale);
+	TempScale GetTemperatureScale();
+	void SetTemperatureScale(TempScale temperatureScale);
 	int GetThreadedRendering();
 	void SetThreadedRendering(bool newThreadedRendering);
 	int GetGravityMode();

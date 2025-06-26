@@ -87,15 +87,16 @@ RenderView::RenderView():
 		AddComponent(displayModeCheckbox);
 	};
 	line1 = 130;
-	addDisplayModeCheckbox(DISPLAY_AIRC, IconAltAir  , ui::Point(135,  4), "압력을 적청으로, 기류를 하얗게 표시합니다.");
-	addDisplayModeCheckbox(DISPLAY_AIRP, IconPressure, ui::Point(135, 22), "압력을 표시합니다. 음압은 빨간색으로, 양압은 파란색으로 표시합니다.");
-	addDisplayModeCheckbox(DISPLAY_AIRV, IconVelocity, ui::Point(167,  4), "기류와 양압을 표시합니다. 상하 방향은 파란색, 좌우 방향은 빨간색, 양압은 초록색으로 표시합니다.");
-	addDisplayModeCheckbox(DISPLAY_AIRH, IconHeat    , ui::Point(167, 22), "공기의 온도를 열 디스플레이와 같이 표시합니다.");
-	line2 = 200;
-	addDisplayModeCheckbox(DISPLAY_WARP, IconWarp      , ui::Point(205, 22), "중력 렌즈 렌더링이며, 뉴턴 중력의 빛 왜곡 효과를 표시합니다.");
-	addDisplayModeCheckbox(DISPLAY_EFFE, IconEffect    , ui::Point(205,  4), "고체 이동 활성화, 스틱맨 총, Premium\xE2\x84\xA2 그래픽(패러디)");
-	addDisplayModeCheckbox(DISPLAY_PERS, IconPersistant, ui::Point(237,  4), "입자 경로가 화면에 잠시 동안 지속됩니다.");
-	line3 = 270;
+	addDisplayModeCheckbox(DISPLAY_AIRC, IconAltAir    , ui::Point(135,  4), "압력을 적청으로, 기류를 하얗게 표시합니다.");
+	addDisplayModeCheckbox(DISPLAY_AIRP, IconPressure  , ui::Point(135, 22), "압력을 표시합니다. 음압은 빨간색으로, 양압은 파란색으로 표시합니다.");
+	addDisplayModeCheckbox(DISPLAY_AIRV, IconVelocity  , ui::Point(167,  4), "기류와 양압을 표시합니다. 상하 방향은 파란색, 좌우 방향은 빨간색, 양압은 초록색으로 표시합니다.");
+	addDisplayModeCheckbox(DISPLAY_AIRH, IconHeat      , ui::Point(167, 22), "공기의 온도를 열 디스플레이와 같이 표시합니다.");
+	addDisplayModeCheckbox(DISPLAY_AIRW, IconVort      , ui::Point(199,  4), "와도를 표시합니다. 시계 방향은 빨간색, 시계 반대 방향은 파란색으로 표시합니다.");
+	line2 = 232;
+	addDisplayModeCheckbox(DISPLAY_WARP, IconWarp      , ui::Point(237, 22), "중력 렌즈 렌더링이며, 뉴턴 중력의 빛 왜곡 효과를 표시합니다.");
+	addDisplayModeCheckbox(DISPLAY_EFFE, IconEffect    , ui::Point(237,  4), "고체 이동 활성화, 스틱맨 총, Premium\xE2\x84\xA2 그래픽(패러디)");
+	addDisplayModeCheckbox(DISPLAY_PERS, IconPersistant, ui::Point(269,  4), "입자 경로가 화면에 잠시 동안 지속됩니다.");
+	line3 = 302;
 
 	auto addColourModeCheckbox = [this](unsigned int mode, Icon icon, ui::Point offset, String tooltip) {
 		auto *colourModeCheckbox = new ModeCheckbox(ui::Point(0, YRES) + offset, ui::Point(30, 16), "", tooltip);
@@ -117,11 +118,11 @@ RenderView::RenderView():
 		} });
 		AddComponent(colourModeCheckbox);
 	};
-	addColourModeCheckbox(COLOUR_HEAT, IconHeat    , ui::Point(275,  4), "요소의 온도를 표시하며, 짙은 남색이 가장 차가움을, 진분홍색이 가장 뜨거움을 나타냅니다.");
-	addColourModeCheckbox(COLOUR_LIFE, IconLife    , ui::Point(275, 22), "요소의 수명값을 명암으로 나타냅니다.");
-	addColourModeCheckbox(COLOUR_GRAD, IconGradient, ui::Point(307, 22), "요소의 색상을 약간 변경하여 열 확산을 나타냅니다.");
-	addColourModeCheckbox(COLOUR_BASC, IconBasic   , ui::Point(307,  4), "다른 모든 설정과 도색를 무시하며, 특수 효과를 전혀 사용하지 않습니다.");
-	line4 = 340;
+	addColourModeCheckbox(COLOUR_HEAT, IconHeat    , ui::Point(307,  4), "요소의 온도를 표시하며, 짙은 남색이 가장 차가움을, 진분홍색이 가장 뜨거움을 나타냅니다.");
+	addColourModeCheckbox(COLOUR_LIFE, IconLife    , ui::Point(307, 22), "요소의 수명값을 명암으로 나타냅니다.");
+	addColourModeCheckbox(COLOUR_GRAD, IconGradient, ui::Point(339, 22), "요소의 색상을 약간 변경하여 열 확산을 나타냅니다.");
+	addColourModeCheckbox(COLOUR_BASC, IconBasic   , ui::Point(339,  4), "다른 모든 설정과 도색를 무시하며, 특수 효과를 전혀 사용하지 않습니다.");
+	line4 = 372;
 }
 
 uint32_t RenderView::CalculateRenderMode()

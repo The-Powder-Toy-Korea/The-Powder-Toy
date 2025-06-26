@@ -3,7 +3,7 @@ project('the-powder-toy', 'cpp', version:
 	                     # A.B.C is the version number shown by meson and by your local builds. note that this version
 	                     # number is overridden by the tag you push to github, so ghactions builds will show that version
 	                     # number instead. you can also replace 'the-powder-toy' with your mod's simplified name.
-	'99.3.387', meson_version: '>=0.64.0')
+	'99.3.388', meson_version: '>=0.64.0')
 
 if get_option('prepare')
 	# we're being run by prepare.py in a ghactions workflow only to determine the values of options; exit early
@@ -80,7 +80,7 @@ tpt_libs_debug = is_debug ? 'debug' : 'release'
 tpt_libs_variant = '@0@-@1@-@2@-@3@'.format(host_arch, host_platform, host_libc, tpt_libs_static)
 tpt_libs_vtag = get_option('tpt_libs_vtag')
 if tpt_libs_vtag == ''
-	tpt_libs_vtag = 'v20250117195557'
+	tpt_libs_vtag = 'v20250622192228'
 endif
 if tpt_libs_static != 'none'
 	if tpt_libs_variant not in [
@@ -202,7 +202,7 @@ project_cpp_args = []
 fftw_dep = dependency('fftw3f', static: is_static)
 threads_dep = dependency('threads')
 if host_platform == 'emscripten'
-	zlib_dep = []
+	app_exe_jssafe = app_exe.underscorify()
 	png_dep = []
 	sdl2_dep = []
 	bzip2_dep = []
@@ -215,23 +215,23 @@ if host_platform == 'emscripten'
 		'-s', 'EXPORTED_RUNTIME_METHODS=ccall,cwrap',
 		'-s', 'FS_DEBUG',
 		'-s', 'MODULARIZE',
-		'-s', 'EXPORT_NAME=create_' + app_exe,
+		'-s', 'EXPORT_NAME=create_' + app_exe_jssafe,
 		'-Wl,-u,_emscripten_run_callback_on_thread',
 		'-lidbfs.js',
+		'--source-map-base=./',
 	]
 	emcc_args = [
 		'-s', 'USE_SDL=2',
 		'-s', 'USE_BZIP2=1',
 		'-s', 'USE_LIBPNG',
-		'-s', 'USE_ZLIB=1',
+		'-s', 'USE_PTHREADS',
+#		'-s', 'USE_ZLIB=1',
 		'-s', 'DISABLE_EXCEPTION_CATCHING=0',
+		'-gsource-map',
 	]
-	project_link_args += [ '--source-map-base=./' ]
-	emcc_args += [ '-gsource-map' ]
 	project_link_args += emcc_args
 	project_cpp_args += emcc_args
 else
-	zlib_dep = dependency('zlib', static: is_static)
 	png_dep = dependency('libpng16', static: is_static)
 	sdl2_dep = dependency('sdl2', static: is_static)
 	bzip2_dep = dependency('bzip2', static: is_static)
@@ -343,20 +343,13 @@ endif
 copied_dlls = []
 if host_platform == 'windows'
 	args_ccomp_win = []
-	defs_ccomp_win = []
-	defs_ccomp_win += [
+	defs_ccomp_win = [
 		'_WIN32_WINNT=0x0501',
 		'NOMINMAX',
 		'UNICODE',
 		'_UNICODE',
 	]
 	windows_mod = import('windows')
-	if is_static
-		defs_ccomp_win += [ 'CURL_STATICLIB' ]
-		if host_arch == 'x86_64'
-			defs_ccomp_win += [ 'ZLIB_WINAPI' ]
-		endif
-	endif
 	if tpt_libs_static == 'dynamic'
 		foreach input_output_condition : tpt_libs.get_variable('config_dlls')
 			dll_input = input_output_condition[0]
@@ -459,9 +452,7 @@ foreach embedded_file : embedded_files
 endforeach
 
 powder_files += powder_external_files
-powder_files += data_files
-render_files += data_files
-font_files += data_files
+common_files += data_files
 
 if host_platform == 'emscripten'
 	project_link_args += [
@@ -487,17 +478,48 @@ endif
 
 clang_tidy_sources = []
 
+sta_libs = {}
+foreach sta_info : [
+	[ 'common', common_files, [
+		host_platform == 'android' ? sdl2_dep : [],
+		png_dep,
+		bzip2_dep,
+	] ],
+	[ 'gui', gui_files, [
+		sdl2_dep,
+	] ],
+	[ 'simulation', simulation_files, [
+		json_dep,
+	] ],
+]
+	sta_name = sta_info[0]
+	sta_srcs = sta_info[1]
+	sta_deps = sta_info[2]
+	sta_libs += { sta_name: declare_dependency(
+		include_directories: project_inc,
+		link_with: static_library(
+			sta_name,
+			sources: sta_srcs,
+			include_directories: project_inc,
+			cpp_args: project_cpp_args,
+			override_options: target_options,
+			pic: host_platform == 'android',
+			dependencies: sta_deps,
+		),
+		dependencies: sta_deps,
+	) }
+	clang_tidy_sources += sta_srcs
+endforeach
+
 if get_option('build_powder')
 	powder_deps += project_deps + [
 		threads_dep,
-		zlib_dep,
-		png_dep,
-		sdl2_dep,
 		lua_dep,
 		curl_dep,
 		fftw_dep,
-		bzip2_dep,
-		json_dep,
+		sta_libs['common'],
+		sta_libs['gui'],
+		sta_libs['simulation'],
 	]
 	if host_platform == 'android'
 		powder_sha = shared_library(
@@ -512,7 +534,7 @@ if get_option('build_powder')
 		)
 		subdir('android')
 	else
-		executable(
+		powder_exe = executable(
 			app_exe,
 			sources: powder_files,
 			include_directories: project_inc,
@@ -530,15 +552,13 @@ if get_option('build_powder')
 endif
 
 if get_option('build_render')
-	if host_platform == 'emscripten'
-		error('render does not target emscripten')
+	if host_platform in [ 'android', 'emscripten' ]
+		error('render does not target @0@'.format(host_platform))
 	endif
 	render_deps = project_deps + [
 		threads_dep,
-		zlib_dep,
-		bzip2_dep,
-		json_dep,
-		png_dep,
+		sta_libs['common'],
+		sta_libs['simulation'],
 	]
 	render_link_args = project_link_args
 	if host_platform == 'linux' and is_static
@@ -559,16 +579,13 @@ if get_option('build_render')
 endif
 
 if get_option('build_font')
-	if host_platform == 'emscripten'
-		error('font does not target emscripten')
+	if host_platform in [ 'android', 'emscripten' ]
+		error('font does not target @0@'.format(host_platform))
 	endif
 	font_deps = project_deps + [
 		threads_dep,
-		zlib_dep,
-		png_dep,
-		sdl2_dep,
-		bzip2_dep,
-		json_dep,
+		sta_libs['common'],
+		sta_libs['gui'],
 	]
 	executable(
 		'font',
@@ -596,5 +613,17 @@ if get_option('clang_tidy')
 			'-warnings-as-errors=*',
 			clang_tidy_sources,
 		],
+	)
+endif
+
+if host_platform == 'emscripten'
+	run_target(
+		'serve-locally',
+		command: [
+			python3_prog,
+			serve_wasm_py,
+			'@BUILD_ROOT@',
+		],
+		depends: powder_exe,
 	)
 endif

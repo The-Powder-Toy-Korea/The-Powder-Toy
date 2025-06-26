@@ -85,13 +85,13 @@ void OptionsModel::SetEdgeMode(int edgeMode)
 	notifySettingsChanged();
 }
 
-int OptionsModel::GetTemperatureScale()
+TempScale OptionsModel::GetTemperatureScale()
 {
 	return gModel->GetTemperatureScale();
 }
-void OptionsModel::SetTemperatureScale(int temperatureScale)
+void OptionsModel::SetTemperatureScale(TempScale temperatureScale)
 {
-	GlobalPrefs::Ref().Set("Renderer.TemperatureScale", temperatureScale);
+	GlobalPrefs::Ref().Set("Renderer.TemperatureScale", int(temperatureScale));
 	gModel->SetTemperatureScale(temperatureScale);
 	notifySettingsChanged();
 }
@@ -116,6 +116,17 @@ void OptionsModel::SetAmbientAirTemperature(float ambientAirTemp)
 {
 	GlobalPrefs::Ref().Set("Simulation.AmbientAirTemp", ambientAirTemp);
 	gModel->SetAmbientAirTemperature(ambientAirTemp);
+	notifySettingsChanged();
+}
+
+float OptionsModel::GetVorticityCoeff()
+{
+	return gModel->GetSimulation()->air->vorticityCoeff;
+}
+void OptionsModel::SetVorticityCoeff(float vorticityCoeff)
+{
+	GlobalPrefs::Ref().Set("Simulation.VorticityCoeff", vorticityCoeff);
+	gModel->SetVorticityCoeff(vorticityCoeff);
 	notifySettingsChanged();
 }
 

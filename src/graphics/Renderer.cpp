@@ -578,7 +578,7 @@ void Renderer::render_parts()
 						legb = 255;
 					}
 
-					if (matchesFindingElement)
+					if (findingElement && !matchesFindingElement)
 					{
 						colr /= 10;
 						colg /= 10;
@@ -987,6 +987,14 @@ void Renderer::draw_air()
 						b=255;
 					c = RGB(r, g, b);
 				}
+			}
+			else if (displayMode & DISPLAY_AIRW)
+			{
+				auto w = 4*Air::vorticity(*sim, y, x);
+				if (w > 0.0f)
+					c = RGB(clamp_flt(w, 0.0f, 8.0f), 0, 0); //positive vorticity is red
+				else
+					c = RGB(0, 0, clamp_flt(-w, 0.0f, 8.0f)); //negative vorticity is blue
 			}
 			if (findingElement)
 			{
