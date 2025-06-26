@@ -1,5 +1,5 @@
 project('the-powder-toy', 'cpp', version:
-	'9.3.77-upstream-' + # if you're a mod developer, remove the first # from this line and customize A.B.C to your liking.
+	'9.4.78-upstream-' + # if you're a mod developer, remove the first # from this line and customize A.B.C to your liking.
 	                     # A.B.C is the version number shown by meson and by your local builds. note that this version
 	                     # number is overridden by the tag you push to github, so ghactions builds will show that version
 	                     # number instead. you can also replace 'the-powder-toy' with your mod's simplified name.
