@@ -60,7 +60,6 @@ TPT를 빌드하려면 [The Powder Toy 공식 위키](https://powdertoy.co.uk/Wi
 * [Mallangche](https://github.com/JammPark/Mallangche)
 * [mbedtls](https://www.trustedfirmware.org/projects/mbed-tls/)
 * [SDL](https://libsdl.org/)
-* [zlib](https://www.zlib.net/)
 
 사용법
 ===========================================================================

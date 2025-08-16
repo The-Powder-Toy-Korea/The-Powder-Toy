@@ -192,7 +192,7 @@ option(
 option(
 	'app_id',
 	type: 'string',
-	value: 'uk.co.powdertoy.tptkoreanmod',
+	value: 'org.tptkor.tptkoreanmod',
 	description: 'App ID, a D-Bus well-known name, used for desktop integration, change if you work on a mod'
 )
 option(
