@@ -250,13 +250,13 @@ GameView::GameView():
 	currentX+=151;
 	saveSimulationButton->SetSplitActionCallback({
 		[this] {
-			if (CtrlBehaviour() || !Client::Ref().GetAuthUser().UserID)
+			if (CtrlBehaviour() || !Client::Ref().GetAuthUser())
 				c->OpenLocalSaveWindow(true);
 			else
 				c->SaveAsCurrent();
 		},
 		[this] {
-			if (CtrlBehaviour() || !Client::Ref().GetAuthUser().UserID)
+			if (CtrlBehaviour() || !Client::Ref().GetAuthUser())
 				c->OpenLocalSaveWindow(false);
 			else
 				c->OpenSaveWindow();
@@ -747,7 +747,8 @@ void GameView::NotifySimulationChanged(GameModel * sender)
 }
 void GameView::NotifyUserChanged(GameModel * sender)
 {
-	if(!sender->GetUser().UserID)
+	auto user = sender->GetUser();
+	if (!user)
 	{
 		loginButton->SetText("[로그인]");
 		loginButton->SetShowSplit(false);
@@ -755,7 +756,7 @@ void GameView::NotifyUserChanged(GameModel * sender)
 	}
 	else
 	{
-		loginButton->SetText(sender->GetUser().Username.FromUtf8());
+		loginButton->SetText(user->Username.FromUtf8());
 		loginButton->SetShowSplit(true);
 		loginButton->SetRightToolTip("프로필 수정");
 	}
@@ -799,13 +800,14 @@ void GameView::NotifySaveChanged(GameModel * sender)
 		if (introText > 50)
 			introText = 50;
 
+		auto user = sender->GetUser();
 		saveSimulationButton->SetText(sender->GetSave()->GetName());
-		if (sender->GetSave()->GetUserName() == sender->GetUser().Username)
+		if (user && sender->GetSave()->GetUserName() == user->Username)
 			saveSimulationButton->SetShowSplit(true);
 		else
 			saveSimulationButton->SetShowSplit(false);
 		reloadButton->Enabled = true;
-		upVoteButton->Enabled = sender->GetSave()->GetID() && sender->GetUser().UserID && sender->GetUser().Username != sender->GetSave()->GetUserName();
+		upVoteButton->Enabled = sender->GetSave()->GetID() && user && user->Username != sender->GetSave()->GetUserName();
 
 		auto upVoteButtonColor = [this](bool active) {
 			if(active)
@@ -821,7 +823,7 @@ void GameView::NotifySaveChanged(GameModel * sender)
 				upVoteButton->Appearance.BackgroundDisabled = (ui::Colour(0, 0, 0));
 			}
 		};
-		auto upvoted = sender->GetSave()->GetID() && sender->GetUser().UserID && sender->GetSave()->GetVote() == 1;
+		auto upvoted = sender->GetSave()->GetID() && user && sender->GetSave()->GetVote() == 1;
 		upVoteButtonColor(upvoted);
 
 		downVoteButton->Enabled = upVoteButton->Enabled;
@@ -839,10 +841,10 @@ void GameView::NotifySaveChanged(GameModel * sender)
 				downVoteButton->Appearance.BackgroundDisabled = (ui::Colour(0, 0, 0));
 			}
 		};
-		auto downvoted = sender->GetSave()->GetID() && sender->GetUser().UserID && sender->GetSave()->GetVote() == -1;
+		auto downvoted = sender->GetSave()->GetID() && user && sender->GetSave()->GetVote() == -1;
 		downVoteButtonColor(downvoted);
 
-		if (sender->GetUser().UserID)
+		if (user)
 		{
 			upVoteButton->Appearance.BorderDisabled = upVoteButton->Appearance.BorderInactive;
 			downVoteButton->Appearance.BorderDisabled = downVoteButton->Appearance.BorderInactive;
@@ -1447,13 +1449,6 @@ void GameView::OnKeyPress(int key, int scan, bool repeat, bool shift, bool ctrl,
 		break;
 	case SDL_SCANCODE_F5:
 		c->ReloadSim();
-		break;
-	case SDL_SCANCODE_A:
-		if (Client::Ref().GetAuthUser().UserElevation != User::ElevationNone && ctrl)
-		{
-			ByteString authorString = Client::Ref().GetAuthorInfo().toStyledString();
-			new InformationMessage("저작권 정보 저장", authorString.FromUtf8(), true);
-		}
 		break;
 	case SDL_SCANCODE_R:
 		if (ctrl)
@@ -2125,7 +2120,7 @@ void GameView::UpdateToolStrength()
 
 void GameView::SetSaveButtonTooltips()
 {
-	if (!Client::Ref().GetAuthUser().UserID)
+	if (!Client::Ref().GetAuthUser())
 		saveSimulationButton->SetToolTips("로컬 드라이브에 열린 시뮬레이션을 덮어씁니다.", "시뮬레이션을 로컬 드라이브에 저장합니다. 로그인하면 파일을 업로드할 수 있습니다.");
 	else if (ctrlBehaviour)
 		saveSimulationButton->SetToolTips("로컬 드라이브에 열린 시뮬레이션을 덮어씁니다.", "시뮬레이션을 로컬 드라이브에 저장합니다.");
@@ -2409,7 +2404,7 @@ void GameView::OnDraw()
 				}
 				sampleInfo << ", 온도: ";
 				format::RenderTemperature(sampleInfo, sample.particle.temp, c->GetTemperatureScale());
-				sampleInfo << ", Life: " << sample.particle.life;
+				sampleInfo << ", 수명: " << sample.particle.life;
 				if (sample.particle.type != PT_RFRG && sample.particle.type != PT_RFGL && sample.particle.type != PT_LIFE)
 				{
 					if (sample.particle.type == PT_CONV)

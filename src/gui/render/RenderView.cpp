@@ -41,7 +41,7 @@ RenderView::RenderView():
 	addPresetButton( 8, IconBasic     , ui::Point(-154, 24), "사전 설정된 기본 디스플레이 모드");
 	addPresetButton( 9, IconGradient  , ui::Point(-193,  6), "사전 설정된 열 명암 디스플레이 모드");
 	addPresetButton( 0, IconAltAir    , ui::Point(-193, 24), "사전 설정된 대체 기류 디스플레이 모드");
-	addPresetButton(10, IconLife      , ui::Point(-232,  6), "사전 설정된 수명값 명암 디스플레이 모드");
+	addPresetButton(10, IconLife      , ui::Point(-232,  6), "사전 설정된 수명 명암 디스플레이 모드");
 
 	auto addRenderModeCheckbox = [this](unsigned int mode, Icon icon, ui::Point offset, String tooltip) {
 		auto *renderModeCheckbox = new ModeCheckbox(ui::Point(0, YRES) + offset, ui::Point(30, 16), "", tooltip);
@@ -121,7 +121,7 @@ RenderView::RenderView():
 	addColourModeCheckbox(COLOUR_HEAT, IconHeat    , ui::Point(307,  4), "요소의 온도를 표시하며, 짙은 남색이 가장 차가움을, 진분홍색이 가장 뜨거움을 나타냅니다.");
 	addColourModeCheckbox(COLOUR_LIFE, IconLife    , ui::Point(307, 22), "요소의 수명값을 명암으로 나타냅니다.");
 	addColourModeCheckbox(COLOUR_GRAD, IconGradient, ui::Point(339, 22), "요소의 색상을 약간 변경하여 열 확산을 나타냅니다.");
-	addColourModeCheckbox(COLOUR_BASC, IconBasic   , ui::Point(339,  4), "다른 모든 설정과 도색를 무시하며, 특수 효과를 전혀 사용하지 않습니다.");
+	addColourModeCheckbox(COLOUR_BASC, IconBasic   , ui::Point(339,  4), "다른 모든 설정과 도색을 무시하며, 특수 효과를 전혀 사용하지 않습니다.");
 	line4 = 372;
 }
 

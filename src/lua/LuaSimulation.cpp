@@ -932,7 +932,7 @@ static int resetTemp(lua_State *L)
 	auto &sd = SimulationData::CRef();
 	auto &elements = sd.elements;
 	bool onlyConductors = luaL_optint(L, 1, 0);
-	for (int i = 0; i < sim->parts.lastActiveIndex; i++)
+	for (int i = 0; i < sim->parts.active; i++)
 	{
 		if (sim->parts[i].type && (!onlyConductors || !sd.IsHeatInsulator(sim->parts[i])))
 		{
@@ -1039,7 +1039,7 @@ static int loadStamp(lua_State *L)
 		lsi->sim->Load(gameSave.get(), includePressure, { quoX, quoY });
 		lua_pushinteger(L, 1);
 
-		if (gameSave->authors.size())
+		if (gameSave->authors.GetSize())
 		{
 			gameSave->authors["type"] = "luastamp";
 			client.MergeStampAuthorInfo(gameSave->authors);
@@ -1387,7 +1387,7 @@ static int brush(lua_State *L)
 static int partsClosure(lua_State *L)
 {
 	auto *lsi = GetLSI();
-	for (int i = lua_tointeger(L, lua_upvalueindex(1)); i <= lsi->sim->parts.lastActiveIndex; ++i)
+	for (int i = lua_tointeger(L, lua_upvalueindex(1)); i < lsi->sim->parts.active; ++i)
 	{
 		if (lsi->sim->parts[i].type)
 		{
@@ -1515,13 +1515,13 @@ static int frameRender(lua_State *L)
 	lsi->AssertInterfaceEvent();
 	if (lua_gettop(L) == 0)
 	{
-		lua_pushinteger(L, lsi->sim->framerender);
+		lua_pushinteger(L, lsi->gameModel->GetQueuedFrames());
 		return 1;
 	}
 	int frames = luaL_checkinteger(L, 1);
 	if (frames < 0)
 		return luaL_error(L, "Can't simulate a negative number of frames");
-	lsi->sim->framerender = frames;
+	lsi->gameModel->SetQueuedFrames(frames);
 	return 0;
 }
 
@@ -1705,7 +1705,7 @@ static int updateUpTo(lua_State *L)
 	{
 		return luaL_error(L, "ID not in valid range");
 	}
-	lsi->sim->framerender = 1;
+	lsi->gameModel->SetQueuedFrames(1);
 	lsi->gameModel->UpdateUpTo(upTo + 1);
 	return 0;
 }

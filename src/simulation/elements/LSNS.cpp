@@ -30,7 +30,7 @@ void Element::Element_LSNS()
 
 	DefaultProperties.temp = 4.0f + 273.15f;
 	HeatConduct = 0;
-	Description = "수명값 감지기: 주변에 설정한 온도보다 높은 수명값을 갖는 입자가 있는 경우 전류를 방출합니다.";
+	Description = "수명 감지기: 주변에 설정한 온도보다 높은 수명을 갖는 입자가 있는 경우 전류를 방출합니다.";
 
 	Properties = TYPE_SOLID;
 

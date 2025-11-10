@@ -20,9 +20,13 @@ LoginView::LoginView():
 	cancelButton(new ui::Button(ui::Point(0, 87-17), ui::Point(101, 17), "로그아웃")),
 	titleLabel(new ui::Label(ui::Point(4, 5), ui::Point(200-16, 16), "The Powder Toy에 로그인")),
 	infoLabel(new ui::RichLabel(ui::Point(6, 67), ui::Point(200-12, 16), "")),
-	usernameField(new ui::Textbox(ui::Point(8, 25), ui::Point(200-16, 17), Client::Ref().GetAuthUser().Username.FromUtf8(), "사용자 이름")),
+	usernameField(new ui::Textbox(ui::Point(8, 25), ui::Point(200-16, 17), "", "사용자 이름")),
 	passwordField(new ui::Textbox(ui::Point(8, 46), ui::Point(200-16, 17), "", "암호"))
 {
+	if (auto user = Client::Ref().GetAuthUser())
+	{
+		usernameField->SetText(user->Username.FromUtf8());
+	}
 	targetSize.SetTarget(float(Size.Y));
 	targetSize.SetValue(float(Size.Y));
 	FocusComponent(usernameField);
@@ -86,8 +90,8 @@ void LoginView::NotifyStatusChanged(LoginModel * sender)
 {
 	auto statusText = sender->GetStatusText();
 	auto notWorking = sender->GetStatus() != loginWorking;
-	auto userID = Client::Ref().GetAuthUser().UserID;
-	if (!statusText.size() && !userID && notWorking)
+	auto user = Client::Ref().GetAuthUser();
+	if (!statusText.size() && !user && notWorking)
 	{
 		statusText = String::Build("계정이 없습니까? {a:", SERVER, "/Register.html", "|\bt계정을 만드십시오.\x0E}");
 	}
@@ -95,7 +99,7 @@ void LoginView::NotifyStatusChanged(LoginModel * sender)
 	infoLabel->SetText(statusText);
 	infoLabel->AutoHeight();
 	loginButton->Enabled = notWorking;
-	cancelButton->Enabled = notWorking && userID;
+	cancelButton->Enabled = notWorking && user;
 	usernameField->Enabled = notWorking;
 	passwordField->Enabled = notWorking;
 	if (infoLabel->Visible)
