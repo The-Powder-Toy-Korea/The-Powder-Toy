@@ -31,7 +31,7 @@ void Element::Element_GEL()
 
 	DefaultProperties.temp = R_TEMP - 2.0f + 273.15f;
 	HeatConduct = 29;
-	Description = "젤: 다양한 점도와 열전도율의 액체입니다. 물을 흡수합니다.";
+	Description = "젤: 다양한 점도와 열전도도의 액체입니다. 물을 흡수합니다.";
 
 	Properties = TYPE_LIQUID|PROP_LIFE_DEC|PROP_NEUTPENETRATE;
 
@@ -126,6 +126,15 @@ static int update(UPDATE_FUNC_ARGS)
 						parts[i].tmp--;
 					}
 					gel = true;
+					break;
+				case PT_BASE:
+					// Base absorbs water from gel
+					if (parts[i].tmp > 0 && parts[ID(r)].life > 1)
+					{
+						// BASE <- GEL
+						parts[ID(r)].life--;
+						parts[i].tmp--;
+					}
 					break;
 				default:
 					break;

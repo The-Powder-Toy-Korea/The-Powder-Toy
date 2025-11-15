@@ -92,7 +92,8 @@ ServerSaveActivity::ServerSaveActivity(std::unique_ptr<SaveInfo> newSave, OnUplo
 	AddComponent(descriptionField);
 
 	publishedCheckbox = new ui::Checkbox(ui::Point(8, 45), ui::Point((Size.X/2)-80, 16), "게시", "");
-	if(Client::Ref().GetAuthUser().Username != save->GetUserName())
+	auto user = Client::Ref().GetAuthUser();
+	if (!(user && user->Username == save->GetUserName()))
 	{
 		//Save is not owned by the user, disable by default
 		publishedCheckbox->SetChecked(false);
@@ -197,7 +198,8 @@ void ServerSaveActivity::Save()
 		new ErrorMessage("오류", "파일 이름을 입력해야 합니다.");
 		return;
 	}
-	if(Client::Ref().GetAuthUser().Username != save->GetUserName() && publishedCheckbox->GetChecked())
+	auto user = Client::Ref().GetAuthUser();
+	if (!(user && user->Username == save->GetUserName()) && publishedCheckbox->GetChecked())
 	{
 		new ConfirmPrompt("게시", "이 세이브는 " + save->GetUserName().FromUtf8() + "에 의해 제작되었으며, 귀하가 이것을 귀하의 이름으로 게시하려 하고 있습니다. 게시자의 허가가 있지 않다면 게시 확인 상자를 해제하십시오. 게시자의 허가가 있다면 게시해도 됩니다.", { [this] {
 			saveUpload();
@@ -211,15 +213,16 @@ void ServerSaveActivity::Save()
 
 void ServerSaveActivity::AddAuthorInfo()
 {
-	Json::Value serverSaveInfo;
+	Bson serverSaveInfo;
 	serverSaveInfo["type"] = "save";
 	serverSaveInfo["id"] = save->GetID();
-	serverSaveInfo["username"] = Client::Ref().GetAuthUser().Username;
+	auto user = Client::Ref().GetAuthUser();
+	serverSaveInfo["username"] = user ? user->Username : ByteString("");
 	serverSaveInfo["title"] = save->GetName().ToUtf8();
 	serverSaveInfo["description"] = save->GetDescription().ToUtf8();
 	serverSaveInfo["published"] = (int)save->GetPublished();
-	serverSaveInfo["date"] = (Json::Value::UInt64)time(nullptr);
-	Client::Ref().SaveAuthorInfo(&serverSaveInfo);
+	serverSaveInfo["date"] = int64_t(time(nullptr));
+	Client::Ref().SaveAuthorInfo(serverSaveInfo);
 	{
 		auto gameSave = save->TakeGameSave();
 		gameSave->authors = serverSaveInfo;
@@ -233,7 +236,8 @@ void ServerSaveActivity::saveUpload()
 	save->SetName(nameField->GetText());
 	save->SetDescription(descriptionField->GetText());
 	save->SetPublished(publishedCheckbox->GetChecked());
-	save->SetUserName(Client::Ref().GetAuthUser().Username);
+	auto user = Client::Ref().GetAuthUser();
+	save->SetUserName(user ? user->Username : ByteString(""));
 	save->SetID(0);
 	{
 		auto gameSave = save->TakeGameSave();
@@ -345,7 +349,8 @@ void ServerSaveActivity::ShowRules()
 
 void ServerSaveActivity::CheckName(String newname)
 {
-	if (newname.length() && newname == save->GetName() && save->GetUserName() == Client::Ref().GetAuthUser().Username)
+	auto user = Client::Ref().GetAuthUser();
+	if (newname.length() && newname == save->GetName() && user && save->GetUserName() == user->Username)
 		titleLabel->SetText("시뮬레이션 속성 수정:");
 	else
 		titleLabel->SetText("새 시뮬레이션 업로드:");

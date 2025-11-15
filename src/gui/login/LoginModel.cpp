@@ -71,7 +71,7 @@ void LoginModel::Tick()
 		{
 			logoutRequest->Finish();
 			auto &client = Client::Ref();
-			client.SetAuthUser(User(0, ""));
+			client.SetAuthUser(std::nullopt);
 			statusText = "로그아웃함";
 		}
 		catch (const http::RequestError &ex)

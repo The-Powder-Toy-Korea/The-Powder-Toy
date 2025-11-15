@@ -67,7 +67,7 @@ const std::vector<RenderPreset> Renderer::renderModePresets = {
 		COLOUR_GRAD,
 	},
 	{
-		"수명값 명암 디스플레이",
+		"수명 명암 디스플레이",
 		RENDER_BASC,
 		0,
 		COLOUR_LIFE,

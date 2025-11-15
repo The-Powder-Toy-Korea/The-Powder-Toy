@@ -68,6 +68,8 @@ private:
 	void InitTools();
 
 	Simulation * sim;
+	bool paused = false;
+	int queuedFrames = 0;
 	Renderer * ren;
 	RendererSettings rendererSettings;
 	std::vector<std::unique_ptr<Menu>> menuList;
@@ -87,7 +89,7 @@ private:
 	Tool **activeTools = nullptr;
 	std::array<Tool *, NUM_TOOLINDICES> decoToolset;
 	std::array<Tool *, NUM_TOOLINDICES> regularToolset;
-	User currentUser;
+	std::optional<User> currentUser;
 	float toolStrength;
 	std::deque<HistoryEntry> history;
 	std::unique_ptr<Snapshot> historyCurrent;
@@ -258,8 +260,8 @@ public:
 	void SetActiveMenu(int menuID);
 	int GetActiveMenu();
 	void FrameStep(int frames);
-	User GetUser();
-	void SetUser(User user);
+	const std::optional<User> &GetUser() const;
+	void SetUser(std::optional<User> user);
 	Simulation * GetSimulation();
 	Renderer * GetRenderer();
 	RendererSettings &GetRendererSettings()
@@ -319,5 +321,18 @@ public:
 	GameView *GetView() const
 	{
 		return view;
+	}
+
+	int GetQueuedFrames() const
+	{
+		return queuedFrames;
+	}
+	void SetQueuedFrames(int newQueuedFrames)
+	{
+		queuedFrames = newQueuedFrames;
+	}
+	bool IsSimRunning() const
+	{
+		return !paused || queuedFrames;
 	}
 };

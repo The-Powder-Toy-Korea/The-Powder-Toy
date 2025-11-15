@@ -59,14 +59,6 @@ std::vector<std::unique_ptr<SaveInfo>> SearchModel::EndSearchSaves()
 void SearchModel::BeginGetTags(int start, int count, String query)
 {
 	lastError = "";
-	ByteStringBuilder urlStream;
-	urlStream << SERVER << "/Browse/Tags.json?Start=" << start << "&Count=" << count;
-	if(query.length())
-	{
-		urlStream << "&Search_Query=";
-		if(query.length())
-			urlStream << format::URLEncode(query.ToUtf8());
-	}
 	getTags = std::make_unique<http::SearchTagsRequest>(start, count, query.ToUtf8());
 	getTags->Start();
 }
@@ -103,7 +95,7 @@ bool SearchModel::UpdateSaveList(int pageNumber, String query)
 		{
 			category = http::categoryFavourites;
 		}
-		if (showOwn && Client::Ref().GetAuthUser().UserID)
+		if (showOwn && Client::Ref().GetAuthUser())
 		{
 			category = http::categoryMyOwn;
 		}
@@ -218,19 +210,12 @@ void SearchModel::SelectAllSaves()
 
 void SearchModel::DeselectSave(int saveID)
 {
-	bool changed = false;
-restart:
-	for (size_t i = 0; i < selected.size(); i++)
+	if (std::erase_if(selected, [saveID](auto &item) {
+		return item == saveID;
+	}))
 	{
-		if (selected[i] == saveID)
-		{
-			selected.erase(selected.begin()+i);
-			changed = true;
-			goto restart; //Just ensure all cases are removed.
-		}
-	}
-	if(changed)
 		notifySelectedChanged();
+	}
 }
 
 void SearchModel::notifySaveListChanged()

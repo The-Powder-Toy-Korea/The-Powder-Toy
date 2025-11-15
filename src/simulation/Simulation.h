@@ -34,11 +34,14 @@ class Renderer;
 class Air;
 class GameSave;
 
-struct Parts
+class Parts
 {
+	int pfree;
+
+public:
 	std::array<Particle, NPART> data;
 	// initialized in clear_sim
-	int lastActiveIndex;
+	int active;
 
 	operator const Particle *() const
 	{
@@ -59,12 +62,24 @@ struct Parts
 
 	Parts &operator =(const Parts &other)
 	{
-		std::copy(other.data.begin(), other.data.begin() + other.lastActiveIndex + 1, data.begin());
-		lastActiveIndex = other.lastActiveIndex;
+		std::copy(other.data.begin(), other.data.begin() + other.active, data.begin());
+		active = other.active;
+		pfree = other.pfree;
 		return *this;
 	}
 
+	Parts(const Parts &&other) = delete;
+	Parts &operator =(const Parts &&other) = delete;
+
 	void Reset();
+	void Free(int i);
+	int Alloc();
+	void Flatten();
+
+	bool MaxPartsReached() const
+	{
+		return pfree == -1;
+	}
 };
 
 struct RenderableSimulation
@@ -141,8 +156,6 @@ public:
 	float customGravityY = 0;
 	int legacy_enable = 0;
 	int water_equal_test = 0;
-	int sys_pause = 0;
-	int framerender = 0;
 	int pretty_powder = 0;
 	int sandcolour_frame = 0;
 	int deco_space = DECOSPACE_SRGB;
@@ -207,7 +220,7 @@ public:
 	void SimulateGoL();
 	void RecalcFreeParticles(bool do_life_dec);
 	void CheckStacking();
-	void BeforeSim();
+	void BeforeSim(bool willUpdate);
 	void AfterSim();
 	void clear_area(int area_x, int area_y, int area_w, int area_h);
 
@@ -237,7 +250,7 @@ public:
 	void CreateBox(int p, int x1, int y1, int x2, int y2, int c, int flags);
 	int FloodParts(int x, int y, int c, int cm, int flags);
 
-	void GetGravityField(int x, int y, float particleGrav, float newtonGrav, float & pGravX, float & pGravY);
+	void GetGravityField(int x, int y, float particleGrav, float newtonGrav, float & pGravX, float & pGravY) const;
 
 	int get_wavelength_bin(int *wm);
 	struct GetNormalResult
@@ -255,11 +268,6 @@ public:
 
 	void EnableNewtonianGravity(bool enable);
 
-	bool MaxPartsReached() const
-	{
-		return pfree == -1;
-	}
-
 private:
 	CoordStack& getCoordStackSingleton();
 
@@ -267,5 +275,15 @@ private:
 	void DispatchNewtonianGravity();
 	void UpdateGravityMask();
 
-	int pfree;
+	struct Neighbourhood
+	{
+		std::array<int, 8> surround;
+		int surround_space = 0;
+		int nt = 0; //if nt is greater than 1 after this, then there is a particle around the current particle, that is NOT the current particle's type, for water movement.
+		float pGravX = 0;
+		float pGravY = 0;
+	};
+	void MovementPhase(int i, Neighbourhood neighbourhood);
+	Neighbourhood GetNeighbourhood(int i) const;
+	bool TransitionPhase(int i, const Neighbourhood &neighbourhood);
 };

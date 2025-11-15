@@ -15,7 +15,7 @@ Lua API가 있어 작업을 자동화하거나 게임용 플러그인을 만들 
 빌드 안내
 ===========================================================================
 
-TPT를 빌드하려면 [The Powder Toy 공식 위키](https://powdertoy.co.uk/Wiki/W/Main_Page/ko.html)의 _개발 안내_ 문단을 참조하십시오.
+TPT를 빌드하려면 [The Powder Toy 공식 위키](https://powdertoy.co.uk/Wiki/W/Main_Page/ko.html)의 _개발 도움말_ 문단을 참조하십시오.
 
 특별 감사
 ===========================================================================
@@ -49,7 +49,6 @@ TPT를 빌드하려면 [The Powder Toy 공식 위키](https://powdertoy.co.uk/Wi
 사용된 라이브러리 및 애셋
 ===========================================================================
 
-* [BSON](https://github.com/interactive-matter/bson-c)
 * [bzip2](http://www.bzip.org/)
 * [FFTW](http://fftw.org/)
 * [JsonCpp](https://github.com/open-source-parsers/jsoncpp)
@@ -75,7 +74,7 @@ TPT를 빌드하려면 [The Powder Toy 공식 위키](https://powdertoy.co.uk/Wi
 | Space                 | 일시 정지                                                                        |
 | Q / Esc               | 나가기                                                                           |
 | Z                     | 선택 영역 확대                                                                   |
-| S                     | 스탬프 저장, STK2이 있을 때에는 \<Ctrl\> 키를 누른 상태로 사용합니다.            |
+| S                     | 스탬프 저장, STK2가 있을 때에는 \<Ctrl\> 키를 누른 상태로 사용합니다.            |
 | L                     | 마지막으로 저장된 스탬프 불러오기                                                |
 | K                     | 스탬프 목록                                                                      |
 | 0-9                   | 보기 모드 설정                                                                   |
@@ -86,9 +85,9 @@ TPT를 빌드하려면 [The Powder Toy 공식 위키](https://powdertoy.co.uk/Wi
 | Shift + G             | 격자 크기 감소                                                                   |
 | H                     | HUD 표시 전환                                                                    |
 | Ctrl + H / F1         | 시작 텍스트 표시                                                                 |
-| D / F3                | 디버그 모드, STK2이 있을 때에는 \<Ctrl\> 키를 누른 상태로 사용합니다.            |
-| I                     | 압력 및 공기 흐름 뒤집기                                                         |
-| W                     | 중력 모드 전환, STK2이 있을 때에는 \<Ctrl\> 키를 누른 상태로 사용합니다.         |
+| D / F3                | 디버그 모드, STK2가 있을 때에는 \<Ctrl\> 키를 누른 상태로 사용합니다.            |
+| I                     | 압력 및 기류 반전                                                                |
+| W                     | 중력 모드 전환, STK2가 있을 때에는 \<Ctrl\> 키를 누른 상태로 사용합니다.         |
 | Y                     | 공기 모드 전환                                                                   |
 | Ctrl + E              | 모서리 모드 전환                                                                 |
 | B                     | 도색 편집 메뉴                                                                   |
@@ -97,7 +96,7 @@ TPT를 빌드하려면 [The Powder Toy 공식 위키](https://powdertoy.co.uk/Wi
 | U                     | 복사열 전환                                                                      |
 | Ctrl + I              | The Powder Toy 설치; 세이브 및 스탬프를 두 번 클릭으로 불러오기 위해 필요합니다. |
 | Backtick              | 콘솔 열기                                                                        |
-| =                     | 압력 및 공기 흐름 초기화                                                         |
+| =                     | 압력 및 기류 초기화                                                              |
 | Ctrl + =              | 모든 전류 제거                                                                   |
 | \[                    | 브러시 크기 줄이기                                                               |
 | \]                    | 브러시 크기 키우기                                                               |

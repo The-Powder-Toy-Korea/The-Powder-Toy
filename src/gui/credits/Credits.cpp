@@ -82,7 +82,7 @@ Credits::Credits():
 
 
 	addHeader("The Powder Toy는 커뮤니티 구성원들이 개발한 오픈 소스 프로젝트입니다.\n"
-			"\bt{a:https://github.com/The-Powder-Toy/The-Powder-Toy|GitHub 리포지토리}\x0E에 기여해주신 모든 분들께 감사드립니다:", false);
+			"\bt{a:https://github.com/The-Powder-Toy/The-Powder-Toy|GitHub 리포지토리}\x0E에 기여해 주신 모든 분들께 감사드립니다:", false);
 
 	auto GitHub = root["GitHub"];
 	int grayscale = 255;
