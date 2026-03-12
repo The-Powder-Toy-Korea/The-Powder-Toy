@@ -20,7 +20,7 @@ TPT를 빌드하려면 [The Powder Toy 공식 위키](https://powdertoy.co.uk/Wi
 특별 감사
 ===========================================================================
 
-* 스타니슬라프 K. 스코브로네크 - 오리지널 The Powder Toy를 디자인함
+* 스타니스와프 K. 스코브로네크 - 오리지널 The Powder Toy를 디자인함
 * 사이먼 로버트쇼 - 웹사이트 작성, 현재 서버 소유자
 * Skresanov Savely
 * Pilihp64
@@ -40,7 +40,7 @@ TPT를 빌드하려면 [The Powder Toy 공식 위키](https://powdertoy.co.uk/Wi
 번역자
 ===========================================================================
 
-* 검은고래(Black Whale)
+* 솟대(Triheron)
 * 뭐지What(NeuroWhAI)
 * 파토매니아
 * Hopz

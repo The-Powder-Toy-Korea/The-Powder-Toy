@@ -31,7 +31,6 @@ void Element::Element_SNOW()
 
 	DefaultProperties.temp = R_TEMP - 30.0f + 273.15f;
 	HeatConduct = 46;
-	LatentHeat = 1095;
 	Description = "눈: 가벼운 입자입니다. 얼음이 압력을 받아 깨질 때 생성됩니다.";
 
 	Properties = TYPE_PART|PROP_NEUTPASS;

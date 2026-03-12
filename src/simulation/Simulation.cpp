@@ -16,6 +16,7 @@
 #include "elements/PIPE.h"
 #include "elements/FILT.h"
 #include "elements/PRTI.h"
+#include "elements/PLNT.h"
 #include <iostream>
 #include <set>
 #include <stack>
@@ -465,6 +466,7 @@ void Simulation::SaveSimOptions(GameSave &gameSave)
 	gameSave.airMode = air->airMode;
 	gameSave.ambientAirTemp = air->ambientAirTemp;
 	gameSave.vorticityCoeff = air->vorticityCoeff;
+	gameSave.convectionMode = air->convectionMode;
 	gameSave.edgeMode = edgeMode;
 	gameSave.legacyEnable = legacy_enable;
 	gameSave.waterEEnabled = water_equal_test;
@@ -2416,19 +2418,26 @@ bool Simulation::TransitionPhase(int i, const Neighbourhood &neighbourhood)
 			}
 		}
 
-		//heat transfer code
+		// Heat transfer code
 		if (t && !sd.IsHeatInsulator(parts[i]) && rng.chance(int(elements[t].HeatConduct*gel_scale), 250))
 		{
-			auto h_count = 0;
+			// Heat transfer with air
 			if (aheat_enable && !(elements[t].Properties&PROP_NOAMBHEAT))
 			{
-				auto c_heat = (hv[y/CELL][x/CELL]-parts[i].temp)*0.04;
-				c_heat = restrict_flt(c_heat, -MAX_TEMP+MIN_TEMP, MAX_TEMP-MIN_TEMP);
-				parts[i].temp += c_heat;
-				hv[y/CELL][x/CELL] -= c_heat;
+				auto dtemp = hv[y/CELL][x/CELL] - parts[i].temp; // Temperature difference
+				auto hc = sd.HeatCapacityOf(parts[i]);
+				auto alpha = std::min(0.04f, 0.4f * hc); // alpha / heat_capacity must be < 1
+
+				// Here we completely ignore that there are CELL^2 "air pixels" in a cell, and the heat capacity of air
+				parts[i].temp = restrict_flt(parts[i].temp + alpha*dtemp / hc, MIN_TEMP, MAX_TEMP);
+				hv[y/CELL][x/CELL] = restrict_flt(hv[y/CELL][x/CELL] - alpha*dtemp, MIN_TEMP, MAX_TEMP);
 			}
-			auto c_heat = 0.0f;
-			int surround_hconduct[8];
+
+			// Heat transfer with other elements
+			auto hc_total = 0.0f; // Total heat capacity of elements involved
+			auto c_heat = 0.0f; // Total heat distributed between elements
+			int surround_hconduct[8]; // IDs of elements which exchange heat
+
 			for (auto j=0; j<8; j++)
 			{
 				surround_hconduct[j] = i;
@@ -2439,6 +2448,7 @@ bool Simulation::TransitionPhase(int i, const Neighbourhood &neighbourhood)
 
 				auto rt = TYP(r);
 
+				// Check if we can conduct heat
 				if (!rt || sd.IsHeatInsulator(parts[ID(r)])
 				        || (t == PT_FILT && (rt == PT_BRAY || rt == PT_BIZR || rt == PT_BIZRG))
 				        || (rt == PT_FILT && (t == PT_BRAY || t == PT_PHOT || t == PT_BIZR || t == PT_BIZRG))
@@ -2449,28 +2459,20 @@ bool Simulation::TransitionPhase(int i, const Neighbourhood &neighbourhood)
 					continue;
 
 				surround_hconduct[j] = ID(r);
-				c_heat += parts[ID(r)].temp;
-
-				if ((rt == PT_PIPE || rt == PT_PPIP) && parts[ID(r)].ctype != 0)
-				{
-					c_heat += parts[ID(r)].temp; // double count the particle to account for the heat capacity of both the PIPE/PPIP and its contents
-				}
-
-				h_count++;
-
-				if ((rt == PT_PIPE || rt == PT_PPIP) && parts[ID(r)].ctype != 0)
-				{
-					h_count++; // double count the particle to account for the heat capacity of both the PIPE/PPIP and its contents
-				}
+				auto hc = sd.HeatCapacityOf(parts[ID(r)]);
+				c_heat += parts[ID(r)].temp*hc;
+				hc_total += hc;
 			}
-			float pt = R_TEMP;
 
-			if ((t == PT_PIPE || t == PT_PPIP) && parts[i].ctype != 0)
-				pt = (c_heat+parts[i].temp*2.0f)/(h_count+2); // double count the particle to account for the heat capacity of both the PIPE/PPIP and its contents
-			else
-				pt = (c_heat+parts[i].temp)/(h_count+1);
+			// Add the current particle
+			auto hc = sd.HeatCapacityOf(parts[i]);
+			c_heat += parts[i].temp*hc;
+			hc_total += hc;
 
-			pt = parts[i].temp = restrict_flt(pt, MIN_TEMP, MAX_TEMP);
+			// Equilibrium temperature
+			float pt = restrict_flt(c_heat / hc_total, MIN_TEMP, MAX_TEMP);
+
+			parts[i].temp = pt;
 			for (auto j=0; j<8; j++)
 			{
 				parts[surround_hconduct[j]].temp = pt;
@@ -2985,6 +2987,16 @@ void Simulation::MovementPhase(int i, Neighbourhood neighbourhood)
 					if (wl_bin < 0) wl_bin = 0;
 					if (wl_bin > 25) wl_bin = 25;
 					mask = (0x1F << wl_bin);
+				}
+				else if (TYP(r) == PT_SEED)
+				{
+					// Reflect different wavelengths based on SEED's color genes
+					int colour = (parts[ID(r)].ctype >> PLNT_COLOUR) & 0x3f;
+
+					mask |= ((colour & 0b110000) != 0) ? 0 : (1 << 25); // Red
+					mask |= ((colour & 0b001100) != 0) ? 0 : (1 << 15); // Green
+					mask |= ((colour & 0b000011) != 0) ? 0 : (1 << 5); // Blue
+
 				}
 				parts[i].ctype &= mask;
 			}

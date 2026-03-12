@@ -30,6 +30,7 @@ void Element::Element_BASE()
 	Weight = 16;
 
 	HeatConduct = 31;
+	HeatCapacity = 1.5f;
 	Description = "염기: 부식성 액체입니다. 전도성 고체를 부식시키고 산을 중화합니다.";
 
 	Properties = TYPE_LIQUID|PROP_DEADLY;

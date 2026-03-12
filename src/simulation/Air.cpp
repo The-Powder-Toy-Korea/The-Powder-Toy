@@ -82,11 +82,11 @@ void Air::update_airh(void)
 			auto dh = 0.0f;
 			auto dx = 0.0f;
 			auto dy = 0.0f;
-			for (auto j=-1; j<2; j++)
+			for (auto j = -1; j <= 1; j++)
 			{
-				for (auto i=-1; i<2; i++)
+				for (auto i = -1; i <= 1; i++)
 				{
-					if (y+j>0 && y+j<YCELLS-2 && x+i>0 && x+i<XCELLS-2 && !(bmap_blockairh[y+j][x+i]&0x8))
+					if (y+j > 0 && y+j < YCELLS-1 && x+i > 0 && x+i < XCELLS-1 && !(bmap_blockairh[y+j][x+i]&0x8))
 					{
 						auto f = kernel[i+1+(j+1)*3];
 						dh += hv[y+j][x+i]*f;
@@ -158,6 +158,10 @@ void Air::update_airh(void)
 				dh += AIR_VADV*tx*ty*((bmap_blockairh[j+1][i+1]&0x8) ? odh : hv[j+1][i+1]);
 			}
 
+			// Don't update if the current cell blocks ambient heat
+			if (bmap_blockairh[y][x]&0x8)
+				dh = hv[y][x];
+
 			// Temp caps
 			if (dh > MAX_TEMP) dh = MAX_TEMP;
 			if (dh < MIN_TEMP) dh = MIN_TEMP;
@@ -165,9 +169,6 @@ void Air::update_airh(void)
 			ohv[y][x] = dh;
 
 			// Air convection.
-			// We use the Boussinesq approximation, i.e. we assume density to be nonconstant only
-			// near the gravity term of the fluid equation, and we suppose that it depends linearly on the
-			// difference between the current temperature (hv[y][x]) and some "stationary" temperature (ambientAirTemp).
 			float dvx, dvy;
 			dvx = vx[y][x];
 		       	dvy = vy[y][x];
@@ -177,21 +178,45 @@ void Air::update_airh(void)
 				float convGravX, convGravY;
 				sim.GetGravityField(x*CELL, y*CELL, -1.0f, -1.0f, convGravX, convGravY);
 
-				// Cap the gravity field
-				float gravMagn = std::sqrt(convGravX*convGravX + convGravY*convGravY);
-				if (gravMagn > 10.0f)
+				switch (convectionMode)
 				{
-					convGravX /= 0.1f*gravMagn;
-					convGravY /= 0.1f*gravMagn;
+					case AIRC_LEGACY:
+						{
+							// Air convection pre 99.0
+							auto weight = ((hv[y][x] - hv[y][x-1]) * convGravX + (hv[y][x] - hv[y-1][x]) * convGravY) / 5000.0f;
+							if (weight > 0 && !(bmap_blockairh[y-1][x]&0x8))
+							{
+								dvx += weight * convGravX;
+								dvy += weight * convGravY;
+							}
+						}
+						break;
+					case AIRC_BOUSSINESQ:
+						{
+							// Boussinesq approximation, i.e. we assume density to be nonconstant only
+							// near the gravity term of the fluid equation, and we suppose that it depends linearly on the
+							// difference between the current temperature (hv[y][x]) and some "stationary" temperature (ambientAirTemp).
+
+							// Cap the gravity field
+							float gravMagn = std::sqrt(convGravX*convGravX + convGravY*convGravY);
+							if (gravMagn > 10.0f)
+							{
+								convGravX /= 0.1f*gravMagn;
+								convGravY /= 0.1f*gravMagn;
+							}
+
+							auto weight = (hv[y][x] - ambientAirTemp) / 10000.0f;
+
+							// Our approximation works best when the temperature difference is small, so we cap it from above.
+							if (weight > 0.01f) weight = 0.01f;
+
+							dvx += weight * convGravX;
+							dvy += weight * convGravY;
+						}
+						break;
+					default:
+						break;
 				}
-
-				auto weight = (hv[y][x] - ambientAirTemp) / 10000.0f;
-
-				// Our approximation works best when the temperature difference is small, so we cap it from above.
-				if (weight > 0.01f) weight = 0.01f;
-
-				dvx += weight * convGravX;
-				dvy += weight * convGravY;
 			}
 
 			// Velocity cap
@@ -465,6 +490,15 @@ void Air::Invert()
 // called when loading saves / stamps to ensure nothing "leaks" the first frame
 void Air::ApproximateBlockAirMaps()
 {
+	for (int y = 0; y < YCELLS; y++)
+	{
+		for (int x = 0; x < XCELLS; x++)
+		{
+			bmap_blockair[y][x] = (sim.bmap[y][x]==WL_WALL || sim.bmap[y][x]==WL_WALLELEC || sim.bmap[y][x]==WL_BLOCKAIR || (sim.bmap[y][x]==WL_EWALL && !sim.emap[y][x]));
+			bmap_blockairh[y][x] = (bmap_blockair[y][x] || sim.bmap[y][x]==WL_GRAV) ? 0x8 : 0;
+		}
+	}
+
 	auto &sd = SimulationData::CRef();
 	auto &elements = sd.elements;
 	for (int i = 0; i < sim.parts.active; i++)
@@ -475,7 +509,7 @@ void Air::ApproximateBlockAirMaps()
 		// Real TTAN would only block if there was enough TTAN
 		// but it would be more expensive and complicated to actually check that
 		// so just block for a frame, if it wasn't supposed to block it will continue allowing air next frame
-		if (type == PT_TTAN)
+		if (type == PT_TTAN || type == PT_RSSS)
 		{
 			int x = ((int)(sim.parts[i].x+0.5f))/CELL, y = ((int)(sim.parts[i].y+0.5f))/CELL;
 			if (InBounds(x, y))
@@ -498,7 +532,8 @@ Air::Air(Simulation & simulation):
 	sim(simulation),
 	airMode(AIR_ON),
 	ambientAirTemp(R_TEMP + 273.15f),
-	vorticityCoeff(0.0f)
+	vorticityCoeff(0.0f),
+	convectionMode(AIRC_BOUSSINESQ)
 {
 	//Simulation should do this.
 	make_kernel();

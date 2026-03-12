@@ -29,7 +29,7 @@ void Element::Element_COAL()
 	Weight = 100;
 
 	HeatConduct = 200;
-	Description = "석탄: 매우 천천히 연소합니다. 뜨거우면 빨갛게 변합니다.";
+	Description = "석탄: 매우 느리게 타오릅니다. 뜨거워지면 붉게 변합니다.";
 
 	Properties = TYPE_SOLID;
 

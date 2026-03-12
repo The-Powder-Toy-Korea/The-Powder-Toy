@@ -30,7 +30,6 @@ void Element::Element_WATR()
 
 	DefaultProperties.temp = R_TEMP - 2.0f + 273.15f;
 	HeatConduct = 29;
-	LatentHeat = 7500;
 	Description = "물: 전기기를 전도하고, 얼며, 불을 끕니다.";
 
 	Properties = TYPE_LIQUID | PROP_CONDUCTS | PROP_LIFE_DEC | PROP_NEUTPASS | PROP_PHOTPASS;
