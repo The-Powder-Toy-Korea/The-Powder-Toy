@@ -33,7 +33,7 @@ void Element::Element_SEED()
 	Weight = 36;
 
 	HeatConduct = 32;
-	Description = "Seeds. Put on sand and add water to grow a tree.";
+	Description = "씨앗: 모래 위에 올려놓고 물을 주면 나무가 자랍니다.";
 
 	Properties = TYPE_PART | PROP_NEUTPASS;
 

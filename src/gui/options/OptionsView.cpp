@@ -155,10 +155,10 @@ OptionsView::OptionsView() : ui::Window(ui::Point(-1, -1), ui::Point(320, 340))
 		scrollPanel->AddChild(label);
 		currentY += 20;
 	}
-	convectionMode = addDropDown("Air heat convection mode", {
-		{ "None", AIRC_NONE },
-		{ "Legacy", AIRC_LEGACY },
-		{ "Boussinesq", AIRC_BOUSSINESQ },
+	convectionMode = addDropDown("공기 열 대류 모드", {
+		{ "없음", AIRC_NONE },
+		{ "레거시", AIRC_LEGACY },
+		{ "부시네스크", AIRC_BOUSSINESQ },
 	}, [this] {
 		c->SetConvectionMode(convectionMode->GetOption().second);
 	});
