@@ -1,7 +1,7 @@
-The Powder Toy - 2026년 만우절
+The Powder Toy - 2026년 4월
 ==========================
 
-[The Powder Toy 공식 홈페이지](https://powdertoy.co.uk/Download.html)에서 최신 버전의 오리지널 TPT를 내려받으십시오.
+[The Powder Toy 공식 홈페이지](https://powdertoy.co.uk/Download.html)에서 최신 버전의 오리지널 TPT를 내려받으십시오. [Steam](https://store.steampowered.com/app/1148350/The_Powder_Toy/)에서도 만나 보실 수 있습니다.
 
 시뮬레이션의 업로드와 같은 기능을 사용하려면 [계정을 만드십시오](https://powdertoy.co.uk/Register.html).
 The Powder Toy 공식 포럼은 [여기](https://powdertoy.co.uk/Discussions/Categories/Index.html)에 있습니다.

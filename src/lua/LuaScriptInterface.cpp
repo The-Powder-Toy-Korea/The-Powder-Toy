@@ -5,7 +5,6 @@
 #include "compat_lua.h"
 #include "scriptmanager_lua.h"
 #include "multiplayermanager_lua.h"
-#include "obra_lua.h"
 #include "gui/game/GameController.h"
 #include "gui/game/GameModel.h"
 #include "gui/game/GameView.h"
@@ -193,11 +192,6 @@ LuaScriptInterface::LuaScriptInterface(GameController *newGameController, GameMo
 	if (luaL_loadbuffer(L, multiplayerManagerSpan.data(), multiplayerManagerSpan.size(), "@[built-in multiplayermanager_ko-kr.lua]") || tpt_lua_pcall(L, 0, 0, 0, eventTraitNone))
 	{
 		throw std::runtime_error(ByteString("failed to load built-in multiplayer manager: ") + tpt_lua_toByteString(L, -1));
-	}
-	auto obraSpan = obra_lua.AsCharSpan();
-	if (luaL_loadbuffer(L, obraSpan.data(), obraSpan.size(), "@[built-in obra.lua]") || tpt_lua_pcall(L, 0, 0, 0, eventTraitNone))
-	{
-		throw std::runtime_error(ByteString("failed to load built-in obra: ") + tpt_lua_toByteString(L, -1));
 	}
 }
 
