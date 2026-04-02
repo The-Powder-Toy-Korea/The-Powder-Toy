@@ -27,7 +27,7 @@ void Element::Element_THRM()
 	Weight = 90;
 
 	HeatConduct = 211;
-	Description = "테르밋: 고온으로 연소합니다.";
+	Description = "테르밋: 극도의 고온으로 연소합니다.";
 
 	Properties = TYPE_PART;
 

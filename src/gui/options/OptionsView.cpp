@@ -114,7 +114,7 @@ OptionsView::OptionsView() : ui::Window(ui::Point(-1, -1), ui::Point(320, 340))
 	airMode = addDropDown("공기 시뮬레이션 모드", {
 		{ "켜기", AIR_ON },
 		{ "압력 끄기", AIR_PRESSUREOFF },
-		{ "바람 끄기", AIR_VELOCITYOFF },
+		{ "기류 끄기", AIR_VELOCITYOFF },
 		{ "끄기", AIR_OFF },
 		{ "고정", AIR_NOUPDATE },
 	}, [this] {
@@ -287,7 +287,7 @@ OptionsView::OptionsView() : ui::Window(ui::Point(-1, -1), ui::Point(320, 340))
 	momentumScroll = addCheckbox(0, "부드러운 스크롤 활성화", "부드러운 스크롤을 활성화합니다.", [this] {
 		c->SetMomentumScroll(momentumScroll->GetChecked());
 	});
-	mouseClickRequired = addCheckbox(0, "카테고리 고정", "우측 물질 카테고리를 클릭으로 전환합니다.", [this] {
+	mouseClickRequired = addCheckbox(0, "요소 범주 고정", "우측 요소 범주를 클릭으로 전환합니다.", [this] {
 		c->SetMouseClickrequired(mouseClickRequired->GetChecked());
 	});
 	includePressure = addCheckbox(0, "압력 포함 저장", "복사하거나 저장할 때 압력을 포함합니다.", [this] {

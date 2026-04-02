@@ -32,7 +32,7 @@ void Element::Element_PROT()
 	Weight = -1;
 
 	HeatConduct = 61;
-	Description = "양성자: 물질에 열을 전달하며 전류를 제거합니다.";
+	Description = "양성자: 소재에 열을 전달하며 전류를 제거합니다.";
 
 	Properties = TYPE_ENERGY;
 

@@ -38,7 +38,7 @@ void DrawGravOption::perform()
 
 
 DecorationsOption::DecorationsOption(GameModel * m):
-QuickOption("D", "물질 도색 효과 표시 \bg(Ctrl+B)", m, Toggle)
+QuickOption("D", "도색 효과 표시 \bg(Ctrl+B)", m, Toggle)
 {
 
 }

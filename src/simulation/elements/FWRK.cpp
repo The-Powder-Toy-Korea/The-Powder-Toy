@@ -30,7 +30,7 @@ void Element::Element_FWRK()
 	Weight = 97;
 
 	HeatConduct = 100;
-	Description = "이전 버전의 폭죽: 열과 NEUT에 반응하는 기존의 폭죽입니다.";
+	Description = "이전 버전의 폭죽: 열과 중성자에 반응하는 기존의 폭죽입니다.";
 
 	Properties = TYPE_PART|PROP_LIFE_DEC;
 

@@ -32,7 +32,7 @@ void Element::Element_STOR()
 	Weight = 100;
 
 	HeatConduct = 0;
-	Description = "저장소: 단일 입자를 저장하며, PSCN을 이용하여 입자를 배출합니다. PIPE로 입자를 전송할 수 있습니다.";
+	Description = "저장소: 단일 입자를 포획하여 저장합니다. PSCN으로 충전하면 입자를 배출하며, 파이프로도 입자가 전달됩니다.";
 
 	Properties = TYPE_SOLID | PROP_NOCTYPEDRAW;
 	CarriesTypeIn = (1U << FIELD_CTYPE) | (1U << FIELD_TMP);

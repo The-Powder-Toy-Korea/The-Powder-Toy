@@ -30,7 +30,7 @@ void Element::Element_PQRT()
 	Weight = 90;
 
 	HeatConduct = 3;
-	Description = "석영 가루: 석영이 부서지면 생성됩니다.";
+	Description = "석영 가루: 깨진 형태의 석영입니다.";
 
 	Properties = TYPE_PART | PROP_PHOTPASS | PROP_HOT_GLOW;
 

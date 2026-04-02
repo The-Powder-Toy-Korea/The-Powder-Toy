@@ -31,7 +31,7 @@ void Element::Element_CLST()
 	Weight = 55;
 
 	HeatConduct = 70;
-	Description = "점토 가루: 물과 섞였을 때 PSTE를 생성합니다.";
+	Description = "점토 가루: 물과 섞으면 페이스트가 됩니다.";
 
 	Properties = TYPE_PART;
 

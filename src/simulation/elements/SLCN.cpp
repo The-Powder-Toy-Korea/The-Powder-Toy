@@ -31,7 +31,7 @@ void Element::Element_SLCN()
 	Weight = 90;
 
 	HeatConduct = 100;
-	Description = "규소: 다양한 물질들을 만들어내는 핵심 재료입니다.";
+	Description = "규소: 다양한 소재들을 만들어내는 핵심 재료입니다.";
 
 	Properties = TYPE_PART | PROP_CONDUCTS | PROP_HOT_GLOW | PROP_LIFE_DEC;
 

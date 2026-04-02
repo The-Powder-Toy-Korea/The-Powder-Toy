@@ -28,7 +28,7 @@ void Element::Element_DRIC()
 
 	DefaultProperties.temp = 172.65f;
 	HeatConduct = 2;
-	Description = "드라이아이스: CO2가 승화하면 발생합니다.";
+	Description = "드라이아이스: 이산화 탄소가 승화하면 형성됩니다.";
 
 	Properties = TYPE_SOLID;
 

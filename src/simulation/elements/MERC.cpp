@@ -29,7 +29,7 @@ void Element::Element_MERC()
 	Weight = 91;
 
 	HeatConduct = 251;
-	Description = "수은: 온도에 따라 부피가 변하며, 전도성이 있습니다.";
+	Description = "수은: 온도에 따라 부피가 변하며, 전기 전도성이 있습니다.";
 
 	Properties = TYPE_LIQUID|PROP_CONDUCTS|PROP_NEUTABSORB|PROP_LIFE_DEC;
 

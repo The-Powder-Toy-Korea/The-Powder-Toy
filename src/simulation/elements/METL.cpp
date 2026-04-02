@@ -28,7 +28,7 @@ void Element::Element_METL()
 
 	HeatConduct = 251;
 	LatentHeat = 919;
-	Description = "메탈: 가장 기본이 되는 도체이며 융해할 수 있습니다.";
+	Description = "메탈: 가장 기본이 되는 도체입니다. 녹을 수 있습니다.";
 
 	Properties = TYPE_SOLID|PROP_CONDUCTS|PROP_LIFE_DEC|PROP_HOT_GLOW;
 

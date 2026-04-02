@@ -29,7 +29,7 @@ void Element::Element_PPIP()
 
 	DefaultProperties.temp = 273.15f;
 	HeatConduct = 0;
-	Description = "전원식 파이프: PSCN 및 NSCN으로 활성화하고 비활성화할 수 있습니다.";
+	Description = "전원식 파이프: PSCN 및 NSCN을 사용하여 활성화하고 비활성화합니다.";
 
 	Properties = TYPE_SOLID|PROP_LIFE_DEC;
 	CarriesTypeIn = 1U << FIELD_CTYPE;

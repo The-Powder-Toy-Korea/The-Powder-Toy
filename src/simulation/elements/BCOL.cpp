@@ -29,7 +29,7 @@ void Element::Element_BCOL()
 	Weight = 90;
 
 	HeatConduct = 150;
-	Description = "석탄 가루: 질량이 높고 느리게 연소합니다.";
+	Description = "석탄 가루: 입자가 무겁고 천천히 연소합니다.";
 
 	Properties = TYPE_PART;
 

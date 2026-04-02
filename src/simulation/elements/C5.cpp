@@ -30,7 +30,7 @@ void Element::Element_C5()
 	Weight = 100;
 
 	HeatConduct = 88;
-	Description = "C-5: 극저온의 물질이나 CFLM에 닿으면 폭발합니다.";
+	Description = "C-5: 차가운 물체에 닿으면 폭발합니다.";
 
 	Properties = TYPE_SOLID | PROP_NEUTPENETRATE | PROP_PHOTPASS | PROP_LIFE_DEC;
 

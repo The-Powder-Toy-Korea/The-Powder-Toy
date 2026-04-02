@@ -30,7 +30,7 @@ void Element::Element_ISZS()
 
 	DefaultProperties.temp = 140.00f;
 	HeatConduct = 251;
-	Description = "고체 동위원소-Z: 극저온의 상태를 가지고 있으며 스스로 광자를 방출하며 소멸합니다.";
+	Description = "고체 동위원소-Z: 고체 형태의 ISOZ로, 천천히 광자로 붕괴합니다.";
 
 	Properties = TYPE_SOLID | PROP_PHOTPASS;
 

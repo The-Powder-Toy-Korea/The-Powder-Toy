@@ -30,7 +30,7 @@ void Element::Element_ROCK()
 	Weight = 100;
 
 	HeatConduct = 200;
-	Description = "암석: 위에 CNCT를 쌓을 수 있습니다.";
+	Description = "암석: 단단한 소재로, CNCT를 그 위에 쌓을 수 있습니다.";
 
 	Properties = TYPE_SOLID | PROP_HOT_GLOW;
 

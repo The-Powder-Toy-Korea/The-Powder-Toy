@@ -30,7 +30,7 @@ void Element::Element_FRZZ()
 
 	DefaultProperties.temp = 253.15f;
 	HeatConduct = 46;
-	Description = "동결 가루: 융해하였다가 다시 응고하였을 때 자가 냉각 얼음을 형성합니다.";
+	Description = "동결 가루: 녹으면 스스로 차가워지는 얼음이 됩니다. 일반 물과 섞어 사용하십시오.";
 
 	Properties = TYPE_PART;
 

@@ -34,7 +34,7 @@ void Element::Element_PHOT()
 
 	DefaultProperties.temp = R_TEMP + 900.0f + 273.15f;
 	HeatConduct = 251;
-	Description = "광자: 유리나 석영에 닿으면 색이 바뀌며, 가연성 물질을 점화합니다.";
+	Description = "광자: 유리를 통과할 때 굴절되고, 석영에 의해 산란되며, 다양한 요소에 의해 색상이 바뀝니다. 가연성 물질을 점화합니다.";
 
 	Properties = TYPE_ENERGY | PROP_PHOTPASS | PROP_LIFE_DEC | PROP_LIFE_KILL_DEC;
 

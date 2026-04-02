@@ -1,5 +1,6 @@
 embedded_files += [
 	[ 'compat_lua', files('compat.lua') ],
-	[ 'scrptmgr_lua', files('scrptmgr.lua') ],
-	[ 'multimgr_lua', files('multimgr.lua') ],
+	[ 'scriptmanager_lua', files('scriptmanager_ko-kr.lua') ],
+	[ 'multiplayermanager_lua', files('multiplayermanager_ko-kr.lua') ],
+	[ 'obra_lua', files('obra_ko-kr.lua') ],
 ]

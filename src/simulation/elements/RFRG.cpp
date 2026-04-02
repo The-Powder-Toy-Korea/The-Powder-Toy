@@ -28,7 +28,7 @@ void Element::Element_RFRG()
 	Weight = 1;
 
 	HeatConduct = 3;
-	Description = "냉매: 스스로 주변의 열을 빼앗아 가열하며, 압력을 가하면 액화합니다.";
+	Description = "냉매: 압력을 받으면 가열되고 액화됩니다.";
 
 	Properties = TYPE_GAS|PROP_DEADLY;
 

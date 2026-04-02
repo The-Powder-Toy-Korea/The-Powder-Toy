@@ -1,6 +1,6 @@
 --TPT Integrated Script Manager Korea
 --The autorun to end all autoruns
---Version 3.15
+--Version 3.16
 
 --TODO:
 --manual file addition (that can be anywhere and any extension)
@@ -9,6 +9,7 @@
 --prettier, organize code
 
 --CHANGES:
+--Version 3.16: Fix Online FILTER breaking on a certain script, Fix 408 errors when downloading scripts on slow connections, Fix rare corruption of script settings or scripts list
 --Version 3.15: Bracket keys now scroll 5x faster, fix bracket scrolling being impossible on some keyboard layouts. Add ability to scroll by clicking and dragging, or with up/down arrow keys
 --Version 3.14: Fix extra newlines being inserted into scripts on Windows
 --Version 3.13: Better support for upcoming versions of TPT, all script downloads now async, settings now stored separately per scripts directory, fix another rare failure on startup
@@ -63,8 +64,8 @@ local icons = {
 if not socket then error("TPT version not supported") end
 if MANAGER then error("manager is already running") end
 
-local scriptversion = 17
-MANAGER = {["version"] = "3.15", ["scriptversion"] = scriptversion, ["hidden"] = true}
+local scriptversion = 18
+MANAGER = {["version"] = "3.16", ["scriptversion"] = scriptversion, ["hidden"] = true}
 
 local type = type -- people like to overwrite this function with a global a lot
 local TPT_LUA_PATH = 'scripts'
@@ -154,7 +155,11 @@ local function readScriptInfo(list)
 		local t = {}
 		local ID = 0
 		for k,v in i:gmatch("(%w+):\"([^\"]*)\"") do
-			t[k]= tonumber(v) or v:gsub("\r",""):gsub("\\n","\n")
+			if k == "version" or k == "ID" or k == "update" then
+				t[k] = tonumber(v)
+			else
+				t[k]= v:gsub("\r",""):gsub("\\n","\n")
+			end
 		end
 		if not t.ID then
 			print("Skipping invalid script in script list")
@@ -189,22 +194,24 @@ local function save_last()
 			savestring = savestring.."\nSET "..k.." "..n..":\""..v.."\""
 		end
 	end
-	local f = io.open(TPT_LUA_PATH..PATH_SEP.."autorunsettings.txt", "wb")
+	local f = io.open(TPT_LUA_PATH..PATH_SEP.."autorunsettings.txt.tmp", "wb")
 	if f then
 		f:write(savestring)
 		f:close()
+		fs.move(TPT_LUA_PATH..PATH_SEP.."autorunsettings.txt.tmp", TPT_LUA_PATH..PATH_SEP.."autorunsettings.txt", true)
 	else
 		MANAGER.print("Couldn't save autorunsettings.txt")
 	end
 
 	save_dir()
 
-	f = io.open(TPT_LUA_PATH..PATH_SEP.."downloaded"..PATH_SEP.."scriptinfo", "wb")
+	f = io.open(TPT_LUA_PATH..PATH_SEP.."downloaded"..PATH_SEP.."scriptinfo.tmp", "wb")
 	if f then
 		for k,v in pairs(localscripts) do
 			f:write(scriptInfoString(v).."\n")
 		end
 		f:close()
+		fs.move(TPT_LUA_PATH..PATH_SEP.."downloaded"..PATH_SEP.."scriptinfo.tmp", TPT_LUA_PATH..PATH_SEP.."downloaded"..PATH_SEP.."scriptinfo", true)
 	end
 end
 
@@ -918,8 +925,8 @@ function download_file(url, cb)
 		return false
 	end
 	local req = http.get(url)
-	local timeout_after = socket.gettime() + 3
-	table.insert(active_downloads, {req=req, timeout_after=timeout_after, cb=cb})
+	local timeout_after = socket.gettime() + 5
+	table.insert(active_downloads, {req=req, timeout_after=timeout_after, last_progress=0, cb=cb})
 end
 
 local function process_downloads()
@@ -929,7 +936,13 @@ local function process_downloads()
 		local timeout_after = v["timeout_after"]
 
 		local status = req:status()
-		if status ~= "running" then
+		if status == "running" then
+			local script_size, script_progress = req:progress()
+			if script_progress > v["last_progress"] then
+				v["last_progress"] = script_progress
+				v["timeout_after"] = socket.gettime() + 5
+			end
+		elseif status ~= "running" then
 			active_downloads[k] = nil
 			local body, status_code = req:finish()
 			if status_code and status_code ~= 200 then
@@ -951,9 +964,10 @@ end
 local function download_script(ID, location, cb)
 	download_file("https://starcatcher.us/scripts/main.lua?get=" .. ID, function(file, status_code)
 		if file and status_code == 200 then
-			f = io.open(location, "wb")
+			f = io.open(location .. ".tmp", "wb")
 			f:write(file)
 			f:close()
+			fs.move(location .. ".tmp", location, true)
 			cb(true, status_code)
 		else
 			MANAGER.print("Got http status " .. status_code .. " while downloading script", 255, 0, 0)

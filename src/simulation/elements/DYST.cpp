@@ -27,7 +27,7 @@ void Element::Element_DYST()
 	Weight = 80;
 
 	HeatConduct = 70;
-	Description = "죽은 이스트";
+	Description = "죽은 효모.";
 
 	Properties = TYPE_PART;
 

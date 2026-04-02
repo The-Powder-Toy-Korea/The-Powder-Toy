@@ -58,11 +58,11 @@ void ProfileActivity::setUserInfo(UserInfo newInfo)
 	info = newInfo;
 
 	if (!info.biography.length() && !editable)
-		info.biography = "\b제공되지 않음";
+		info.biography = "\bg제공되지 않음";
 	if (!info.location.length() && !editable)
-		info.location = "\b제공되지 않음";
+		info.location = "\bg제공되지 않음";
 	if (!info.website.length())
-		info.website = "\b제공되지 않음";
+		info.website = "\bg제공되지 않음";
 
 	// everything is on a large scroll panel
 	scrollPanel = new ui::ScrollPanel(ui::Point(1, 1), ui::Point(Size.X-2, Size.Y-16));
@@ -96,7 +96,7 @@ void ProfileActivity::setUserInfo(UserInfo newInfo)
 	scrollPanel->AddChild(ageTitle);
 
 	// can't figure out how to tell a null from a 0 in the json library we use
-	ui::Label *age = new ui::Label(ui::Point(4+ageTitle->Size.X, currentY), ui::Point(Size.X-ageTitle->Size.X-56, 15), info.age ? String::Build(info.age) : "\b제공되지 않음");
+	ui::Label *age = new ui::Label(ui::Point(4+ageTitle->Size.X, currentY), ui::Point(Size.X-ageTitle->Size.X-56, 15), info.age ? String::Build(info.age) : "\bg제공되지 않음");
 	age->Appearance.HorizontalAlign = ui::Appearance::AlignLeft;
 	scrollPanel->AddChild(age);
 

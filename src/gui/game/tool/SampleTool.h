@@ -9,7 +9,7 @@ class SampleTool: public Tool
 
 public:
 	SampleTool(GameModel &model):
-		Tool(0, "SMPL", "스포이트 도구: 화면의 물질을 샘플링합니다.",
+		Tool(0, "SMPL", "스포이트 도구: 화면의 요소를 스포이트합니다.",
 			0x000000_rgb, "DEFAULT_UI_SAMPLE", SampleTool::GetIcon
 		),
 		gameModel(model)

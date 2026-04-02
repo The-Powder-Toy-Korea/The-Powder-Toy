@@ -31,7 +31,7 @@ void Element::Element_THDR()
 
 	DefaultProperties.temp = 9000.0f + 273.15f;
 	HeatConduct = 1;
-	Description = "천둥: 고온의 입자이며, 다른 입자에 닿을 시 매우 강한 압력과 전류를 방출합니다.";
+	Description = "천둥: 매우 뜨거우며, 대부분의 소재에 손상을 입히고, 금속으로 전류를 방출합니다.";
 
 	Properties = TYPE_PART;
 

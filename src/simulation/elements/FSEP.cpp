@@ -29,7 +29,7 @@ void Element::Element_FSEP()
 	Weight = 70;
 
 	HeatConduct = 70;
-	Description = "퓨즈 가루: 가루 상태의 FUSE입니다.";
+	Description = "퓨즈 가루: 퓨즈처럼 천천히 연소합니다.";
 
 	Properties = TYPE_PART;
 

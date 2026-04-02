@@ -28,7 +28,7 @@ void Element::Element_PLEX()
 	Weight = 100;
 
 	HeatConduct = 88;
-	Description = "C-4 고성능 폭약: 압력에 민감합니다.";
+	Description = "C-4: 압력에 민감한 고체 폭발물입니다.";
 
 	Properties = TYPE_SOLID | PROP_NEUTPENETRATE;
 

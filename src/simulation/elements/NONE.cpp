@@ -30,7 +30,7 @@ void Element::Element_NONE()
 	Weight = 100;
 
 	HeatConduct = 0;
-	Description = "물질을 지웁니다.";
+	Description = "지우개: 입자를 지웁니다.";
 
 	Properties = 0;
 

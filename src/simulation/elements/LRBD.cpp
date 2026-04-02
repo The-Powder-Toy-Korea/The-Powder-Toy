@@ -28,7 +28,7 @@ void Element::Element_LRBD()
 
 	DefaultProperties.temp = R_TEMP + 45.0f + 273.15f;
 	HeatConduct = 170;
-	Description = "액체 루비듐: 루비듐의 액체 상태입니다.";
+	Description = "액체 루비듐.";
 
 	Properties = TYPE_LIQUID|PROP_CONDUCTS|PROP_LIFE_DEC;
 

@@ -10,7 +10,7 @@ void SimTool::Tool_WIND()
 	Identifier = "DEFAULT_TOOL_WIND";
 	Name = "WIND";
 	Colour = 0x404040_rgb;
-	Description = "바람 도구: 공기 흐름을 생성합니다.";
+	Description = "바람 도구: 기류를 생성합니다.";
 	PerformDrawLine = &performDrawLine;
 	PerformDrag = &performDrag;
 }

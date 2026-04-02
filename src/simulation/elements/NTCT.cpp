@@ -28,7 +28,7 @@ void Element::Element_NTCT()
 	Weight = 100;
 
 	HeatConduct = 251;
-	Description = "고온형 반도체: 100 °C 이상에서만 전류가 흐릅니다.";
+	Description = "NTC 서미스터: 뜨거울 때만 전기를 전도하는 반도체입니다(100 °C 초과).";
 
 	Properties = TYPE_SOLID|PROP_CONDUCTS|PROP_LIFE_DEC;
 

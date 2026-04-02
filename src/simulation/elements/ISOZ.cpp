@@ -30,7 +30,7 @@ void Element::Element_ISOZ()
 
 	DefaultProperties.temp = R_TEMP - 2.0f + 273.15f;
 	HeatConduct = 29;
-	Description = "동위원소-Z: 음압 상태이거나 광자에 닿으면 광자를 방출하며 소멸합니다.";
+	Description = "동위원소-Z: 광자에 닿거나 음압 상태이면 광자를 방출하며 붕괴합니다.";
 
 	Properties = TYPE_LIQUID | PROP_NEUTPENETRATE | PROP_PHOTPASS;
 

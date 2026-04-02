@@ -30,7 +30,7 @@ void Element::Element_PVOD()
 	Weight = 100;
 
 	HeatConduct = 251;
-	Description = "전원식 공허: 활성화하였을 때 닿은 입자를 제거합니다.";
+	Description = "전원식 공허: 활성화하였을 때 진입하는 입자를 파괴합니다.";
 
 	Properties = TYPE_SOLID;
 

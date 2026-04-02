@@ -322,7 +322,7 @@ GameView::GameView():
 	pauseButton->SetActionCallback({ [this] { c->SetPaused(pauseButton->GetToggleState()); } });
 	AddComponent(pauseButton);
 
-	ui::Button * tempButton = new ui::Button(ui::Point(WINDOWW-16, WINDOWH-32), ui::Point(15, 15), 0xE065, "물질 검색...");
+	ui::Button * tempButton = new ui::Button(ui::Point(WINDOWW-16, WINDOWH-32), ui::Point(15, 15), 0xE065, "요소 검색...");
 	tempButton->Appearance.Margin = ui::Border(0, 2, 3, 2);
 	tempButton->SetActionCallback({ [this] { c->OpenElementSearch(); } });
 	AddComponent(tempButton);
@@ -418,7 +418,7 @@ void GameView::NotifyMenuListChanged(GameModel * sender)
 			String description_temp = menuList[i]->GetDescription();
 			ByteString description = description_temp.ToUtf8();
 			if (i == SC_FAVORITES && !Favorite::Ref().AnyFavorites())
-				description += " (<Ctrl+Shift>를 누른 상태로 물질을 클릭하여 즐겨찾기에 등록할 수 있습니다)";
+				description += " (<Ctrl+Shift>를 누른 상태로 요소를 클릭하여 즐겨찾기에 등록할 수 있습니다)";
 			auto *tempButton = new MenuButton(ui::Point(WINDOWW-16, currentY), ui::Point(15, 15), tempString, description.FromUtf8());
 			tempButton->Appearance.Margin = ui::Border(0, 2, 3, 2);
 			tempButton->menuID = i;
@@ -453,6 +453,8 @@ void GameView::SetSample(SimulationSample sample)
 void GameView::SetHudEnable(bool hudState)
 {
 	showHud = hudState;
+	if (!showHud)
+		introText = 0;
 }
 
 bool GameView::GetHudEnable()
@@ -694,7 +696,7 @@ void GameView::NotifyColourPresetsChanged(GameModel * sender)
 	int i = 0;
 	for(std::vector<ui::Colour>::iterator iter = colours.begin(), end = colours.end(); iter != end; ++iter)
 	{
-		ToolButton * tempButton = new ToolButton(ui::Point(currentX, YRES+1), ui::Point(30, 18), "", "", "물질 도색 사전 설정");
+		ToolButton * tempButton = new ToolButton(ui::Point(currentX, YRES+1), ui::Point(30, 18), "", "", "요소 도색 사전 설정");
 		tempButton->Appearance.BackgroundInactive = *iter;
 		tempButton->SetActionCallback({ [this, i, tempButton] {
 			c->SetActiveColourPreset(i);
@@ -2358,13 +2360,13 @@ void GameView::OnDraw()
 			{
 				if (type == PT_LAVA && c->IsValidElement(ctype))
 				{
-					sampleInfo << "융해된 " << c->ElementResolve(ctype, 0);
+					sampleInfo << "융해한 " << c->ElementResolve(ctype, 0);
 				}
 				else if ((type == PT_PIPE || type == PT_PPIP) && c->IsValidElement(ctype))
 				{
 					if (ctype == PT_LAVA && c->IsValidElement(sample.particle.tmp4))
 					{
-						sampleInfo << "융해된 " << c->ElementResolve(sample.particle.tmp4, -1) << "이(가) 들어 있는 " << c->ElementResolve(type, 0);
+						sampleInfo << "융해한 " << c->ElementResolve(sample.particle.tmp4, -1) << "이(가) 들어 있는 " << c->ElementResolve(type, 0);
 					}
 					else
 					{
@@ -2403,7 +2405,7 @@ void GameView::OnDraw()
 				}
 				sampleInfo << ", 온도: ";
 				format::RenderTemperature(sampleInfo, sample.particle.temp, c->GetTemperatureScale());
-				sampleInfo << ", Life: " << sample.particle.life;
+				sampleInfo << ", 수명: " << sample.particle.life;
 				if (sample.particle.type != PT_RFRG && sample.particle.type != PT_RFGL && sample.particle.type != PT_LIFE)
 				{
 					if (sample.particle.type == PT_CONV)
@@ -2531,9 +2533,9 @@ void GameView::OnDraw()
 				fpsInfo << ", 총 입자량: " << sample.NumParts;
 		}
 		if (c->GetReplaceModeFlags()&REPLACE_MODE)
-			fpsInfo << " [물질 변경]";
+			fpsInfo << " [요소 대체]";
 		if (c->GetReplaceModeFlags()&SPECIFIC_DELETE)
-			fpsInfo << " [특정 물질 제거]";
+			fpsInfo << " [특정 요소 제거]";
 		if (rendererSettings->gridSize)
 			fpsInfo << " [격자: " << rendererSettings->gridSize << "]";
 		if (rendererSettings->findingElement)

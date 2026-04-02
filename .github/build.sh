@@ -144,7 +144,7 @@ if [[ $BSH_HOST_PLATFORM-$BSH_HOST_LIBC == windows-msvc ]]; then
 	case $BSH_HOST_ARCH in
 	x86_64)  vs_env_arch=x64      ; vcvars_ver=14.29;;
 	x86)     vs_env_arch=x86      ; vcvars_ver=14.29;;
-	aarch64) vs_env_arch=x64_arm64; vcvars_ver=14.29;;
+	aarch64) vs_env_arch=x64_arm64; vcvars_ver=14.43;;
 	esac
 	VS_ENV_PARAMS=$vs_env_arch$'\t'-vcvars_ver=${BSH_VS_TOOLSET-$vcvars_ver}
 	. ./.github/vs-env.sh
@@ -392,7 +392,7 @@ if [[ $BSH_HOST_PLATFORM == android ]]; then
 	cat << ANDROID_INI > .github/android-ghactions.ini
 [constants]
 andriod_ndk_toolchain_bin = '$ANDROID_NDK_LATEST_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin'
-andriod_sdk_build_tools = '$ANDROID_SDK_ROOT/build-tools/32.0.0'
+andriod_sdk_build_tools = '$ANDROID_SDK_ROOT/build-tools/35.0.0'
 
 [properties]
 # android_ndk_toolchain_prefix comes from the correct cross-file in ./android/cross

@@ -30,7 +30,7 @@ void Element::Element_BOYL()
 
 	DefaultProperties.temp = R_TEMP + 2.0f + 273.15f;
 	HeatConduct = 42;
-	Description = "보일 기체: 고온에서 팽창합니다.";
+	Description = "보일 기체: 압력이 변하는 기체입니다. 가열하면 팽창합니다.";
 
 	Properties = TYPE_GAS;
 

@@ -32,7 +32,7 @@ void Element::Element_TUNG()
 	Weight = 100;
 
 	HeatConduct = 251;
-	Description = "텅스텐: 매우 높은 온도에서 융해하며 부서지기 쉽습니다.";
+	Description = "텅스텐: 녹는점이 매우 높고 부서지기 쉬운 금속입니다.";
 
 	Properties = TYPE_SOLID|PROP_CONDUCTS|PROP_LIFE_DEC;
 

@@ -30,7 +30,7 @@ void Element::Element_INVIS()
 	Weight = 100;
 
 	HeatConduct = 164;
-	Description = "통과체: 높은 압력을 가하면 물질이 통과할 수 있습니다.";
+	Description = "인비저블: 압력이 가해지는 동안 입자에 대해 투명해집니다.";
 
 	Properties = TYPE_SOLID | PROP_NEUTPASS | PROP_PHOTPASS;
 

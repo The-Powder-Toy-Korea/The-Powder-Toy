@@ -29,7 +29,7 @@ void Element::Element_IRON()
 	Weight = 100;
 
 	HeatConduct = 251;
-	Description = "철: SALT에 의해 부식됩니다. WATR의 전기분해에 사용될 수 있습니다.";
+	Description = "철: 소금에 의해 부식됩니다. 물의 전기분해에 사용될 수 있습니다.";
 
 	Properties = TYPE_SOLID|PROP_CONDUCTS|PROP_LIFE_DEC|PROP_HOT_GLOW;
 

@@ -1711,6 +1711,7 @@ void GameModel::UpdateElementTool(int element)
 	tool->textureGen = elem.IconGenerator;
 	tool->MenuSection = elem.MenuSection;
 	tool->MenuVisible = elem.MenuVisible;
+	tool->MenuSort = elem.MenuSort;
 }
 
 void GameModel::AllocElementTool(int element)
@@ -1769,13 +1770,13 @@ void GameModel::InitTools()
 	{
 		AllocTool(std::make_unique<SimTool>(tool));
 	}
-	AllocTool(std::make_unique<DecorationTool>(view, DECO_ADD     , "ADD" , "색상 혼합: 덧셈."                          , 0x000000_rgb, "DEFAULT_DECOR_ADD" ));
-	AllocTool(std::make_unique<DecorationTool>(view, DECO_SUBTRACT, "SUB" , "색상 혼합: 뺄셈."                          , 0x000000_rgb, "DEFAULT_DECOR_SUB" ));
-	AllocTool(std::make_unique<DecorationTool>(view, DECO_MULTIPLY, "MUL" , "색상 혼합: 곱셈."                          , 0x000000_rgb, "DEFAULT_DECOR_MUL" ));
-	AllocTool(std::make_unique<DecorationTool>(view, DECO_DIVIDE  , "DIV" , "색상 혼합: 나눗셈."                        , 0x000000_rgb, "DEFAULT_DECOR_DIV" ));
-	AllocTool(std::make_unique<DecorationTool>(view, DECO_SMUDGE  , "SMDG", "흐림 도구: 주변 도색을 혼합합니다."        , 0x000000_rgb, "DEFAULT_DECOR_SMDG"));
-	AllocTool(std::make_unique<DecorationTool>(view, DECO_CLEAR   , "CLR" , "도색을 제거합니다."                        , 0x000000_rgb, "DEFAULT_DECOR_CLR" ));
-	AllocTool(std::make_unique<DecorationTool>(view, DECO_DRAW    , "SET" , "물질을 도색합니다(색상은 번지지 않습니다).", 0x000000_rgb, "DEFAULT_DECOR_SET" ));
+	AllocTool(std::make_unique<DecorationTool>(view, DECO_ADD     , "ADD" , "색상 혼합: 덧셈."                        , 0x000000_rgb, "DEFAULT_DECOR_ADD" ));
+	AllocTool(std::make_unique<DecorationTool>(view, DECO_SUBTRACT, "SUB" , "색상 혼합: 뺄셈."                        , 0x000000_rgb, "DEFAULT_DECOR_SUB" ));
+	AllocTool(std::make_unique<DecorationTool>(view, DECO_MULTIPLY, "MUL" , "색상 혼합: 곱셈."                        , 0x000000_rgb, "DEFAULT_DECOR_MUL" ));
+	AllocTool(std::make_unique<DecorationTool>(view, DECO_DIVIDE  , "DIV" , "색상 혼합: 나눗셈."                      , 0x000000_rgb, "DEFAULT_DECOR_DIV" ));
+	AllocTool(std::make_unique<DecorationTool>(view, DECO_SMUDGE  , "SMDG", "흐림 도구: 주변 도색을 혼합합니다."      , 0x000000_rgb, "DEFAULT_DECOR_SMDG"));
+	AllocTool(std::make_unique<DecorationTool>(view, DECO_CLEAR   , "CLR" , "도색을 제거합니다."                      , 0x000000_rgb, "DEFAULT_DECOR_CLR" ));
+	AllocTool(std::make_unique<DecorationTool>(view, DECO_DRAW    , "SET" , "도색을 그립니다(색상은 번지지 않습니다).", 0x000000_rgb, "DEFAULT_DECOR_SET" ));
 	AllocTool(std::make_unique<PropertyTool>(*this));
 	AllocTool(std::make_unique<SignTool>(*this));
 	AllocTool(std::make_unique<SampleTool>(*this));

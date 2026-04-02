@@ -31,7 +31,7 @@ void Element::Element_VRSG()
 
 	DefaultProperties.temp = 522.0f + 273.15f;
 	HeatConduct = 251;
-	Description = "기체 바이러스: 닿는 모든 물질을 자기 자신으로 바꿉니다.";
+	Description = "기체 바이러스: 닿는 모든 것을 자기 자신으로 바꿉니다.";
 
 	Properties = TYPE_GAS|PROP_DEADLY;
 	CarriesTypeIn = 1U << FIELD_TMP2;

@@ -29,7 +29,7 @@ void Element::Element_BCLN()
 	Weight = 100;
 
 	HeatConduct = 251;
-	Description = "파괴 가능한 CLNE입니다.";
+	Description = "취성 복제기: 부서질 수 있는 복제기입니다.";
 
 	Properties = TYPE_SOLID | PROP_PHOTPASS | PROP_LIFE_DEC | PROP_LIFE_KILL_DEC | PROP_NOCTYPEDRAW;
 	CarriesTypeIn = 1U << FIELD_CTYPE;
