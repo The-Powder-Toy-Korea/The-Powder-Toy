@@ -33,6 +33,7 @@ void Element::Element_WTRV()
 	Description = "수증기: 뜨거운 물에서 생성됩니다.";
 
 	Properties = TYPE_GAS;
+	CarriesTypeIn = 1U << FIELD_CTYPE;
 
 	LowPressure = IPL;
 	LowPressureTransition = NT;
@@ -59,6 +60,7 @@ static int update(UPDATE_FUNC_ARGS)
 					continue;
 				if ((TYP(r)==PT_RBDM||TYP(r)==PT_LRBD) && !sim->legacy_enable && parts[i].temp>(273.15f+12.0f) && sim->rng.chance(1, 100))
 				{
+					//@ WTRV + RBDM/LRBD -> FIRE + RBDM/LRBD
 					sim->part_change_type(i,x,y,PT_FIRE);
 					parts[i].life = 4;
 					parts[i].ctype = PT_WATR;

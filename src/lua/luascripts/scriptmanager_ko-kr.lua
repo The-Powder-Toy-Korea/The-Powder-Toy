@@ -1421,7 +1421,7 @@ local function check_update_req_status()
 		updatetable = readScriptInfo(updateinfo)
 		if not updatetable[1] then return end
 		if tonumber(updatetable[1].version) > scriptversion then
-			local updatebutton = ui_button.new(278,127,40,10,ui_button.doupdate,"UPDATE")
+			local updatebutton = ui_button.new(276,53,110,15,ui_button.doupdate,icons["sync"].." 업데이트 사용 가능")
 			updatebutton.t:setcolor(25,255,25)
 			mainwindow:add(updatebutton)
 			MANAGER.print("A script manager update is available! Click UPDATE",25,255,55)
