@@ -70,7 +70,7 @@ void NGravityOption::perform()
 
 
 AHeatOption::AHeatOption(GameModel * m):
-QuickOption("A", "복사열 활성화 \bg(U)", m, Toggle)
+QuickOption("A", "환경 열 활성화 \bg(U)", m, Toggle)
 {
 
 }

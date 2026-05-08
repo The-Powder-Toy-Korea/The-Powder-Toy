@@ -31,7 +31,7 @@ void Element::Element_NBLE()
 
 	DefaultProperties.temp = R_TEMP + 2.0f + 273.15f;
 	HeatConduct = 106;
-	Description = "비활성 기체: 전류가 흐르면 플라즈마로 이온화합니다. 확산하는 기체입니다.";
+	Description = "비활성 기체: 전류가 흐르면 플라스마로 이온화합니다. 확산하는 기체입니다.";
 
 	Properties = TYPE_GAS|PROP_CONDUCTS|PROP_LIFE_DEC;
 

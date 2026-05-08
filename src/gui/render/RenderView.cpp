@@ -57,7 +57,7 @@ RenderView::RenderView():
 	addRenderModeCheckbox(RENDER_EFFE, IconEffect, ui::Point( 1,  4), "일부 요소에 특별한 화염 효과를 표시합니다.");
 	addRenderModeCheckbox(RENDER_FIRE, IconFire  , ui::Point( 1, 22), "기체 요소에 불 효과를 표시합니다.");
 	addRenderModeCheckbox(RENDER_GLOW, IconGlow  , ui::Point(33,  4), "일부 요소에 발광 효과를 표시합니다.");
-	addRenderModeCheckbox(RENDER_BLUR, IconBlur  , ui::Point(33, 22), "액체 요소에 흐리기 효과를 표시합니다.");
+	addRenderModeCheckbox(RENDER_BLUR, IconBlur  , ui::Point(33, 22), "액체 요소에 흐림 효과를 표시합니다.");
 	addRenderModeCheckbox(RENDER_BLOB, IconBlob  , ui::Point(65,  4), "모든 것을 얼룩처럼 표시합니다.");
 	addRenderModeCheckbox(RENDER_BASC, IconBasic , ui::Point(65, 22), "기본 렌더링이며, 이 렌더링이 없으면 대부분의 사물이 보이지 않습니다.");
 	addRenderModeCheckbox(RENDER_SPRK, IconEffect, ui::Point(97,  4), "전류에 발광 효과를 표시합니다.");
@@ -93,7 +93,7 @@ RenderView::RenderView():
 	addDisplayModeCheckbox(DISPLAY_AIRH, IconHeat      , ui::Point(167, 22), "공기의 온도를 열 디스플레이와 같이 표시합니다.");
 	addDisplayModeCheckbox(DISPLAY_AIRW, IconVort      , ui::Point(199,  4), "와도를 표시합니다. 시계 방향은 빨간색, 시계 반대 방향은 파란색으로 표시합니다.");
 	line2 = 232;
-	addDisplayModeCheckbox(DISPLAY_WARP, IconWarp      , ui::Point(237, 22), "중력 렌즈 렌더링이며, 뉴턴 중력의 빛 왜곡 효과를 표시합니다.");
+	addDisplayModeCheckbox(DISPLAY_WARP, IconWarp      , ui::Point(237, 22), "중력 렌즈 렌더링으로, 뉴턴 중력의 빛 왜곡 효과를 표시합니다.");
 	addDisplayModeCheckbox(DISPLAY_EFFE, IconEffect    , ui::Point(237,  4), "고체 이동 활성화, 스틱맨 총, Premium\xE2\x84\xA2 그래픽(패러디)");
 	addDisplayModeCheckbox(DISPLAY_PERS, IconPersistant, ui::Point(269,  4), "입자 경로가 화면에 잠시 동안 지속됩니다.");
 	line3 = 302;

@@ -28,7 +28,7 @@ void Element::Element_PSTS()
 
 	DefaultProperties.temp = R_TEMP - 2.0f + 273.15f;
 	HeatConduct = 29;
-	Description = "고체 페이스트.";
+	Description = "고형 페이스트.";
 
 	Properties = TYPE_SOLID;
 

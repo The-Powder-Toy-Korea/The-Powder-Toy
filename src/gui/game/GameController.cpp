@@ -846,7 +846,7 @@ void GameController::SwitchAir()
 		gameModel->SetInfoTip("공기: 끄기");
 		break;
 	case AIR_NOUPDATE:
-		gameModel->SetInfoTip("공기: 업데이트 없음");
+		gameModel->SetInfoTip("공기: 고정");
 		break;
 	}
 }

@@ -93,7 +93,7 @@ TPT를 빌드하려면 [The Powder Toy 공식 위키](https://powdertoy.co.uk/Wi
 | B                     | 도색 편집 메뉴                                                                   |
 | Ctrl + B              | 도색 효과 표시 전환                                                              |
 | N                     | 뉴턴 중력 전환                                                                   |
-| U                     | 복사열 전환                                                                      |
+| U                     | 환경 열 전환                                                                     |
 | Ctrl + I              | The Powder Toy 설치; 세이브 및 스탬프를 두 번 클릭으로 불러오기 위해 필요합니다. |
 | Backtick              | 콘솔 열기                                                                        |
 | =                     | 압력 및 기류 초기화                                                              |

@@ -19,7 +19,7 @@ LocalBrowserView::LocalBrowserView():
 {
 	nextButton = new ui::Button(ui::Point(WINDOWW-52, WINDOWH-18), ui::Point(50, 16), String("다음 ") + 0xE015);
 	previousButton = new ui::Button(ui::Point(2, WINDOWH-18), ui::Point(50, 16), 0xE016 + String(" 이전"));
-	undeleteButton = new ui::Button(ui::Point(WINDOWW-122, WINDOWH-18), ui::Point(60, 16), "새로고침");
+	undeleteButton = new ui::Button(ui::Point(WINDOWW-122, WINDOWH-18), ui::Point(60, 16), "새로 고침");
 	AddComponent(nextButton);
 	AddComponent(previousButton);
 	AddComponent(undeleteButton);

@@ -1150,9 +1150,9 @@ void GameModel::SetAHeatEnable(bool aHeat)
 	sim->aheat_enable = aHeat;
 	UpdateQuickOptions();
 	if (aHeat)
-		SetInfoTip("복사열: 켜짐");
+		SetInfoTip("환경 열: 켜짐");
 	else
-		SetInfoTip("복사열: 꺼짐");
+		SetInfoTip("환경 열: 꺼짐");
 }
 
 bool GameModel::GetAHeatEnable()

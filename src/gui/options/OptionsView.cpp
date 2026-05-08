@@ -194,7 +194,7 @@ OptionsView::OptionsView() : ui::Window(ui::Point(-1, -1), ui::Point(320, 340))
 	newtonianGravity = addCheckbox(0, "뉴턴 중력 시뮬레이션 \bg버전 48 이상", "\bg일정 성능 이하의 컴퓨터에서 성능 저하를 일으킬 수 있음", [this] {
 		c->SetNewtonianGravity(newtonianGravity->GetChecked());
 	});
-	ambientHeatSimulation = addCheckbox(0, "복사열 시뮬레이션 \bg버전 50 이상", "\bg활성화 시 일부 세이브와 충돌을 일으킬 수 있음", [this] {
+	ambientHeatSimulation = addCheckbox(0, "환경 열 시뮬레이션 \bg버전 50 이상", "\bg활성화 시 일부 세이브와 충돌을 일으킬 수 있음", [this] {
 		c->SetAmbientHeatSimulation(ambientHeatSimulation->GetChecked());
 	});
 	waterEqualisation = addCheckbox(0, "액체 높이 균등화 \bg버전 61 이상", "\bg다량의 액체가 있을 시 성능 저하를 일으킬 수 있음", [this] {
@@ -209,22 +209,22 @@ OptionsView::OptionsView() : ui::Window(ui::Point(-1, -1), ui::Point(320, 340))
 	}, [this] {
 		c->SetAirMode(airMode->GetOption().second);
 	});
-	std::tie(ambientAirTemp, ambientAirTempPreview) = addTextboxWithPreview("기본 복사열 온도", true, [this](String value, bool defocus) {
+	std::tie(ambientAirTemp, ambientAirTempPreview) = addTextboxWithPreview("기본 환경 온도", true, [this](String value, bool defocus) {
 		UpdateAirTemp(value, defocus);
 	});
-	std::tie(edgePressure, edgePressurePreview) = addTextboxWithPreview("Ambient air pressure", true, [this](String value, bool defocus) {
+	std::tie(edgePressure, edgePressurePreview) = addTextboxWithPreview("기본 환경 기압", true, [this](String value, bool defocus) {
 		UpdateEdgePressure(value, defocus);
 	});
 	{
-		edgeVelocityChange = new ui::Button(ui::Point(Size.X-95, currentY), ui::Point(80, 16), "Change");
+		edgeVelocityChange = new ui::Button(ui::Point(Size.X-95, currentY), ui::Point(80, 16), "변경");
 		scrollPanel->AddChild(edgeVelocityChange);
 		edgeVelocityChange->SetActionCallback({ [this] {
-			new DirectionSelector(ui::Point(-1, -1), 0.05f, 40, edgeVelocityX, edgeVelocityY, "Ambient air velocity", [this](float x, float y) {
+			new DirectionSelector(ui::Point(-1, -1), 0.05f, 40, edgeVelocityX, edgeVelocityY, "환경 유속 설정", [this](float x, float y) {
 				c->SetEdgeVelocityX(x);
 				c->SetEdgeVelocityY(y);
 			});
 		} });
-		auto *label = new ui::Label(ui::Point(8, currentY), ui::Point(Size.X-96, 16), "Ambient air velocity");
+		auto *label = new ui::Label(ui::Point(8, currentY), ui::Point(Size.X-96, 16), "기본 환경 기류");
 		label->Appearance.HorizontalAlign = ui::Appearance::AlignLeft;
 		label->Appearance.VerticalAlign = ui::Appearance::AlignMiddle;
 		scrollPanel->AddChild(label);
