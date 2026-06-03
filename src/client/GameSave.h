@@ -69,7 +69,9 @@ class GameSave
 
 public:
 	Vec2<int> blockSize = { 0, 0 };
+	Rect<int> blockContent = { { 0, 0 }, { 0, 0 } };
 	bool fromNewerVersion = false;
+	bool fromUnstableVersion = false;
 	Version<2> version{};
 	bool hasPressure = false;
 	bool hasAmbientHeat = false;

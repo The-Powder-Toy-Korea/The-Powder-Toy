@@ -85,6 +85,8 @@ void GameSave::MapPalette()
 		ignoreMissingErrors[PT_WTRV] = true;
 		ignoreMissingErrors[PT_FIRE] = true;
 		ignoreMissingErrors[PT_BRMT] = true;
+		ignoreMissingErrors[PT_FOG] = true;
+		ignoreMissingErrors[PT_RIME] = true;
 	}
 
 	auto &sd = SimulationData::CRef();
@@ -239,6 +241,7 @@ void GameSave::Expand(const std::vector<char> &data)
 void GameSave::setSize(Vec2<int> newBlockSize)
 {
 	blockSize = newBlockSize;
+	blockContent = blockSize.OriginRect();
 
 	particlesCount = 0;
 	particles = std::vector<Particle>(NPART);
@@ -289,12 +292,17 @@ void GameSave::Transform(Mat2<int> transform, Vec2<int> nudge)
 
 	// Grow as needed.
 	assert((Vec2{ CELL, CELL }.OriginRect().Contains(nudge)));
+	blockContent = newBlockS.OriginRect();
 	if (nudge.X) newBlockS.X += 1;
 	if (nudge.Y) newBlockS.Y += 1;
+	if (nudge.X >= CELL / 2) blockContent.pos.X += 1;
+	if (nudge.Y >= CELL / 2) blockContent.pos.Y += 1;
+	btranslate += blockContent.pos;
 
 	// TODO: allow transforms to yield bigger saves. For this we'd need SaveRenderer (the singleton, not Renderer)
 	// to fully render them (possible with stitching) and Simulation::Load to be able to take only the part that fits.
 	newBlockS = newBlockS.Clamp(RectBetween({ 0, 0 }, CELLS));
+	blockContent &= CELLS.OriginRect();
 	auto newPartS = newBlockS * CELL;
 
 	// Prepare to patch pipes.
@@ -594,6 +602,7 @@ void GameSave::readOPS(const std::vector<char> &data)
 
 	std::vector<sign> tempSigns;
 
+	ByteString releaseType = "R";
 	if (auto *origin = getIfType(b, "origin", Bson::Type::objectValue))
 	{
 		int minorVersion = 0;
@@ -601,8 +610,16 @@ void GameSave::readOPS(const std::vector<char> &data)
 		{
 			version[1] = minorVersion;
 		}
+		if (auto *value = getIfType(*origin, "releaseType", Bson::Type::stringValue))
+		{
+			releaseType = value->As<ByteString>();
+		}
 	}
 	fromNewerVersion = version > currentVersion;
+	if (fromNewerVersion)
+	{
+		fromUnstableVersion = releaseType != "R";
+	}
 
 	getAddressIfUser(b, "parts", partsData);
 	getAddressIfUser(b, "partsPos", partsPosData);
@@ -768,10 +785,10 @@ void GameSave::readOPS(const std::vector<char> &data)
 	//Read wall and fan data
 	if(wallData.data())
 	{
-		auto wallDataPlane = PlaneAdapter<PlaneBase<const unsigned char>>(blockS, std::in_place, wallData.data());
 		unsigned int j = 0;
 		if (blockS.X * blockS.Y > int(wallData.size()))
 			throw ParseException(ParseException::Corrupt, "Not enough wall data");
+		auto wallDataPlane = MakePlane(blockS, wallData.data());
 		for (auto bpos : blockS.OriginRect().Range<LEFT_TO_RIGHT, TOP_TO_BOTTOM>())
 		{
 			unsigned char bm = 0;
@@ -880,8 +897,8 @@ void GameSave::readOPS(const std::vector<char> &data)
 	{
 		if (blockS.X * blockS.Y * 2 > int(blockAirData.size()))
 			throw ParseException(ParseException::Corrupt, "Not enough block air data");
-		auto blockAirDataPlane = PlaneAdapter<PlaneBase<const unsigned char>>(blockS, std::in_place, blockAirData.data());
-		auto blockAirhDataPlane = PlaneAdapter<PlaneBase<const unsigned char>>(blockS, std::in_place, blockAirData.data() + blockS.X * blockS.Y);
+		auto blockAirDataPlane = MakePlane(blockS, blockAirData.data());
+		auto blockAirhDataPlane = MakePlane(blockS, blockAirData.data() + blockS.X * blockS.Y);
 		for (auto bpos : blockS.OriginRect().Range<LEFT_TO_RIGHT, TOP_TO_BOTTOM>())
 		{
 			blockAir [blockP + bpos] = blockAirDataPlane [bpos];
@@ -896,10 +913,10 @@ void GameSave::readOPS(const std::vector<char> &data)
 		{
 			throw ParseException(ParseException::Corrupt, "Not enough gravity data");
 		}
-		auto massDataPlane   = PlaneAdapter<PlaneBase<const float   >>(blockS, std::in_place, reinterpret_cast<const float    *>(gravityData.data()                                          ));
-		auto maskDataPlane   = PlaneAdapter<PlaneBase<const uint32_t>>(blockS, std::in_place, reinterpret_cast<const uint32_t *>(gravityData.data() +     blockS.X * blockS.Y * sizeof(float)));
-		auto forceXDataPlane = PlaneAdapter<PlaneBase<const float   >>(blockS, std::in_place, reinterpret_cast<const float    *>(gravityData.data() + 2 * blockS.X * blockS.Y * sizeof(float)));
-		auto forceYDataPlane = PlaneAdapter<PlaneBase<const float   >>(blockS, std::in_place, reinterpret_cast<const float    *>(gravityData.data() + 3 * blockS.X * blockS.Y * sizeof(float)));
+		auto massDataPlane   = MakePlane(blockS, reinterpret_cast<const float    *>(gravityData.data()));
+		auto maskDataPlane   = MakePlane(blockS, reinterpret_cast<const uint32_t *>(gravityData.data() +     blockS.X * blockS.Y * sizeof(float)));
+		auto forceXDataPlane = MakePlane(blockS, reinterpret_cast<const float    *>(gravityData.data() + 2 * blockS.X * blockS.Y * sizeof(float)));
+		auto forceYDataPlane = MakePlane(blockS, reinterpret_cast<const float    *>(gravityData.data() + 3 * blockS.X * blockS.Y * sizeof(float)));
 		for (auto bpos : blockS.OriginRect().Range<LEFT_TO_RIGHT, TOP_TO_BOTTOM>())
 		{
 			gravMass  [blockP + bpos] = massDataPlane  [bpos];
@@ -1466,7 +1483,7 @@ void GameSave::readPSv(const std::vector<char> &dataVec)
 	}
 	for (auto bpos : RectSized(blockP, blockS).Range<TOP_TO_BOTTOM, LEFT_TO_RIGHT>())
 	{
-		auto dataPlane = PlaneAdapter<PlaneBase<const unsigned char>>(blockS, std::in_place, data);
+		auto dataPlane = MakePlane(blockS, data);
 		if (dataPlane[bpos - blockP]==4||(ver>=44 && dataPlane[bpos - blockP]==O_WL_FAN))
 		{
 			if (p >= dataLength)
@@ -1476,7 +1493,7 @@ void GameSave::readPSv(const std::vector<char> &dataVec)
 	}
 	for (auto bpos : RectSized(blockP, blockS).Range<TOP_TO_BOTTOM, LEFT_TO_RIGHT>())
 	{
-		auto dataPlane = PlaneAdapter<PlaneBase<const unsigned char>>(blockS, std::in_place, data);
+		auto dataPlane = MakePlane(blockS, data);
 		if (dataPlane[bpos - blockP]==4||(ver>=44 && dataPlane[bpos - blockP]==O_WL_FAN))
 		{
 			if (p >= dataLength)
@@ -1592,7 +1609,7 @@ void GameSave::readPSv(const std::vector<char> &dataVec)
 			}
 		}
 	}
-	auto dataPlanePty = PlaneAdapter<PlaneBase<const unsigned char>>(partS, std::in_place, data + pty);
+	auto dataPlanePty = MakePlane(partS, data + pty);
 	if (ver>=53) {
 		for (auto pos : partS.OriginRect().Range<TOP_TO_BOTTOM, LEFT_TO_RIGHT>())
 		{
@@ -1968,7 +1985,7 @@ std::pair<bool, std::vector<char>> GameSave::serialiseOPS() const
 
 	// Copy fan and wall data
 	std::vector<unsigned char> wallDataBacking(blockSize.X*blockSize.Y);
-	PlaneAdapter<PlaneBase<unsigned char>> wallData(blockSize, std::in_place, wallDataBacking.data());
+	auto wallData = MakePlane(blockSize, wallDataBacking.data());
 	bool hasWallData = false;
 	std::vector<unsigned char> fanData(blockSize.X*blockSize.Y*2);
 	std::vector<unsigned char> pressData(blockSize.X*blockSize.Y*2);
@@ -1977,14 +1994,14 @@ std::pair<bool, std::vector<char>> GameSave::serialiseOPS() const
 	std::vector<unsigned char> ambientData(blockSize.X*blockSize.Y*2, 0);
 
 	std::vector<unsigned char> blockAirData(blockSize.X * blockSize.Y * 2);
-	PlaneAdapter<PlaneBase<unsigned char>> blockAirDataPlane (blockSize, std::in_place, blockAirData.data()                            );
-	PlaneAdapter<PlaneBase<unsigned char>> blockAirhDataPlane(blockSize, std::in_place, blockAirData.data() + blockSize.X * blockSize.Y);
+	auto blockAirDataPlane  = MakePlane(blockSize, blockAirData.data());
+	auto blockAirhDataPlane = MakePlane(blockSize, blockAirData.data() + blockSize.X * blockSize.Y);
 
 	std::vector<unsigned char> gravityData(blockSize.X * blockSize.Y * 4 * sizeof(float));
-	PlaneAdapter<PlaneBase<float   >> massDataPlane  (blockSize, std::in_place, reinterpret_cast<float    *>(gravityData.data()                                                ));
-	PlaneAdapter<PlaneBase<uint32_t>> maskDataPlane  (blockSize, std::in_place, reinterpret_cast<uint32_t *>(gravityData.data() +     blockSize.X * blockSize.Y * sizeof(float)));
-	PlaneAdapter<PlaneBase<float   >> forceXDataPlane(blockSize, std::in_place, reinterpret_cast<float    *>(gravityData.data() + 2 * blockSize.X * blockSize.Y * sizeof(float)));
-	PlaneAdapter<PlaneBase<float   >> forceYDataPlane(blockSize, std::in_place, reinterpret_cast<float    *>(gravityData.data() + 3 * blockSize.X * blockSize.Y * sizeof(float)));
+	auto massDataPlane   = MakePlane(blockSize, reinterpret_cast<float    *>(gravityData.data()));
+	auto maskDataPlane   = MakePlane(blockSize, reinterpret_cast<uint32_t *>(gravityData.data() +     blockSize.X * blockSize.Y * sizeof(float)));
+	auto forceXDataPlane = MakePlane(blockSize, reinterpret_cast<float    *>(gravityData.data() + 2 * blockSize.X * blockSize.Y * sizeof(float)));
+	auto forceYDataPlane = MakePlane(blockSize, reinterpret_cast<float    *>(gravityData.data() + 3 * blockSize.X * blockSize.Y * sizeof(float)));
 
 	unsigned int fanDataLen = 0, pressDataLen = 0, vxDataLen = 0, vyDataLen = 0, ambientDataLen = 0;
 
@@ -2405,6 +2422,14 @@ std::pair<bool, std::vector<char>> GameSave::serialiseOPS() const
 			{
 				RESTRICTVERSION(98, 0);
 			}
+			if (part.type == PT_BASE || part.type == PT_SEED)
+			{
+				RESTRICTVERSION(100, 0);
+			}
+			if ((part.type == PT_PIPE || part.type == PT_PPIP) && (part.tmp & PFLAG_CAN_CONDUCT))
+			{
+				RESTRICTVERSION(100, 0);
+			}
 
 			//Get the pmap entry for the next particle in the same position
 			i = partsPosLink[i];
@@ -2610,7 +2635,10 @@ std::pair<bool, std::vector<char>> GameSave::serialiseOPS() const
 	{
 		b["soapLinks"] = std::move(soapLinkData);
 	}
-	b["blockAir"] = std::move(blockAirData);
+	if (hasBlockAirMaps)
+	{
+		b["blockAir"] = std::move(blockAirData);
+	}
 	if (ensureDeterminism)
 	{
 		b["ensureDeterminism"] = ensureDeterminism;

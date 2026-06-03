@@ -96,14 +96,23 @@ static void changeType(ELEMENT_CHANGETYPE_FUNC_ARGS)
 
 void die(Simulation *sim, playerst *playerp, int i)
 {
-	int x = (int)(sim->parts[i].x + 0.5f);
-	int y = (int)(sim->parts[i].y + 0.5f);
-	for (int r = -2; r <= 1; r++)
+	if (playerp->fan)
 	{
-		sim->create_part(-1, x + r, y - 2, playerp->elem);
-		sim->create_part(-1, x + r + 1, y + 2, playerp->elem);
-		sim->create_part(-1, x - 2, y + r + 1, playerp->elem);
-		sim->create_part(-1, x + 2, y + r, playerp->elem);
+		int x = (int)(sim->parts[i].x + 0.5f) / CELL;
+		int y = (int)(sim->parts[i].y + 0.5f) / CELL;
+		sim->pv[y][x] += 64;
+	}
+	else
+	{
+		int x = (int)(sim->parts[i].x + 0.5f);
+		int y = (int)(sim->parts[i].y + 0.5f);
+		for (int r = -2; r <= 1; r++)
+		{
+			sim->create_part(-1, x + r, y - 2, playerp->elem);
+			sim->create_part(-1, x + r + 1, y + 2, playerp->elem);
+			sim->create_part(-1, x - 2, y + r + 1, playerp->elem);
+			sim->create_part(-1, x + 2, y + r, playerp->elem);
+		}
 	}
 	sim->kill_part(i);  //Kill him
 }
@@ -391,10 +400,10 @@ int Element_STKM_run_stickman(playerst *playerp, UPDATE_FUNC_ARGS)
 	}
 
 	//Charge detector wall if foot inside
-	if (InBounds(int(playerp->legs[4]+0.5)/CELL, int(playerp->legs[5]+0.5)/CELL) &&
+	if (InCellBounds(int(playerp->legs[4]+0.5)/CELL, int(playerp->legs[5]+0.5)/CELL) &&
 	       sim->bmap[(int)(playerp->legs[5]+0.5)/CELL][(int)(playerp->legs[4]+0.5)/CELL]==WL_DETECT)
 		sim->set_emap((int)playerp->legs[4]/CELL, (int)playerp->legs[5]/CELL);
-	if (InBounds(int(playerp->legs[12]+0.5)/CELL, int(playerp->legs[13]+0.5)/CELL) &&
+	if (InCellBounds(int(playerp->legs[12]+0.5)/CELL, int(playerp->legs[13]+0.5)/CELL) &&
 	        sim->bmap[(int)(playerp->legs[13]+0.5)/CELL][(int)(playerp->legs[12]+0.5)/CELL]==WL_DETECT)
 		sim->set_emap((int)(playerp->legs[12]+0.5)/CELL, (int)(playerp->legs[13]+0.5)/CELL);
 

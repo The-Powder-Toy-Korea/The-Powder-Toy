@@ -101,7 +101,7 @@ static int update(UPDATE_FUNC_ARGS)
 		int si = -1; // Used for create_part calls
 		bool stopped = false; // Did the cell stop growing?
 
-		int down = detectDown(sim, x, y); // Down gravity direction (8 means no direction)
+		int down = Element_PLNT_detectDown(sim, x, y); // Down gravity direction (8 means no direction)
 
 		// Do we continue growing?
 		if (life > 0)
@@ -278,6 +278,7 @@ static int update(UPDATE_FUNC_ARGS)
 								auto np = sim->create_part(ID(r),x+rx,y+ry,PT_PLNT);
 								if (np<0) continue;
 								parts[np].life = 0;
+								parts[np].ctype = parts[i].ctype;//Keep the color identical
 							}
 							break;
 						case PT_LAVA:
@@ -402,12 +403,21 @@ constexpr std::array<std::array<int, 3>, 3> invDir = {{
     {{ 7, 6, 5 }},
 }};
 
-int detectDown(Simulation *sim, int x, int y)
+int Element_PLNT_detectDown(Simulation *sim, int x, int y)
 {
 	float pGravX = 0;
 	float pGravY = 0;
 
 	sim->GetGravityField(x, y, 1.0f, 1.0f, pGravX, pGravY);
+
+	float gravLen = hypot(pGravX, pGravY);
+
+	// Normalize gravity
+	if (gravLen > 0)
+	{
+		pGravX /= gravLen;
+		pGravY /= gravLen;
+	}
 
 	int gravx = 1;
 	int gravy = 1;

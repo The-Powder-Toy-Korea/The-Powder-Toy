@@ -34,7 +34,7 @@ void Element::Element_PLSM()
 	HeatConduct = 5;
 	Description = "플라스마: 매우 뜨겁습니다.";
 
-	Properties = TYPE_GAS|PROP_LIFE_DEC|PROP_LIFE_KILL;
+	Properties = TYPE_GAS|PROP_LIFE_DEC;
 	CarriesTypeIn = 1U << FIELD_CTYPE;
 
 	LowPressure = IPL;

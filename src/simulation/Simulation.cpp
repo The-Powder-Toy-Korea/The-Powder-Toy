@@ -290,7 +290,8 @@ void Simulation::Load(const GameSave *save, bool includePressure, Vec2<int> bloc
 		}
 	}
 	auto useGravityMaps = save->hasGravityMaps && grav;
-	for (auto bpos : RectSized(blockP, save->blockSize) & CELLS.OriginRect())
+	auto targetBlocks = RectSized(blockP + save->blockContent.TopLeft(), save->blockContent.size) & CELLS.OriginRect();
+	for (auto bpos : targetBlocks)
 	{
 		auto spos = bpos - blockP;
 		if (save->blockMap[spos])
@@ -334,7 +335,7 @@ void Simulation::Load(const GameSave *save, bool includePressure, Vec2<int> bloc
 	gravWallChanged = true;
 	if (!save->hasBlockAirMaps)
 	{
-		air->ApproximateBlockAirMaps();
+		air->ApproximateBlockAirMaps(targetBlocks);
 	}
 }
 
@@ -2541,6 +2542,8 @@ bool SimulationImpl::TransitionPhase(int i, const Neighbourhood &neighbourhood)
 				// particle type change due to high temperature
 				if (elements[t].HighTemperatureTransition != ST)
 				{
+					if (t == PT_FOG)
+						parts[i].ctype = 0; // clear unnecessary ctype
 					t = elements[t].HighTemperatureTransition;
 				}
 				else if (t == PT_ICEI || t == PT_SNOW)
@@ -2608,7 +2611,8 @@ bool SimulationImpl::TransitionPhase(int i, const Neighbourhood &neighbourhood)
 					else
 					{
 						//@ RIME -> WATR
-						t = PT_WATR;
+						t = parts[i].ctype == PT_DSTW ? PT_DSTW : PT_WATR;
+						parts[i].ctype = 0;
 					}
 				}
 				else
@@ -2687,6 +2691,8 @@ bool SimulationImpl::TransitionPhase(int i, const Neighbourhood &neighbourhood)
 			{
 				if (t==PT_ICEI || t==PT_LAVA || t==PT_SNOW)
 					parts[i].ctype = parts[i].type;
+				if (t == PT_RIME)
+					parts[i].ctype = PT_DSTW;
 				if (!(t==PT_ICEI && parts[i].ctype==PT_FRZW) && t!=PT_ACID)
 					parts[i].life = 0;
 				if (t == PT_FIRE)

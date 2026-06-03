@@ -3,7 +3,7 @@ project('the-powder-toy-ko-kr', 'cpp', version:
 	                      # A.B.C is the version number shown by meson and by your local builds. note that this version
 	                      # number is overridden by the tag you push to github, so ghactions builds will show that version
 	                      # number instead. you can also replace 'the-powder-toy' with your mod's simplified name.
-	'99.5.396', meson_version: '>=0.64.0')
+	'99.5.397', meson_version: '>=0.64.0')
 
 if get_option('prepare')
 	# we're being run by prepare.py in a ghactions workflow only to determine the values of options; exit early
@@ -39,6 +39,8 @@ if cpp_compiler.get_id() in [ 'msvc', 'clang-cl' ]
 	host_libc = 'msvc'
 elif cpp_compiler.get_id() in [ 'gcc' ] and host_platform == 'windows'
 	host_libc = 'mingw'
+elif cpp_compiler.get_id() in [ 'clang' ] and host_platform == 'windows'
+	host_libc = 'mingwclang'
 elif host_platform in [ 'darwin' ]
 	host_libc = 'macos'
 elif host_platform in [ 'emscripten' ]
@@ -115,7 +117,14 @@ if tpt_libs_static != 'none'
 	endif
 	tpt_libs = subproject('tpt-libs-prebuilt-@0@-@1@-@2@'.format(tpt_libs_variant, tpt_libs_debug, tpt_libs_vtag))
 else
-	if get_option('workaround_elusive_bzip2')
+	workaround_elusive_bzip2 = get_option('workaround_elusive_bzip2')
+	if workaround_elusive_bzip2 == 'simple'
+		cpp_compiler.check_header('bzlib.h', required: true)
+		meson.override_dependency('bzip2', declare_dependency(
+			dependencies: cpp_compiler.find_library('bz2'),
+			version: '1.0.8-elusive',
+		))
+	elif workaround_elusive_bzip2 == 'manual'
 		bzip2_lib_name = get_option('workaround_elusive_bzip2_lib_name')
 		bzip2_include_name = get_option('workaround_elusive_bzip2_include_name')
 		bzip2_lib_dir = get_option('workaround_elusive_bzip2_lib_dir')
@@ -390,15 +399,6 @@ if host_platform == 'windows'
 		endif
 	endforeach
 	project_cpp_args += args_ccomp_win
-elif host_platform == 'darwin'
-	# work around assertion failure with LTO symbols
-	# https://developer.apple.com/documentation/xcode-release-notes/xcode-15-release-notes#Linking
-	# otherwise we get ld: Assertion failed: (0 && "lto symbol should not be in layout"), function symbolForAtom, file Layout.cpp, line 1447.
-	# TODO: remove when appropriate
-	if is_static and cpp_compiler.has_link_argument('-ld_classic')
-		warning('applying broken apple clang linker workaround with -ld_classic')
-		project_link_args += [ '-ld_classic' ]
-	endif
 elif host_platform == 'android'
 	args_ccomp_android = []
 	if not is_64bit
