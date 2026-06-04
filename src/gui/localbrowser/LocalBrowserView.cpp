@@ -24,7 +24,7 @@ LocalBrowserView::LocalBrowserView():
 	AddComponent(previousButton);
 	AddComponent(undeleteButton);
 
-	searchTextbox = new ui::Textbox(ui::Point(30, 25), ui::Point(Size.X-60, 16), "", "[search]");
+	searchTextbox = new ui::Textbox(ui::Point(30, 25), ui::Point(Size.X-60, 16), "", "검색");
 	searchTextbox->Appearance.VerticalAlign = ui::Appearance::AlignMiddle;
 	searchTextbox->Appearance.HorizontalAlign = ui::Appearance::AlignLeft;
 	searchTextbox->SetActionCallback({ [this] { searchChanged(); } });

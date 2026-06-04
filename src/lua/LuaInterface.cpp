@@ -47,8 +47,8 @@ static Type PickIfType(lua_State *L, int index, Type defaultValue)
 static int beginMessageBox(lua_State *L)
 {
 	GetLSI()->AssertInterfaceEvent();
-	auto title = PickIfType(L, 1, String("Title"));
-	auto message = PickIfType(L, 2, String("Message"));
+	auto title = PickIfType(L, 1, String("제목"));
+	auto message = PickIfType(L, 2, String("내용"));
 	auto large = PickIfType(L, 3, false);
 	auto cb = std::make_shared<LuaSmartRef>(); // * Bind to main lua state (might be different from L).
 	if (lua_gettop(L))
@@ -77,13 +77,13 @@ static int beginMessageBox(lua_State *L)
 static int beginThrowError(lua_State *L)
 {
 	GetLSI()->AssertInterfaceEvent();
-	auto errorMessage = PickIfType(L, 1, String("Error text"));
+	auto errorMessage = PickIfType(L, 1, String("오류 텍스트"));
 	auto cb = std::make_shared<LuaSmartRef>(); // * Bind to main lua state (might be different from L).
 	if (lua_gettop(L))
 	{
 		cb->Assign(L, lua_gettop(L));
 	}
-	new ErrorMessage("Error", errorMessage, { [cb]() {
+	new ErrorMessage("오류", errorMessage, { [cb]() {
 		auto *lsi = GetLSI();
 		auto L = lsi->L;
 		cb->Push(L);
@@ -105,8 +105,8 @@ static int beginThrowError(lua_State *L)
 static int beginInput(lua_State *L)
 {
 	GetLSI()->AssertInterfaceEvent();
-	auto title = PickIfType(L, 1, String("Title"));
-	auto prompt = PickIfType(L, 2, String("Enter some text:"));
+	auto title = PickIfType(L, 1, String("제목"));
+	auto prompt = PickIfType(L, 2, String("텍스트를 입력하세요:"));
 	auto text = PickIfType(L, 3, String(""));
 	auto shadow = PickIfType(L, 4, String(""));
 	auto cb = std::make_shared<LuaSmartRef>(); // * Bind to main lua state (might be different from L).
@@ -149,9 +149,9 @@ static int beginInput(lua_State *L)
 static int beginConfirm(lua_State *L)
 {
 	GetLSI()->AssertInterfaceEvent();
-	auto title = PickIfType(L, 1, String("Title"));
-	auto message = PickIfType(L, 2, String("Message"));
-	auto buttonText = PickIfType(L, 3, String("Confirm"));
+	auto title = PickIfType(L, 1, String("제목"));
+	auto message = PickIfType(L, 2, String("내용"));
+	auto buttonText = PickIfType(L, 3, String("확인"));
 	auto cb = std::make_shared<LuaSmartRef>(); // * Bind to main lua state (might be different from L).
 	if (lua_gettop(L))
 	{

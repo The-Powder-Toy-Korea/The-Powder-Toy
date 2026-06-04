@@ -184,16 +184,16 @@ LuaScriptInterface::LuaScriptInterface(GameController *newGameController, GameMo
 		lua_pop(L, 1);
 	}
 	auto compatSpan = compat_lua.AsCharSpan();
-	auto scriptManagerSpan = scriptmanager_lua.AsCharSpan();
-	auto multiplayerManagerSpan = multiplayermanager_lua.AsCharSpan();
 	if (luaL_loadbuffer(L, compatSpan.data(), compatSpan.size(), "@[built-in compat.lua]") || tpt_lua_pcall(L, 0, 0, 0, eventTraitNone))
 	{
 		throw std::runtime_error(ByteString("failed to load built-in compat: ") + tpt_lua_toByteString(L, -1));
 	}
+	auto scriptManagerSpan = scriptmanager_lua.AsCharSpan();
 	if (luaL_loadbuffer(L, scriptManagerSpan.data(), scriptManagerSpan.size(), "@[built-in scriptmanager_ko-kr.lua]") || tpt_lua_pcall(L, 0, 0, 0, eventTraitInterface))
 	{
 		throw std::runtime_error(ByteString("failed to load built-in script manager: ") + tpt_lua_toByteString(L, -1));
 	}
+	auto multiplayerManagerSpan = multiplayermanager_lua.AsCharSpan();
 	if (luaL_loadbuffer(L, multiplayerManagerSpan.data(), multiplayerManagerSpan.size(), "@[built-in multiplayermanager_ko-kr.lua]") || tpt_lua_pcall(L, 0, 0, 0, eventTraitInterface))
 	{
 		throw std::runtime_error(ByteString("failed to load built-in multiplayer manager: ") + tpt_lua_toByteString(L, -1));

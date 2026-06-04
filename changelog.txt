@@ -1,2 +1,3 @@
-Based on The Powder Toy, Snapshot-397.
+Based on The Powder Toy, 100.0 Beta 398.
 - Updated TPT code.
+- Improved translations.
