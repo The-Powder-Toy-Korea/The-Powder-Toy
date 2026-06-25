@@ -1,3 +1,3 @@
-Based on The Powder Toy, 100.0 Beta 398.
+Based on The Powder Toy, 100.0.
 - Updated TPT code.
-- Improved translations.
+- Updated intergrated script.
