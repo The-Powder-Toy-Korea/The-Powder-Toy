@@ -2528,7 +2528,7 @@ void GameView::OnDraw()
 			if (gravtot)
 				sampleInfo << ", GX: " << sample.GravityVelocityX << " GY: " << sample.GravityVelocityY;
 
-			if (c->GetAHeatEnable())
+			if (c->GetAHeatEnable() && sample.isMouseInSim)
 			{
 				sampleInfo << ", AHeat: ";
 				format::RenderTemperature(sampleInfo, sample.AirTemperature, c->GetTemperatureScale());
@@ -2591,10 +2591,6 @@ void GameView::OnDraw()
 			if (std::holds_alternative<DrawLimitDisplay>(drawLimit))
 			{
 				fpsInfo << "디스플레이";
-			}
-			else if (std::holds_alternative<DrawLimitNone>(drawLimit))
-			{
-				fpsInfo << "없음";
 			}
 			else
 			{

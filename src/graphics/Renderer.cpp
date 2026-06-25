@@ -260,10 +260,18 @@ void Renderer::render_parts()
 		for (ny=0; ny<YRES; ny++)
 			for (nx=0; nx<XRES; nx++)
 			{
-				if (ny%(4*gridSize) == 0)
-					BlendPixel({ nx, ny }, 0x646464_rgb .WithAlpha(80));
-				if (nx%(4*gridSize) == 0 && ny%(4*gridSize) != 0)
-					BlendPixel({ nx, ny }, 0x646464_rgb .WithAlpha(80));
+				if (gridCheckerboard)
+				{
+					if ((nx/(4*gridSize) + ny/(4*gridSize))%2)
+						BlendPixel({ nx, ny }, 0x646464_rgb .WithAlpha(80));
+				}
+				else
+				{
+					if (ny%(4*gridSize) == 0)
+						BlendPixel({ nx, ny }, 0x646464_rgb .WithAlpha(80));
+					if (nx%(4*gridSize) == 0 && ny%(4*gridSize) != 0)
+						BlendPixel({ nx, ny }, 0x646464_rgb .WithAlpha(80));
+				}
 			}
 	}
 	stats.foundParticles = 0;
@@ -1446,6 +1454,17 @@ void Renderer::AdjustHdispLimit()
 				visit(p * CELL, hv[p.Y][p.X]);
 			}
 		}
+
+		// min and max will shrink towards new limits slowly, to prevent rapid flashes (but they still expand immediately)
+		float maxGap = stats.hdispLimitMax - autoHdispLimitMax;
+		autoHdispLimitMax = std::max(autoHdispLimitMax, stats.hdispLimitMax - maxGap * 0.05f);
+		float minGap = autoHdispLimitMin - stats.hdispLimitMin;
+		autoHdispLimitMin = std::min(autoHdispLimitMin, stats.hdispLimitMin + minGap * 0.05f);
+
+		// Ensure a 1C gap between min and max to handle odd effects and flashing when there's miniscule temperature gaps
+		autoHdispLimitMax = std::min(MAX_TEMP, std::max(autoHdispLimitMax, autoHdispLimitMin + 1));
+		autoHdispLimitMin = std::max(MIN_TEMP, std::min(autoHdispLimitMin, autoHdispLimitMax - 1));
+
 	}
 	stats.hdispLimitMin = autoHdispLimitMin;
 	stats.hdispLimitMax = autoHdispLimitMax;

@@ -1,59 +1,17 @@
-local env__ = setmetatable({}, { __index = function(_, key)
-	error("__index on env: " .. tostring(key), 2)
-end, __newindex = function(_, key)
-	error("__newindex on env: " .. tostring(key), 2)
-end })
-for key, value in pairs(_G) do
-	rawset(env__, key, value)
-end
-local _ENV = env__
 if rawget(_G, "setfenv") then
-	setfenv(1, env__)
+	setfenv(1, { _G = _G, modules = {} })
+else
+	_ENV = { _G = _G, modules = {} }
 end
 
+modules["tptmp.client"] = function()
 math.randomseed(os.time())
 
-local require_preload__ = {}
-local require_loaded__ = {}
-local function require(modname)
-	local mod = require_loaded__[modname]
-	if not mod then
-		mod = assert(assert(require_preload__[modname], "missing module " .. modname)())
-		require_loaded__[modname] = mod
-	end
-	return mod
+if table.unpack and not rawget(_G, "unpack") then
+	rawset(_ENV, "unpack", table.unpack)
 end
-rawset(env__, "require", require)
 
-local unpack = rawget(_G, "unpack") or table.unpack
-local function packn(...)
-	return { [ 0 ] = select("#", ...), ... }
-end
-local function unpackn(tbl, from, to)
-	return unpack(tbl, from or 1, to or tbl[0])
-end
-local function xpcall_wrap(func, handler)
-	return function(...)
-		local iargs = packn(...)
-		local oargs
-		xpcall(function()
-			oargs = packn(func(unpackn(iargs)))
-		end, function(err)
-			if handler then
-				handler(err)
-			end
-			print(debug.traceback(err, 2))
-			return err
-		end)
-		if oargs then
-			return unpackn(oargs)
-		end
-	end
-end
-rawset(env__, "xpcall_wrap", xpcall_wrap)
-
-require_preload__["tptmp.client"] = function()
-
+local modulepack  = require("modulepack")
 	local common_util = require("tptmp.common.util")
 	
 	local loadtime_error
@@ -80,7 +38,7 @@ require_preload__["tptmp.client"] = function()
 		loadtime_error = "no http API, try updating the game"
 	elseif not tools then
 		loadtime_error = "no tools API, try updating the game"
-	elseif not socket or not socket.tcp then
+elseif not socket or (not socket.tcp and not socket.web) then
 		loadtime_error = "no socket API, try updating the game"
 	elseif socket.bind then
 		loadtime_error = "outdated socket API, try updating the game"
@@ -305,7 +263,7 @@ require_preload__["tptmp.client"] = function()
 				win:backlog_push_error("An error occurred and its trace has been saved to " .. config.trace_path .. "; please find this file in your data folder and attach it when reporting this to developers")
 				win:backlog_push_error("Top-level error: " .. tostring(err))
 			end
-			local str = debug.traceback(err, 2) .. "\n"
+		local str = modulepack.traceback(err, 2) .. "\n"
 			if last_trace_str ~= str then
 				last_trace_str = str
 				local handle = io.open(config.trace_path, "ab")
@@ -318,6 +276,12 @@ require_preload__["tptmp.client"] = function()
 				kill_client()
 			end
 		end
+
+	local handle_aftersim = modulepack.xpcall_wrap(function()
+		if cli then
+			cli:aftersim()
+		end
+	end)
 	
 		local pcur_r, pcur_g, pcur_b, pcur_a = unpack(colours.common.player_cursor)
 		local bmode_to_repr = {
@@ -325,7 +289,7 @@ require_preload__["tptmp.client"] = function()
 			[ 1 ] = " REPL",
 			[ 2 ] = " SDEL",
 		}
-		local handle_tick = xpcall_wrap(function()
+	local handle_tick = modulepack.xpcall_wrap(function()
 			local now = socket.gettime()
 			if should_reconnect_at and now >= should_reconnect_at then
 				should_reconnect_at = nil
@@ -458,119 +422,37 @@ require_preload__["tptmp.client"] = function()
 			prof:handle_tick()
 		end, handle_error)
 	
-		local handle_mousemove = xpcall_wrap(function(px, py, dx, dy)
-			if prof:handle_mousemove(px, py, dx, dy) then
+	local event_handlers = {
+		{ event = evt.TICK, handle = handle_tick },
+		{ event = evt.AFTERSIM, handle = handle_aftersim },
+	}
+
+	local function handle_simple(event, handler)
+		local handle = modulepack.xpcall_wrap(function(...)
+			if win[handler] and window_status == "shown" and win[handler](win, ...) then
+				return false
+			end
+			if sbtn[handler] and sbtn[handler](sbtn, ...) then
+				return false
+			end
+			if prof[handler] and prof[handler](prof, ...) then
 				return false
 			end
 		end, handle_error)
-	
-		local handle_mousedown = xpcall_wrap(function(px, py, button)
-			if window_status == "shown" and win:handle_mousedown(px, py, button) then
-				return false
-			end
-			if sbtn:handle_mousedown(px, py, button) then
-				return false
-			end
-			if prof:handle_mousedown(px, py, button) then
-				return false
-			end
-		end, handle_error)
-	
-		local handle_mouseup = xpcall_wrap(function(px, py, button, reason)
-			if window_status == "shown" and win:handle_mouseup(px, py, button, reason) then
-				return false
-			end
-			if sbtn:handle_mouseup(px, py, button, reason) then
-				return false
-			end
-			if prof:handle_mouseup(px, py, button, reason) then
-				return false
-			end
-		end, handle_error)
-	
-		local handle_mousewheel = xpcall_wrap(function(px, py, dir)
-			if window_status == "shown" and win:handle_mousewheel(px, py, dir) then
-				return false
-			end
-			if sbtn:handle_mousewheel(px, py, dir) then
-				return false
-			end
-			if prof:handle_mousewheel(px, py, dir) then
-				return false
-			end
-		end, handle_error)
-	
-		local handle_keypress = xpcall_wrap(function(key, scan, rep, shift, ctrl, alt)
-			if window_status == "shown" and win:handle_keypress(key, scan, rep, shift, ctrl, alt) then
-				return false
-			end
-			if sbtn:handle_keypress(key, scan, rep, shift, ctrl, alt) then
-				return false
-			end
-			if prof:handle_keypress(key, scan, rep, shift, ctrl, alt) then
-				return false
-			end
-		end, handle_error)
-	
-		local handle_keyrelease = xpcall_wrap(function(key, scan, rep, shift, ctrl, alt)
-			if window_status == "shown" and win:handle_keyrelease(key, scan, rep, shift, ctrl, alt) then
-				return false
-			end
-			if sbtn:handle_keyrelease(key, scan, rep, shift, ctrl, alt) then
-				return false
-			end
-			if prof:handle_keyrelease(key, scan, rep, shift, ctrl, alt) then
-				return false
-			end
-		end, handle_error)
-	
-		local handle_textinput = xpcall_wrap(function(text)
-			if window_status == "shown" and win:handle_textinput(text) then
-				return false
-			end
-			if sbtn:handle_textinput(text) then
-				return false
-			end
-			if prof:handle_textinput(text) then
-				return false
-			end
-		end, handle_error)
-	
-		local handle_textediting = xpcall_wrap(function(text)
-			if window_status == "shown" and win:handle_textediting(text) then
-				return false
-			end
-			if sbtn:handle_textediting(text) then
-				return false
-			end
-			if prof:handle_textediting(text) then
-				return false
-			end
-		end, handle_error)
-	
-		local handle_blur = xpcall_wrap(function()
-			if window_status == "shown" and win:handle_blur() then
-				return false
-			end
-			if sbtn:handle_blur() then
-				return false
-			end
-			if prof:handle_blur() then
-				return false
-			end
-		end, handle_error)
-	
-		evt.register(evt.tick      , handle_tick      )
-		evt.register(evt.mousemove , handle_mousemove )
-		evt.register(evt.mousedown , handle_mousedown )
-		evt.register(evt.mouseup   , handle_mouseup   )
-		evt.register(evt.mousewheel, handle_mousewheel)
-		evt.register(evt.keypress  , handle_keypress  )
-		evt.register(evt.textinput , handle_textinput )
-		evt.register(evt.keyrelease, handle_keyrelease)
-		evt.register(evt.blur      , handle_blur      )
-		if evt.textediting then
-			evt.register(evt.textediting, handle_textediting)
+		table.insert(event_handlers, { event = event, handle = handle })
+	end
+	handle_simple(evt.MOUSEMOVE  , "handle_mousemove"  )
+	handle_simple(evt.MOUSEDOWN  , "handle_mousedown"  )
+	handle_simple(evt.MOUSEUP    , "handle_mouseup"    )
+	handle_simple(evt.MOUSEWHEEL , "handle_mousewheel" )
+	handle_simple(evt.KEYPRESS   , "handle_keypress"   )
+	handle_simple(evt.KEYRELEASE , "handle_keyrelease" )
+	handle_simple(evt.TEXTINPUT  , "handle_textinput"  )
+	handle_simple(evt.TEXTEDITING, "handle_textediting")
+	handle_simple(evt.BLUR       , "handle_blur"       )
+
+	for i = 1, #event_handlers do
+		evt.register(event_handlers[i].event, event_handlers[i].handle)
 		end
 	
 		function TPTMP.disableMultiplayer()
@@ -578,17 +460,8 @@ require_preload__["tptmp.client"] = function()
 				cmd:parse("/fpssync off")
 				cmd:parse("/disconnect")
 			end
-			evt.unregister(evt.tick      , handle_tick      )
-			evt.unregister(evt.mousemove , handle_mousemove )
-			evt.unregister(evt.mousedown , handle_mousedown )
-			evt.unregister(evt.mouseup   , handle_mouseup   )
-			evt.unregister(evt.mousewheel, handle_mousewheel)
-			evt.unregister(evt.keypress  , handle_keypress  )
-			evt.unregister(evt.textinput , handle_textinput )
-			evt.unregister(evt.keyrelease, handle_keyrelease)
-			evt.unregister(evt.blur      , handle_blur      )
-			if evt.textediting then
-				evt.unregister(evt.textediting, handle_textediting)
+		for i = 1, #event_handlers do
+			evt.unregister(event_handlers[i].event, event_handlers[i].handle)
 			end
 			_G.TPTMP = nil
 		end
@@ -615,13 +488,14 @@ require_preload__["tptmp.client"] = function()
 	
 end
 
-require_preload__["tptmp.client.client"] = function()
-
-	local buffer_list = require("tptmp.common.buffer_list")
+modules["tptmp.client.client"] = function()
+local modulepack  = require("modulepack")
 	local colours     = require("tptmp.client.colours")
 	local config      = require("tptmp.client.config")
 	local util        = require("tptmp.client.util")
 	local format      = require("tptmp.client.format")
+local tcp_socket  = require("tptmp.client.socket.tcp")
+local web_socket  = require("tptmp.client.socket.web")
 	
 	local can_yield_xpcall = coroutine.resume(coroutine.create(function()
 		assert(pcall(coroutine.yield))
@@ -644,7 +518,10 @@ require_preload__["tptmp.client.client"] = function()
 	}
 	
 	local function get_auth_token(audience)
-		local req = http.getAuthToken(audience)
+	local req, err = http.getAuthToken(audience)
+	if not req then
+		return nil, "internal", tostring(err)
+	end
 		local started_at = socket.gettime()
 		while req:status() == "running" do
 			if socket.gettime() > started_at + config.auth_backend_timeout then
@@ -673,23 +550,25 @@ require_preload__["tptmp.client.client"] = function()
 	end
 	
 	function client_i:read_(count)
-		while self.rx_:pending() < count do
+	local rx = self.socket_:rx()
+	while rx:pending() < count do
 			coroutine.yield()
 		end
-		return self.rx_:get(count)
+	return rx:get(count)
 	end
 	
 	function client_i:read_bytes_(count)
-		while self.rx_:pending() < count do
+	local rx = self.socket_:rx()
+	while rx:pending() < count do
 			coroutine.yield()
 		end
-		local data, first, last = self.rx_:next()
+	local data, first, last = rx:next()
 		if last >= first + count - 1 then
 			-- * Less memory-intensive path.
-			self.rx_:pop(count)
+		rx:pop(count)
 			return data:byte(first, first + count - 1)
 		end
-		return self.rx_:get(count):byte(1, count)
+	return rx:get(count):byte(1, count)
 	end
 	
 	function client_i:read_str24_()
@@ -737,7 +616,7 @@ require_preload__["tptmp.client.client"] = function()
 	function client_i:handle_disconnect_reason_2_()
 		local reason = self:read_str8_()
 		self.should_not_reconnect_func_()
-		self:stop(reason)
+	self:proto_close_(reason)
 	end
 	
 	function client_i:handle_ping_3_()
@@ -941,14 +820,14 @@ require_preload__["tptmp.client.client"] = function()
 	
 	function client_i:handle_mousepos_32_()
 		local member = self:member_prefix_()
-		member.pos_x, member.pos_y = self:read_xy_12_()
+	member.pos_x, member.pos_y = util.clamp_pos(self:read_xy_12_())
 		member:update_can_render()
 	end
 	
 	function client_i:handle_brushmode_33_()
 		local member = self:member_prefix_()
 		local bmode = self:read_bytes_(1)
-		member.bmode = bmode < 3 and bmode or 0
+	member.bmode = util.clamp(bmode, 0, 2)
 		member:update_can_render()
 	end
 	
@@ -962,7 +841,7 @@ require_preload__["tptmp.client.client"] = function()
 	
 	function client_i:handle_brushshape_35_()
 		local member = self:member_prefix_()
-		member.shape = self:read_bytes_(1)
+	member.shape = util.clamp(self:read_bytes_(1), 0, sim.NUM_DEFAULTBRUSHES - 1)
 		member:update_can_render()
 	end
 	
@@ -1086,12 +965,9 @@ require_preload__["tptmp.client.client"] = function()
 	
 	function client_i:handle_flood_39_()
 		local member = self:member_prefix_()
-		local index = self:read_bytes_(1)
-		if index > 3 then
-			index = 0
-		end
+	local index = util.clamp(self:read_bytes_(1), 0, 3)
 		member.last_tool = member[index_to_lrax[index]]
-		local x, y = self:read_xy_12_()
+	local x, y = util.clamp_pos(self:read_xy_12_())
 		if member.last_tool then
 			util.flood_any(self.xidr, x, y, member.last_tool, -1, -1, member)
 		end
@@ -1100,7 +976,7 @@ require_preload__["tptmp.client.client"] = function()
 	function client_i:handle_lineend_40_()
 		local member = self:member_prefix_()
 		local x1, y1 = member.line_x, member.line_y
-		local x2, y2 = self:read_xy_12_()
+	local x2, y2 = util.clamp_pos(self:read_xy_12_())
 		if member:can_render() and x1 and member.last_tool then
 			if member.kmod_a then
 				x2, y2 = util.line_snap_coords(x1, y1, x2, y2)
@@ -1113,7 +989,7 @@ require_preload__["tptmp.client.client"] = function()
 	function client_i:handle_rectend_41_()
 		local member = self:member_prefix_()
 		local x1, y1 = member.rect_x, member.rect_y
-		local x2, y2 = self:read_xy_12_()
+	local x2, y2 = util.clamp_pos(self:read_xy_12_())
 		if member:can_render() and x1 and member.last_tool then
 			if member.kmod_a then
 				x2, y2 = util.rect_snap_coords(x1, y1, x2, y2)
@@ -1125,12 +1001,9 @@ require_preload__["tptmp.client.client"] = function()
 	
 	function client_i:handle_pointsstart_42_()
 		local member = self:member_prefix_()
-		local index = self:read_bytes_(1)
-		if index > 3 then
-			index = 0
-		end
+	local index = util.clamp(self:read_bytes_(1), 0, 3)
 		member.last_tool = member[index_to_lrax[index]]
-		local x, y = self:read_xy_12_()
+	local x, y = util.clamp_pos(self:read_xy_12_())
 		if member:can_render() and member.last_tool then
 			util.create_parts_any(self.xidr, x, y, member.size_x, member.size_y, member.last_tool, member.shape, member)
 		end
@@ -1140,7 +1013,7 @@ require_preload__["tptmp.client.client"] = function()
 	
 	function client_i:handle_pointscont_43_()
 		local member = self:member_prefix_()
-		local x, y = self:read_xy_12_()
+	local x, y = util.clamp_pos(self:read_xy_12_())
 		if member:can_render() and member.last_tool and member.last_x then
 			util.create_line_any(self.xidr, member.last_x, member.last_y, x, y, member.size_x, member.size_y, member.last_tool, member.shape, member, true)
 		end
@@ -1150,22 +1023,16 @@ require_preload__["tptmp.client.client"] = function()
 	
 	function client_i:handle_linestart_44_()
 		local member = self:member_prefix_()
-		local index = self:read_bytes_(1)
-		if index > 3 then
-			index = 0
-		end
+	local index = util.clamp(self:read_bytes_(1), 0, 3)
 		member.last_tool = member[index_to_lrax[index]]
-		member.line_x, member.line_y = self:read_xy_12_()
+	member.line_x, member.line_y = util.clamp_pos(self:read_xy_12_())
 	end
 	
 	function client_i:handle_rectstart_45_()
 		local member = self:member_prefix_()
-		local index = self:read_bytes_(1)
-		if index > 3 then
-			index = 0
-		end
+	local index = util.clamp(self:read_bytes_(1), 0, 3)
 		member.last_tool = member[index_to_lrax[index]]
-		member.rect_x, member.rect_y = self:read_xy_12_()
+	member.rect_x, member.rect_y = util.clamp_pos(self:read_xy_12_())
 	end
 	
 	function client_i:handle_custgolinfo_46_()
@@ -1257,8 +1124,8 @@ require_preload__["tptmp.client.client"] = function()
 	
 	function client_i:handle_clearrect_67_()
 		self:member_prefix_()
-		local x, y = self:read_xy_12_()
-		local w, h = self:read_xy_12_()
+	local x, y = util.clamp_pos(self:read_xy_12_())
+	local w, h = util.clamp_pos(self:read_xy_12_()) -- is really a size but it's ok
 		util.clear_rect(x, y, w, h)
 	end
 	
@@ -1294,7 +1161,7 @@ require_preload__["tptmp.client.client"] = function()
 	function client_i:handle_placestatus_71_()
 		local member = self:member_prefix_()
 		local k = self:read_bytes_(1)
-		local w, h = self:read_xy_12_()
+	local w, h = util.clamp_pos(self:read_xy_12_()) -- is really a size but it's ok
 		if k == 0 then
 			member.place = nil
 		elseif k == 1 then
@@ -1307,7 +1174,7 @@ require_preload__["tptmp.client.client"] = function()
 	function client_i:handle_selectstatus_72_()
 		local member = self:member_prefix_()
 		local k = self:read_bytes_(1)
-		local x, y = self:read_xy_12_()
+	local x, y = util.clamp_pos(self:read_xy_12_())
 		if k == 0 then
 			member.select = nil
 		elseif k == 1 then
@@ -1323,7 +1190,7 @@ require_preload__["tptmp.client.client"] = function()
 	
 	function client_i:handle_zoomstart_73_()
 		local member = self:member_prefix_()
-		local x, y = self:read_xy_12_()
+	local x, y = util.clamp_pos(self:read_xy_12_())
 		local s = self:read_bytes_(1)
 		member.zoom_x = x
 		member.zoom_y = y
@@ -1339,7 +1206,7 @@ require_preload__["tptmp.client.client"] = function()
 	
 	function client_i:handle_sparksign_75_()
 		local member = self:member_prefix_()
-		local x, y = self:read_xy_12_()
+	local x, y = util.clamp_pos(self:read_xy_12_())
 		sim.partCreate(-1, x, y, elem.DEFAULT_PT_SPRK)
 	end
 	
@@ -1388,9 +1255,13 @@ require_preload__["tptmp.client.client"] = function()
 	function client_i:connect_()
 		self.server_probably_secure_ = nil
 		self.window_:set_subtitle("status", "Connecting")
-		self.socket_ = socket.tcp()
-		self.socket_:settimeout(0)
-		self.socket_:setoption("tcp-nodelay", true)
+	if socket.tcp then
+		self.socket_ = tcp_socket.new()
+	else
+		self.socket_ = web_socket.new({
+			handle_error_func = self.handle_error_func_,
+		})
+	end
 		while true do
 			local ok, err = self.socket_:connect(self.host_, self.port_, self.secure_)
 			if ok then
@@ -1755,15 +1626,16 @@ require_preload__["tptmp.client.client"] = function()
 		assert(self.status_ == "ready")
 		self.status_ = "running"
 		self.proto_coro_ = coroutine.create(function()
-			local wrap_traceback = can_yield_xpcall and xpcall or function(func)
-				-- * It doesn't matter if wrap_traceback is not a real xpcall
+		local xpcall_wrap_wrap = can_yield_xpcall and modulepack.xpcall_wrap or function(func)
+			-- * It doesn't matter if xpcall_wrap_wrap is not the real xpcall_wrap
 				--   as the error would be re-thrown later anyway, but a real
 				--   xpcall is preferable because it lets us print a stack trace
 				--   from within the coroutine.
-				func()
-				return true
+			return func
 			end
-			local ok, err = wrap_traceback(function()
+		local ok = true
+		local err
+		xpcall_wrap_wrap(function()
 				self:connect_()
 				self:handshake_()
 				while true do
@@ -1774,49 +1646,17 @@ require_preload__["tptmp.client.client"] = function()
 					end
 					handler(self)
 				end
-			end, function(err)
+		end, function(xperr)
 				if self.handle_error_func_ then
-					self.handle_error_func_(err)
+				self.handle_error_func_(xperr)
 				end
-				return err
-			end)
+			ok = false
+			err = xperr
+		end)()
 			if not ok then
 				error(err)
 			end
 		end)
-	end
-	
-	function client_i:tick_read_()
-		if self.connected_ and not self.read_closed_ then
-			while true do
-				local closed = false
-				local data, err, partial = self.socket_:receive(config.read_size)
-				if not data then
-					if err == "closed" then
-						data = partial
-						closed = true
-					elseif err == "timeout" then
-						data = partial
-					else
-						self:stop(err)
-						break
-					end
-				end
-				local pushed, count = self.rx_:push(data)
-				if pushed < count then
-					self:stop("recv queue limit exceeded")
-					break
-				end
-				if closed then
-					self:tick_resume_()
-					self:stop("connection closed: receive failed: " .. tostring(self.socket_lasterror_))
-					break
-				end
-				if #data < config.read_size then
-					break
-				end
-			end
-		end
 	end
 	
 	function client_i:tick_resume_()
@@ -1828,44 +1668,6 @@ require_preload__["tptmp.client.client"] = function()
 			end
 			if self.proto_coro_ and coroutine.status(self.proto_coro_) == "dead" then
 				error("proto coroutine terminated")
-			end
-		end
-	end
-	
-	function client_i:tick_write_()
-		if self.connected_ then
-			while true do
-				local data, first, last = self.tx_:next()
-				if not data then
-					break
-				end
-				local closed = false
-				local count = last - first + 1
-				if self.socket_:status() ~= "connected" then
-					break
-				end
-				local written_up_to, err, partial_up_to = self.socket_:send(data, first, last)
-				if not written_up_to then
-					if err == "closed" then
-						written_up_to = partial_up_to
-						closed = true
-					elseif err == "timeout" then
-						written_up_to = partial_up_to
-					else
-						self:stop(err)
-						break
-					end
-				end
-				local written = written_up_to - first + 1
-				self.tx_:pop(written)
-				if closed then
-					self.socket_lasterror_ = self.socket_:lasterror()
-					self:stop("connection closed: send failed: " .. tostring(self.socket_lasterror_))
-					break
-				end
-				if written < count then
-					break
-				end
 			end
 		end
 	end
@@ -1925,6 +1727,12 @@ require_preload__["tptmp.client.client"] = function()
 			end
 		end
 	end
+
+function client_i:aftersim_fpssync_()
+	if self.registered_ and self.fps_sync_ then
+		self.fps_sync_count_ = self.fps_sync_count_ + 1
+		end
+	end
 	
 	function client_i:tick_fpssync_()
 		if self.registered_ then
@@ -1940,7 +1748,6 @@ require_preload__["tptmp.client.client"] = function()
 						end
 					end
 				end
-				self.fps_sync_count_ = self.fps_sync_count_ + 1
 				if now_msec >= self.fps_sync_last_ + 1000 then
 					self:send_fpssync(now_msec - self.fps_sync_first_, self.fps_sync_count_)
 					self.fps_sync_last_ = now_msec
@@ -1980,15 +1787,36 @@ require_preload__["tptmp.client.client"] = function()
 			end
 		end
 	end
+
+function client_i:aftersim()
+	if self.status_ ~= "running" then
+		return
+	end
+	self:aftersim_fpssync_()
+	end
 	
 	function client_i:tick()
 		if self.status_ ~= "running" then
 			return
 		end
 		self:tick_fpssync_invalidate_()
-		self:tick_read_()
+	local brok = true
+	local brerr, brmsg
+	if self.connected_ then
+		brok, brerr, brmsg = self.socket_:before_resume()
+	end
+	if brok or brerr == "resumestop" then
 		self:tick_resume_()
-		self:tick_write_()
+	end
+	if not brok then
+		self:stop(brmsg)
+	end
+	if self.connected_ then
+		local arok, arerr, armsg = self.socket_:after_resume()
+		if not arok then
+			self:stop(armsg)
+		end
+	end
 		self:tick_connect_()
 		self:tick_ping_()
 		self:tick_sim_()
@@ -2005,7 +1833,6 @@ require_preload__["tptmp.client.client"] = function()
 				self.socket_:shutdown()
 			end
 			self.socket_:close()
-			self.socket_lasterror_ = self.socket_:lasterror()
 			self.socket_ = nil
 			self.connected_ = nil
 			self.registered_ = nil
@@ -2038,7 +1865,7 @@ require_preload__["tptmp.client.client"] = function()
 		end
 		local buf = self.write_buf_
 		self.write_buf_ = nil
-		local pushed, count = self.tx_:push(type(buf) == "string" and buf or table.concat(buf))
+	local pushed, count = self.socket_:tx():push(type(buf) == "string" and buf or table.concat(buf))
 		if pushed < count then
 			self:stop("send queue limit exceeded")
 		end
@@ -2147,8 +1974,6 @@ require_preload__["tptmp.client.client"] = function()
 			secure_                    = params.secure,
 			event_log_                 = params.event_log,
 			backlog_                   = params.backlog,
-			rx_                        = buffer_list.new({ limit = config.recvq_limit }),
-			tx_                        = buffer_list.new({ limit = config.sendq_limit }),
 			connecting_since_          = now,
 			last_ping_sent_at_         = now,
 			last_ping_received_at_     = now,
@@ -2179,8 +2004,7 @@ require_preload__["tptmp.client.client"] = function()
 	
 end
 
-require_preload__["tptmp.client.colours"] = function()
-
+modules["tptmp.client.colours"] = function()
 	local utf8 = require("tptmp.client.utf8")
 	
 	local function hsv_to_rgb(hue, saturation, value) -- * [0, 1), [0, 1), [0, 1)
@@ -2262,11 +2086,10 @@ require_preload__["tptmp.client.colours"] = function()
 	
 end
 
-require_preload__["tptmp.client.config"] = function()
-
+modules["tptmp.client.config"] = function()
 	local common_config = require("tptmp.common.config")
 	
-	local versionstr = "v2.2.4"
+local versionstr = "v2.2.7"
 	
 	local config = {
 		-- ***********************************************************************
@@ -2417,6 +2240,9 @@ require_preload__["tptmp.client.config"] = function()
 	
 		-- * Protocol version.
 		version = common_config.version,
+
+	-- * WebSocket protocol to request.
+	websocket_protocol = common_config.websocket_protocol,
 	
 		-- * Client-to-server message size limit.
 		message_size = common_config.message_size,
@@ -2439,8 +2265,7 @@ require_preload__["tptmp.client.config"] = function()
 	
 end
 
-require_preload__["tptmp.client.format"] = function()
-
+modules["tptmp.client.format"] = function()
 	local colours = require("tptmp.client.colours")
 	local util    = require("tptmp.client.util")
 	
@@ -2472,8 +2297,7 @@ require_preload__["tptmp.client.format"] = function()
 	
 end
 
-require_preload__["tptmp.client.localcmd"] = function()
-
+modules["tptmp.client.localcmd"] = function()
 	local config         = require("tptmp.client.config")
 	local format         = require("tptmp.client.format")
 	local manager        = require("tptmp.client.manager")
@@ -2849,8 +2673,7 @@ require_preload__["tptmp.client.localcmd"] = function()
 	
 end
 
-require_preload__["tptmp.client.manager"] = function()
-
+modules["tptmp.client.manager"] = function()
 	local jacobs = require("tptmp.client.manager.jacobs")
 	local null   = require("tptmp.client.manager.null")
 	
@@ -2862,8 +2685,7 @@ require_preload__["tptmp.client.manager"] = function()
 	
 end
 
-require_preload__["tptmp.client.manager.jacobs"] = function()
-
+modules["tptmp.client.manager.jacobs"] = function()
 	local config = require("tptmp.client.config")
 	
 	local MANAGER = rawget(_G, "MANAGER")
@@ -2897,8 +2719,7 @@ require_preload__["tptmp.client.manager.jacobs"] = function()
 	
 end
 
-require_preload__["tptmp.client.manager.null"] = function()
-
+modules["tptmp.client.manager.null"] = function()
 	local config = require("tptmp.client.config")
 	
 	local data
@@ -2960,8 +2781,7 @@ require_preload__["tptmp.client.manager.null"] = function()
 	
 end
 
-require_preload__["tptmp.client.profile"] = function()
-
+modules["tptmp.client.profile"] = function()
 	local vanilla = require("tptmp.client.profile.vanilla")
 	local jacobs  = require("tptmp.client.profile.jacobs")
 	
@@ -2973,8 +2793,7 @@ require_preload__["tptmp.client.profile"] = function()
 	
 end
 
-require_preload__["tptmp.client.profile.jacobs"] = function()
-
+modules["tptmp.client.profile.jacobs"] = function()
 	local vanilla = require("tptmp.client.profile.vanilla")
 	local config  = require("tptmp.client.config")
 	
@@ -3007,8 +2826,7 @@ require_preload__["tptmp.client.profile.jacobs"] = function()
 	
 end
 
-require_preload__["tptmp.client.profile.vanilla"] = function()
-
+modules["tptmp.client.profile.vanilla"] = function()
 	local util   = require("tptmp.client.util")
 	local config = require("tptmp.client.config")
 	
@@ -3659,24 +3477,20 @@ require_preload__["tptmp.client.profile.vanilla"] = function()
 	end
 	
 	function profile_i:update_shape_()
-		local pcirc = self.perfect_circle_
-		if self.perfect_circle_invalid_ then
-			pcirc = perfect_circle()
-		end
 		local shape = tpt.brushID
-		if self.shape_ ~= shape or self.perfect_circle_ ~= pcirc then
+	if self.shape_ ~= shape or self.imperfect_circle_invalid_ then
+		local ipcirc = shape == 0 and not perfect_circle()
 			local old_cbrush = self.cbrush_
 			self.cbrush_ = shape >= BRUSH_COUNT or nil
 			if not old_cbrush and self.cbrush_ then
 				self.display_toolwarn_["cbrush"] = true
 			end
-			local old_ipcirc = self.ipcirc_
-			self.ipcirc_ = shape == 0 and not pcirc
-			if not old_ipcirc and self.ipcirc_ then
-				self.display_toolwarn_["ipcirc"] = true
+		if self.imperfect_circle_invalid_ or not ipcirc then
+			self.display_toolwarn_["ipcirc"] = ipcirc or nil
 			end
+		self.imperfect_circle_invalid_ = nil
 			self.shape_ = shape
-			self.perfect_circle_ = pcirc
+		self.imperfect_circle_ = ipcirc
 			self:report_shape_()
 		end
 	end
@@ -3866,6 +3680,7 @@ require_preload__["tptmp.client.profile.vanilla"] = function()
 		end
 		if self.simstate_invalid_next_ then
 			self.simstate_invalid_next_ = nil
+		self.imperfect_circle_invalid_ = true
 			self.simstate_invalid_ = true
 		end
 		if self.placesave_size_next_ then
@@ -4051,7 +3866,6 @@ require_preload__["tptmp.client.profile.vanilla"] = function()
 		end
 		-- * Here the assumption is made that no Lua hook cancels the mouseup event.
 		if px >= sim.XRES or py >= sim.YRES then
-			self.perfect_circle_invalid_ = true
 			self.simstate_invalid_next_ = true
 		end
 		if self.registered_func_() and ((reason == MOUSEUP_REASON_MOUSEUP and self[index_to_lraxid[self.last_toolslot_]] ~= "DEFAULT_UI_SIGN") or button ~= 1) then
@@ -4400,6 +4214,7 @@ require_preload__["tptmp.client.profile.vanilla"] = function()
 			self.tool_aid_ = nil
 			self.tool_xid_ = nil
 			self.last_toolid_ = self.tool_lid_
+		self.imperfect_circle_invalid_ = true
 			self:update_tools_()
 		end
 	end
@@ -4419,7 +4234,7 @@ require_preload__["tptmp.client.profile.vanilla"] = function()
 			last_toolslot_ = 0,
 			shape_ = 0,
 			stk2_out_ = false,
-			perfect_circle_invalid_ = true,
+		imperfect_circle_invalid_ = true,
 			registered_func_ = params.registered_func,
 			log_event_func_ = params.log_event_func,
 			set_id_func_ = params.set_id_func,
@@ -4453,8 +4268,7 @@ require_preload__["tptmp.client.profile.vanilla"] = function()
 	
 end
 
-require_preload__["tptmp.client.side_button"] = function()
-
+modules["tptmp.client.side_button"] = function()
 	local colours = require("tptmp.client.colours")
 	local util    = require("tptmp.client.util")
 	local utf8    = require("tptmp.client.utf8")
@@ -4609,8 +4423,208 @@ require_preload__["tptmp.client.side_button"] = function()
 	
 end
 
-require_preload__["tptmp.client.utf8"] = function()
+modules["tptmp.client.socket.tcp"] = function()
+local config      = require("tptmp.client.config")
+local buffer_list = require("tptmp.common.buffer_list")
 
+local tcp_i = {}
+local tcp_m = { __index = tcp_i }
+
+function tcp_i:before_resume()
+	while true do
+		local closed = false
+		local data, err, partial = self.socket_:receive(config.read_size)
+		if not data then
+			if err == "closed" then
+				data = partial
+				closed = true
+			elseif err == "timeout" then
+				data = partial
+			else
+				return nil, "stop", err
+			end
+		end
+		local pushed, count = self.rx_:push(data)
+		if pushed < count then
+			return nil, "stop", "recv queue limit exceeded"
+		end
+		if closed then
+			local lasterror = self.socket_:lasterror()
+			return nil, "resumestop", "connection closed: receive failed: " .. (lasterror == "" and "???" or tostring(lasterror))
+		end
+		if #data < config.read_size then
+			break
+		end
+	end
+	return true
+end
+
+function tcp_i:after_resume()
+	while true do
+		local data, first, last = self.tx_:next()
+		if not data then
+			return true
+		end
+		local closed = false
+		local count = last - first + 1
+		if self.socket_:status() ~= "connected" then
+			return true
+		end
+		local written_up_to, err, partial_up_to = self.socket_:send(data, first, last)
+		if not written_up_to then
+			if err == "closed" then
+				written_up_to = partial_up_to
+				closed = true
+			elseif err == "timeout" then
+				written_up_to = partial_up_to
+			else
+				return nil, "stop", err
+			end
+		end
+		local written = written_up_to - first + 1
+		self.tx_:pop(written)
+		if closed then
+			local lasterror = self.socket_:lasterror()
+			return nil, "stop", "connection closed: send failed: " .. (lasterror == "" and "???" or tostring(lasterror))
+		end
+		if written < count then
+			break
+		end
+	end
+	return true
+end
+
+function tcp_i:connect(host, port, secure)
+	return self.socket_:connect(host, port, secure)
+end
+
+function tcp_i:shutdown()
+	self.socket_:shutdown()
+end
+
+function tcp_i:close()
+	self.socket_:close()
+end
+
+function tcp_i:rx()
+	return self.rx_
+end
+
+function tcp_i:tx()
+	return self.tx_
+end
+
+local function new()
+	local tcp = setmetatable({
+		socket_ = socket.tcp(),
+		rx_     = buffer_list.new({ limit = config.recvq_limit }),
+		tx_     = buffer_list.new({ limit = config.sendq_limit }),
+	}, tcp_m)
+	tcp.socket_:settimeout(0)
+	tcp.socket_:setoption("tcp-nodelay", true)
+	return tcp
+end
+
+return {
+	new = new,
+}
+
+end
+
+modules["tptmp.client.socket.web"] = function()
+local config      = require("tptmp.client.config")
+local buffer_list = require("tptmp.common.buffer_list")
+local modulepack  = require("modulepack")
+
+local web_i = {}
+local web_m = { __index = web_i }
+
+function web_i:connect(host, port, secure)
+	if not self.socket_ then
+		local address, path = host:match("^([^/]+)(/.*)$")
+		if not address then
+			address, path = host, "/"
+		end
+		self.socket_ = socket.web((secure and "wss://" or "ws://") .. address .. ":" .. port .. path, { config.websocket_protocol })
+		self.tx_ = {
+			push = function(_, data)
+				local _, tx_size = self.socket_:status()
+				local count = #data
+				local want = math.min(count, config.sendq_limit - tx_size)
+				self.socket_:send(data, true, 1, want)
+				return want, count
+			end,
+		}
+		self.socket_:onClose(modulepack.xpcall_wrap(function(code, reason, clean)
+			self.closed_ = true
+			if not clean then
+				self.lasterror_ = reason
+			end
+		end, self.handle_error_func_))
+		self.socket_:onMessage(modulepack.xpcall_wrap(function(message, binary)
+			if not binary then
+				self.lasterror_ = "unexpected string frame"
+				self.socket_:close(1002, self.lasterror_)
+			end
+			local pushed, count = self.rx_:push(message)
+			if pushed < count then
+				self.lasterror_ = "recv queue limit exceeded"
+				self.socket_:close(1002, self.lasterror_)
+			end
+		end, self.handle_error_func_))
+	end
+	if self.socket_:status() == "connecting" then
+		return nil, "timeout"
+	end
+	if self.socket_:status() ~= "open" then
+		return nil, self.lasterror_
+	end
+	return true
+end
+
+function web_i:close()
+	self.socket_:close()
+end
+
+function web_i:before_resume()
+	return true
+end
+
+function web_i:after_resume()
+	if self.closed_ then
+		return nil, "stop", "connection closed: " .. self.lasterror_
+	end
+	return true
+end
+
+function web_i:shutdown()
+	self.closed_ = true
+end
+
+function web_i:rx()
+	return self.rx_
+end
+
+function web_i:tx()
+	return self.tx_
+end
+
+local function new(params)
+	return setmetatable({
+		lasterror_         = "???",
+		closed_            = false,
+		rx_                = buffer_list.new({ limit = config.recvq_limit }),
+		handle_error_func_ = params.handle_error_func,
+	}, web_m)
+end
+
+return {
+	new = new,
+}
+
+end
+
+modules["tptmp.client.utf8"] = function()
 	local function code_points(str)
 		local cps = {}
 		local cursor = 0
@@ -4723,8 +4737,7 @@ require_preload__["tptmp.client.utf8"] = function()
 	
 end
 
-require_preload__["tptmp.client.util"] = function()
-
+modules["tptmp.client.util"] = function()
 	local config      = require("tptmp.client.config")
 	local common_util = require("tptmp.common.util")
 	
@@ -4760,7 +4773,8 @@ require_preload__["tptmp.client.util"] = function()
 		local from_tool = {}
 		local to_tool = {}
 		local to_tool_index = {}
-		for xtype, tool in ipairs(supported) do
+	for xtype = 1, #supported do
+		local tool = supported[xtype]
 			assert(not to_tool[xtype])
 			assert(not from_tool[tool])
 			local class = tool:match("^[^_]+_(.-)_[^_]+$")
@@ -4972,7 +4986,17 @@ require_preload__["tptmp.client.util"] = function()
 	end
 	
 	local function create_parts_any(xidr, x, y, rx, ry, xtype, brush, member)
+	if member.kmod_s == nil or
+	   member.kmod_c == nil or
+	   member.tool_x == nil or
+	   member.deco == nil or
+	   member.bmode == nil then
+		return
+	end
 		if not inside_rect(0, 0, sim.XRES, sim.YRES, x, y) then
+			return
+		end
+	if brush >= sim.NUM_DEFAULTBRUSHES then
 			return
 		end
 		if xidr.line_only[xtype] or xidr.no_create[xtype] then
@@ -5024,9 +5048,19 @@ require_preload__["tptmp.client.util"] = function()
 	end
 	
 	local function create_line_any(xidr, x1, y1, x2, y2, rx, ry, xtype, brush, member, cont)
+	if member.kmod_s == nil or
+	   member.kmod_c == nil or
+	   member.tool_x == nil or
+	   member.deco == nil or
+	   member.bmode == nil then
+		return
+	end
 		-- * TODO[opt]: Revert jacob1's mod ball check.
 		if not inside_rect(0, 0, sim.XRES, sim.YRES, x1, y1) or
 		   not inside_rect(0, 0, sim.XRES, sim.YRES, x2, y2) then
+			return
+		end
+	if brush >= sim.NUM_DEFAULTBRUSHES then
 			return
 		end
 		if xidr.no_create[xtype] or xidr.no_shape[xtype] then
@@ -5083,6 +5117,11 @@ require_preload__["tptmp.client.util"] = function()
 	end
 	
 	local function create_box_any(xidr, x1, y1, x2, y2, rx, ry, xtype, member)
+	if member.tool_x == nil or
+	   member.deco == nil or
+	   member.bmode == nil then
+		return
+	end
 		if not inside_rect(0, 0, sim.XRES, sim.YRES, x1, y1) or
 		   not inside_rect(0, 0, sim.XRES, sim.YRES, x2, y2) then
 			return
@@ -5134,6 +5173,12 @@ require_preload__["tptmp.client.util"] = function()
 	end
 	
 	local function flood_any(xidr, x, y, xtype, part_flood_hint, wall_flood_hint, member)
+	if member.size_x == nil or
+	   member.size_y == nil or
+	   member.tool_x == nil or
+	   member.bmode == nil then
+		return
+	end
 		if not inside_rect(0, 0, sim.XRES, sim.YRES, x, y) then
 			return
 		end
@@ -5290,6 +5335,15 @@ require_preload__["tptmp.client.util"] = function()
 		               bit.lshift(g,  8),
 		                          b     )
 	end
+
+local function clamp(x, lo, hi)
+	return math.min(math.max(x, lo), hi)
+end
+
+local function clamp_pos(x, y)
+	return clamp(x, 0, gfx.WIDTH  - 1),
+	       clamp(y, 0, gfx.HEIGHT - 1)
+	end
 	
 	return {
 		get_name               = get_name,
@@ -5324,12 +5378,13 @@ require_preload__["tptmp.client.util"] = function()
 		deco_pack              = deco_pack,
 		tool_identifiers       = tool_identifiers,
 		tool_proper_name       = tool_proper_name,
+	clamp                  = clamp,
+	clamp_pos              = clamp_pos,
 	}
 	
 end
 
-require_preload__["tptmp.client.window"] = function()
-
+modules["tptmp.client.window"] = function()
 	local config  = require("tptmp.client.config")
 	local colours = require("tptmp.client.colours")
 	local format  = require("tptmp.client.format")
@@ -6510,8 +6565,7 @@ require_preload__["tptmp.client.window"] = function()
 	
 end
 
-require_preload__["tptmp.common.buffer_list"] = function()
-
+modules["tptmp.common.buffer_list"] = function()
 	local buffer_list_i = {}
 	local buffer_list_m = { __index = buffer_list_i }
 	
@@ -6601,8 +6655,7 @@ require_preload__["tptmp.common.buffer_list"] = function()
 	
 end
 
-require_preload__["tptmp.common.command_parser"] = function()
-
+modules["tptmp.common.command_parser"] = function()
 	local command_parser_i = {}
 	local command_parser_m = { __index = command_parser_i }
 	
@@ -6749,8 +6802,7 @@ require_preload__["tptmp.common.command_parser"] = function()
 	
 end
 
-require_preload__["tptmp.common.config"] = function()
-
+modules["tptmp.common.config"] = function()
 	return {
 		-- ***********************************************************************
 		-- *** The following options apply to both the server and the clients. ***
@@ -6759,7 +6811,7 @@ require_preload__["tptmp.common.config"] = function()
 		-- ***********************************************************************
 	
 		-- * Protocol version, between 0 and 254. 255 is reserved for future use.
-		version = 36,
+	version = 37,
 	
 		-- * Client-to-server message size limit, between 0 and 255, the latter
 		--   limit being imposted by the protocol.
@@ -6787,6 +6839,9 @@ require_preload__["tptmp.common.config"] = function()
 	
 		-- * Port to connect to by default.
 		port = 34403,
+
+	-- * WebSocket protocol to use.
+	websocket_protocol = "tptmp",
 	
 		-- * Encrypt traffic between player clients and the server.
 		secure = true,
@@ -6794,8 +6849,7 @@ require_preload__["tptmp.common.config"] = function()
 	
 end
 
-require_preload__["tptmp.common.util"] = function()
-
+modules["tptmp.common.util"] = function()
 	local function version_less(lhs, rhs)
 		for i = 1, math.max(#lhs, #rhs) do
 			local left = lhs[i] or 0
@@ -6828,6 +6882,155 @@ require_preload__["tptmp.common.util"] = function()
 	
 end
 
-xpcall_wrap(function()
-	require("tptmp.client").run()
+
+return (function(...)
+	local first_mod_name = "tptmp.client"	local senv
+	local _ENV = _ENV
+	if _G.rawget(_G, "setfenv") then
+		senv = _G.getfenv(1)
+		_G.setfenv(1, _G)
+	else
+		senv = _ENV
+		_ENV = _G
+	end
+	local modules = senv.modules
+	senv.modules = nil
+
+	local unpack = rawget(_G, "unpack") or table.unpack
+	local function packn(...)
+		return { [ 0 ] = select("#", ...), ... }
+	end
+	local function unpackn(tbl, from, to)
+		return unpack(tbl, from or 1, to or tbl[0])
+	end
+	local chunkname = debug.getinfo(1, "S").source
+	if chunkname:find("^[=@]") then
+		chunkname = chunkname:sub(2)
+	else
+		chunkname = nil
+	end
+	local lineinfo = {
+		{ mod_name = "tptmp.common.util", line = 6861, mod_lines = 29 },
+		{ mod_name = "tptmp.common.config", line = 6814, mod_lines = 43 },
+		{ mod_name = "tptmp.common.command_parser", line = 6667, mod_lines = 143 },
+		{ mod_name = "tptmp.common.buffer_list", line = 6577, mod_lines = 86 },
+		{ mod_name = "tptmp.client.window", line = 5396, mod_lines = 1177 },
+		{ mod_name = "tptmp.client.util", line = 4749, mod_lines = 643 },
+		{ mod_name = "tptmp.client.utf8", line = 4636, mod_lines = 109 },
+		{ mod_name = "tptmp.client.socket.web", line = 4543, mod_lines = 89 },
+		{ mod_name = "tptmp.client.socket.tcp", line = 4435, mod_lines = 104 },
+		{ mod_name = "tptmp.client.side_button", line = 4272, mod_lines = 159 },
+		{ mod_name = "tptmp.client.profile.vanilla", line = 2830, mod_lines = 1438 },
+		{ mod_name = "tptmp.client.profile.jacobs", line = 2797, mod_lines = 29 },
+		{ mod_name = "tptmp.client.profile", line = 2785, mod_lines = 8 },
+		{ mod_name = "tptmp.client.manager.null", line = 2723, mod_lines = 58 },
+		{ mod_name = "tptmp.client.manager.jacobs", line = 2689, mod_lines = 30 },
+		{ mod_name = "tptmp.client.manager", line = 2677, mod_lines = 8 },
+		{ mod_name = "tptmp.client.localcmd", line = 2301, mod_lines = 372 },
+		{ mod_name = "tptmp.client.format", line = 2269, mod_lines = 28 },
+		{ mod_name = "tptmp.client.config", line = 2090, mod_lines = 175 },
+		{ mod_name = "tptmp.client.colours", line = 2008, mod_lines = 78 },
+		{ mod_name = "tptmp.client.client", line = 492, mod_lines = 1512 },
+		{ mod_name = "tptmp.client", line = 8, mod_lines = 480 }
+	}
+	local function escape_regex(str)
+		return (str:gsub("[%$%%%(%)%*%+%-%.%?%]%[%^]", "%%%1"))
+	end
+	local function demangle(str)
+		if chunkname then
+			return (str:gsub(escape_regex(chunkname) .. ":(%d+)", function(line)
+				line = tonumber(line)
+				for _, info in ipairs(lineinfo) do
+					if info.line <= line then
+						local mod_line = line - info.line + 1
+						if mod_line <= info.mod_lines then
+							return ("%s$%s:%i"):format(chunkname, info.mod_name, mod_line)
+						end
+					end
+				end
+			end))
+		end
+		return str
+	end
+	local function traceback(...)
+		return demangle(debug.traceback(...))
+	end
+	local function xpcall_wrap(func, handler)
+		return function(...)
+			local iargs = packn(...)
+			local oargs
+			xpcall(function()
+				oargs = packn(func(unpackn(iargs)))
+			end, function(err)
+				if type(err) == "string" then
+					err = demangle(err)
+				end
+				if handler then
+					handler(err)
+				end
+				if type(err) == "string" then
+					print(traceback(err, 2))
+				end
+				return err
+			end)
+			if oargs then
+				return unpackn(oargs)
+			end
+		end
+	end
+
+	local mod_state = {}
+	local mod_result = {}
+	local function modulepack_require(mod_name)
+		if mod_state[mod_name] ~= "loaded" then
+			local func = modules[mod_name]
+			if not func then
+				error(("module %q not found"):format(mod_name), 2)
+			end
+			if mod_state[mod_name] == "loading" then
+				error("circular dependency", 2)
+			end
+			mod_state[mod_name] = "loading"
+			local ok = true
+			mod_result[mod_name] = xpcall_wrap(func, function()
+				ok = false
 end)()
+			if not ok then
+				mod_state[mod_name] = "failed"
+				error("module failed", 2)
+			end
+			mod_state[mod_name] = "loaded"
+		end
+		return mod_result[mod_name]
+	end
+
+	for key, value in pairs(_G) do
+		rawset(senv, key, value)
+	end
+	rawset(senv, "require", modulepack_require)
+	setmetatable(senv, { __index = function(_, key)
+		error(("__index on env: %s"):format(tostring(key)), 2)
+	end, __newindex = function(_, key)
+		error(("__newindex on env: %s"):format(tostring(key)), 2)
+	end })
+
+	mod_result["modulepack"] = {
+		packn       = packn,
+		unpackn     = unpackn,
+		xpcall_wrap = xpcall_wrap,
+		demangle    = demangle,
+		traceback   = traceback,
+	}
+	mod_state["modulepack"] = "loaded"
+
+	local ok = true
+	local ret = packn(xpcall_wrap(function(...)
+		modulepack_require(first_mod_name).run(...)
+	end, function()
+		ok = false
+	end)(...))
+	if not ok then
+		error("entry point failed", 2)
+	end
+	return unpackn(ret)
+end)(...)

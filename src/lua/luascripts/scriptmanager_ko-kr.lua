@@ -1,6 +1,6 @@
 --TPT Integrated Script Manager Korea
 --The autorun to end all autoruns
---Version 3.16
+--Version 3.17
 
 --TODO:
 --manual file addition (that can be anywhere and any extension)
@@ -9,6 +9,7 @@
 --prettier, organize code
 
 --CHANGES:
+--Version 3.17: Fix script manager being unclickable if scripts failed to load due to lag
 --Version 3.16: Fix Online FILTER breaking on a certain script, Fix 408 errors when downloading scripts on slow connections, Fix rare corruption of script settings or scripts list
 --Version 3.15: Bracket keys now scroll 5x faster, fix bracket scrolling being impossible on some keyboard layouts. Add ability to scroll by clicking and dragging, or with up/down arrow keys
 --Version 3.14: Fix extra newlines being inserted into scripts on Windows
@@ -64,8 +65,8 @@ local icons = {
 if not socket then error("TPT version not supported") end
 if MANAGER then error("manager is already running") end
 
-local scriptversion = 18
-MANAGER = {["version"] = "3.16", ["scriptversion"] = scriptversion, ["hidden"] = true}
+local scriptversion = 19
+MANAGER = {["version"] = "3.17", ["scriptversion"] = scriptversion, ["hidden"] = true}
 
 local type = type -- people like to overwrite this function with a global a lot
 local TPT_LUA_PATH = 'scripts'
@@ -1451,6 +1452,9 @@ gen_buttons()
 
 --register manager first
 tpt.register_step(smallstep)
+tpt.register_mouseevent(mouseclick)
+evt.register(evt.keypress, keypress)
+
 --load previously running scripts
 local started = ""
 for prev,v in pairs(running) do
@@ -1468,5 +1472,3 @@ save_last()
 if started~="" then
 	MANAGER.print("Auto started"..started)
 end
-tpt.register_mouseevent(mouseclick)
-evt.register(evt.keypress, keypress)
