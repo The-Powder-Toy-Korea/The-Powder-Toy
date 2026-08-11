@@ -319,19 +319,19 @@ OptionsView::OptionsView() : ui::Window(ui::Point(-1, -1), ui::Point(320, 340))
 		c->SetTemperatureScale(TempScale(temperatureScale->GetOption().second));
 	});
 	addSeparator();
-	std::tie(fpsLimit, fpsLimitText) = addLimitDropDown("Simulation framerate cap", {
-		{ "Exact", fpsLimitDropdownExact },
-		{ "Uncapped", fpsLimitDropdownUncapped },
+	std::tie(fpsLimit, fpsLimitText) = addLimitDropDown("시뮬레이션 프레임률 제한", {
+		{ "정확한 값", fpsLimitDropdownExact },
+		{ "제한 없음", fpsLimitDropdownUncapped },
 	}, [this](bool defocus) {
 		UpdateFpsLimit(defocus);
 	});
-	std::tie(drawLimit, drawLimitText) = addLimitDropDown("Rendering framerate cap", {
-		{ "Exact", drawLimitDropdownExact },
-		{ "Follow display", drawLimitDropdownFollowDisplay },
+	std::tie(drawLimit, drawLimitText) = addLimitDropDown("렌더링 프레임률 제한", {
+		{ "정확한 값", drawLimitDropdownExact },
+		{ "디스플레이에 맞추기", drawLimitDropdownFollowDisplay },
 	}, [this](bool defocus) {
 		UpdateDrawLimit(defocus);
 	});
-	addButtonWithLabel("Reset", " - Set both limits to sane defaults", [this]{
+	addButtonWithLabel("초기화", " - 두 값을 모두 적절한 기본값으로 설정", [this]{
 		c->SetFpsLimit(DefaultFpsLimit);
 		c->SetDrawLimit(DefaultDrawLimit);
 	});
