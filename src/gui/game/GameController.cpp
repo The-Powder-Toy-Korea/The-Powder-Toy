@@ -274,7 +274,7 @@ void GameController::Install()
 			}
 			else
 			{
-				new ErrorMessage("설치할 수 없음", "오류로 인해 설치가 실패하였습니다.");
+				new ErrorMessage("설치할 수 없음", "오류로 인해 설치가 완료되지 않았습니다.");
 			}
 		} });
 	}

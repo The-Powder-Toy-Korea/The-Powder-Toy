@@ -289,7 +289,7 @@ OptionsView::OptionsView() : ui::Window(ui::Point(-1, -1), ui::Point(320, 340))
 	}, [this] {
 		c->SetConvectionMode(convectionMode->GetOption().second);
 	});
-	gravityMode = addDropDown("중력 방향", {
+	gravityMode = addDropDown("중력 시뮬레이션 모드", {
 		{ "수직", GRAV_VERTICAL },
 		{ "끄기", GRAV_OFF },
 		{ "중심", GRAV_RADIAL },

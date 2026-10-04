@@ -69,7 +69,7 @@ static std::vector<wall_type> LoadWalls()
 		{0xFFAA00_rgb, 0xAA5500_rgb, 4, Renderer::WallIcon, String("ENERGY WALL"),     "DEFAULT_WL_ENRGY",  String("에너지 벽: 에너지 입자는 통과시키지만, 다른 모든 입자를 막습니다.")},
 		{0xDCDCDC_rgb, 0x000000_rgb, 1, Renderer::WallIcon, String("AIRBLOCK WALL"),   "DEFAULT_WL_NOAIR",  String("공기 차단벽: 모든 입자를 통과시키지만, 기류는 막습니다.")},
 		{0x808080_rgb, 0x000000_rgb, 0, Renderer::WallIcon, String("ERASEALL"),        "DEFAULT_WL_ERASEA", String("지우기 도구: 벽, 입자, 표지판을 모두 지웁니다.")},
-		{0x800080_rgb, 0x000000_rgb, 0, Renderer::WallIcon, String("STASIS WALL"),     "DEFAULT_WL_STASIS", String("정체 벽: 전류가 공급될 때까지 그 내부의 입자를 제자리에 고정합니다.")},
+		{0x800080_rgb, 0x000000_rgb, 0, Renderer::WallIcon, String("STASIS WALL"),     "DEFAULT_WL_STASIS", String("정지 벽: 전류가 공급될 때까지 그 내부의 입자를 제자리에 고정합니다.")},
 	};
 }
 
