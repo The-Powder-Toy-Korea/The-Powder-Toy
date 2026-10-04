@@ -25,6 +25,7 @@ if [[ -z           ${APP_DATA-} ]]; then >&2 echo           "APP_DATA not set"; 
 if [[ -z         ${APP_VENDOR-} ]]; then >&2 echo         "APP_VENDOR not set"; exit 1; fi
 
 x86_old=no
+bsh_host_arch_init=$BSH_HOST_ARCH
 if [[ $BSH_HOST_ARCH == x86_old ]]; then
 	export BSH_HOST_ARCH=x86
 	x86_old=yes
@@ -138,7 +139,7 @@ if [[ -z ${BSH_NO_PACKAGES-} ]]; then
 		fi
 		;;
 	emscripten)
-		git clone https://github.com/emscripten-core/emsdk.git --branch 3.1.72
+		git clone https://github.com/emscripten-core/emsdk.git --branch 5.0.7
 		cd emsdk
 		./emsdk install latest
 		./emsdk activate latest
@@ -376,7 +377,7 @@ if [[ $RELEASE_TYPE == tptlibsdev ]] && ([[ $BSH_HOST_PLATFORM-$BSH_HOST_LIBC ==
 	tpt_libs_vtag=v00000000000000
 	if [[ ! -f build-tpt-libs/tpt-libs/.ok ]]; then
 		cd build-tpt-libs/tpt-libs
-		BSH_VTAG=$tpt_libs_vtag ./.github/build.sh
+		BSH_HOST_ARCH=$bsh_host_arch_init BSH_VTAG=$tpt_libs_vtag ./.github/build.sh
 		touch .ok
 		cd ../../subprojects
 		for i in tpt-libs-prebuilt-*; do

@@ -2833,7 +2833,7 @@ static void ConvertJsonToBson(Bson &b, Json::Value j, int depth)
 			b[member.c_str()] = j[member].asInt64();
 		else if (j[member].isArray())
 		{
-			auto &array = b.Append(Bson::Type::arrayValue);
+			auto &array = (b[member] = Bson::Type::arrayValue);
 			std::set<int> saveIDs = std::set<int>();
 			int length = 0;
 			for (Json::Value::ArrayIndex i = 0; i < j[member].size(); i++)

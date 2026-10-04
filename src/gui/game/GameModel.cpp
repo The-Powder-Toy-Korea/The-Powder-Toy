@@ -796,6 +796,15 @@ Tool * GameModel::GetActiveTool(int selection)
 void GameModel::SetActiveTool(int selection, Tool * tool)
 {
 	activeTools[selection] = tool;
+	rendererSettings.gravityZonesEnabled = false;
+	for(int i = 0; i < 3; i++)
+	{
+		auto *activeTool = activeTools[i];
+		if (activeTool && activeTool->Identifier == "DEFAULT_WL_GRVTY")
+		{
+			rendererSettings.gravityZonesEnabled = true;
+		}
+	}
 	notifyActiveToolsChanged();
 }
 

@@ -3,7 +3,7 @@ project('the-powder-toy-ko-kr', 'cpp', version:
 	                      # A.B.C is the version number shown by meson and by your local builds. note that this version
 	                      # number is overridden by the tag you push to github, so ghactions builds will show that version
 	                      # number instead. you can also replace 'the-powder-toy' with your mod's simplified name.
-	'100.1.400', meson_version: '>=0.64.0')
+	'100.1.401', meson_version: '>=0.64.0')
 
 if get_option('prepare')
 	# we're being run by prepare.py in a ghactions workflow only to determine the values of options; exit early
@@ -90,7 +90,7 @@ endif
 tpt_libs_variant = '@0@-@1@-@2@-@3@'.format(host_arch_tlv, host_platform, host_libc, tpt_libs_static)
 tpt_libs_vtag = get_option('tpt_libs_vtag')
 if tpt_libs_vtag == ''
-	tpt_libs_vtag = 'v20251019131007'
+	tpt_libs_vtag = 'v20260821222421'
 endif
 if tpt_libs_static != 'none'
 	if tpt_libs_variant not in [
@@ -249,7 +249,6 @@ if host_platform == 'emscripten'
 		'-s', 'USE_SDL=2',
 		'-s', 'USE_BZIP2=1',
 		'-s', 'USE_LIBPNG',
-		'-s', 'USE_PTHREADS',
 		'-s', 'DISABLE_EXCEPTION_CATCHING=0',
 		'-gsource-map',
 	]
@@ -440,6 +439,8 @@ elif host_platform == 'linux'
 	ident_platform = is_64bit ? 'LIN64' : 'LIN32'
 elif host_platform == 'darwin'
 	ident_platform = host_arch == 'aarch64' ? 'MACOSARM' : 'MACOSX'
+elif host_platform == 'emscripten'
+	ident_platform = 'EMSCRIPTEN'
 else
 	ident_platform = 'UNKNOWN'
 endif
@@ -500,12 +501,15 @@ foreach sta_info : [
 		host_platform == 'android' ? sdl2_dep : [],
 		png_dep,
 		bzip2_dep,
+		threads_dep,
 	] ],
 	[ 'gui', gui_files, [
 		sdl2_dep,
+		threads_dep,
 	] ],
 	[ 'simulation', simulation_files, [
 		json_dep,
+		threads_dep,
 	] ],
 ]
 	sta_name = sta_info[0]

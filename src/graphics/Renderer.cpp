@@ -410,6 +410,19 @@ void Renderer::render_parts()
 					colb = colour.Blue;
 					pixel_mode = PMODE_FLAT;
 				}
+				else if (colorMode & COLOUR_DEST)
+				{
+					auto score = sd.DestructibilityScore(t);
+					if (score < 100)
+					{
+						colr = colg = colb = score*1.3f;
+					}
+					else
+					{
+						colr = colg = colb = 255;
+					}
+					pixel_mode = PMODE_FLAT;
+				}
 
 				//Apply decoration colour
 				if(!(colorMode & ~COLOUR_GRAD) && decorationLevel != decorationDisabled && deca)
@@ -519,7 +532,7 @@ void Renderer::render_parts()
 						{
 							auto dx = parts[parts[i].tmp].x - nx;
 							auto dy = parts[parts[i].tmp].y - ny;
-							Element_SOAP_neighourLoop(dx, dy);
+							Element_SOAP_neighourLoop(sim, dx, dy);
 							BlendLine({ nx, ny }, { int(nx + dx + 0.5f), int(ny + dy + 0.5f) }, RGBA(colr, colg, colb, cola));
 						}
 					}
@@ -1419,6 +1432,12 @@ const std::vector<RenderPreset> Renderer::renderModePresets = {
 		RENDER_EFFE | RENDER_BASC,
 		DISPLAY_AIRW,
 		0,
+	},
+	{
+		"Destructibility Display",
+		RENDER_BASC,
+		0,
+		COLOUR_DEST,
 	},
 };
 

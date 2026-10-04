@@ -40,6 +40,7 @@ constexpr auto FLAG_PHOTDECO      = UINT32_C(0x00000008); // compatibility with 
 
 class Parts;
 class Simulation;
+struct RenderableSimulation;
 struct GraphicsFuncContext;
 struct Particle;
 

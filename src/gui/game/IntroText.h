@@ -2,6 +2,7 @@
 #include "Config.h"
 #include "SimulationConfig.h"
 #include "common/String.h"
+#include <cstring>
 
 inline ByteString VersionInfo()
 {
@@ -75,6 +76,10 @@ inline ByteString IntroText()
 	else
 	{
 		sb << "\bg세이브의 업로드와 같은 기능을 사용하려면 \br" << SERVER << "/Register.html\bg에서 계정을 만드십시오.\n";
+	}
+	if constexpr (std::string_view(IDENT_PLATFORM) == "EMSCRIPTEN")
+	{
+		sb << "\brLocal saves and other data are managed by your browser and may be deleted unexpectedly. \bgIf in doubt, save online.\n";
 	}
 	sb << "\n\bt" << VersionInfo();
 	return sb.Build();
